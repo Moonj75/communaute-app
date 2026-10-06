@@ -11,6 +11,7 @@ export type JoueurNotion = {
   email: string | null;
   actif: boolean;
   admin: boolean;
+  titulaire: boolean;
   roles: string[];
   cagnotte: number | null;
   telephone: string | null;
@@ -49,6 +50,7 @@ function parse(page: { id: string; properties: Record<string, Prop> }): JoueurNo
     email,
     actif: Boolean(p["Actif"]?.checkbox),
     admin: acces === "Administrateur",
+    titulaire: Boolean(p["Titulaire du compte"]?.checkbox),
     roles,
     cagnotte: typeof p["Cagnotte"]?.number === "number" ? (p["Cagnotte"].number as number) : null,
     telephone: (p["Téléphone"]?.phone_number as string | null) || null,

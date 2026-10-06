@@ -13,8 +13,6 @@ type Membre = {
   prenom: string | null;
   role: "admin" | "joueur";
   actif: boolean;
-  roles: string[] | null;
-  cagnotte: number | null;
   synced_at: string | null;
 };
 
@@ -25,10 +23,14 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (profil?.role !== "admin") redirect("/");
 
-  const [{ data: membres }, { data: profils }] = await Promise.all([
-    supabase.from("membres").select("email,nom,prenom,role,actif,roles,cagnotte,synced_at").order("nom"),
+  const [{ data: membres }, { data: profils }, { data: joueurs }] = await Promise.all([
+    supabase.from("membres").select("email,nom,prenom,role,actif,synced_at").order("nom"),
     supabase.from("profils").select("email"),
+    supabase.from("joueurs").select("email,prenom,nom,actif,titulaire,roles,cagnotte"),
   ]);
+  type J = { email: string | null; prenom: string | null; nom: string; actif: boolean; titulaire: boolean; roles: string[] | null; cagnotte: number | null };
+  const parEmail = new Map<string, J[]>();
+  for (const j of (joueurs || []) as J[]) if (j.email) parEmail.set(j.email, [...(parEmail.get(j.email) || []), j]);
   const connected = new Set((profils || []).map((p: { email: string }) => p.email));
   const list = (membres || []) as Membre[];
   const lastSync = list.reduce<string | null>((m, x) => (x.synced_at && (!m || x.synced_at > m) ? x.synced_at : m), null);
@@ -67,7 +69,7 @@ export default async function AdminPage() {
 
         <section className="panel">
           <div className="hd">
-            <h2>Membres ({list.length})</h2>
+            <h2>Comptes de connexion ({list.length})</h2>
             <span className="muted" style={{ fontSize: 13 }}>
               Rôle et statut modifiables ici ; ils seront écrasés par Notion à la prochaine synchronisation.
             </span>
@@ -78,8 +80,7 @@ export default async function AdminPage() {
                 <tr>
                   <th>Nom</th>
                   <th>E-mail</th>
-                  <th>Rôles club</th>
-                  <th>Cagnotte</th>
+                  <th>Personnes · rôles · cagnotte</th>
                   <th>Accès</th>
                   <th>Statut</th>
                   <th>Connexion</th>
@@ -90,8 +91,16 @@ export default async function AdminPage() {
                   <tr key={m.email}>
                     <td style={{ fontWeight: 700 }}>{[m.prenom, m.nom].filter(Boolean).join(" ")}</td>
                     <td>{m.email}</td>
-                    <td>{(m.roles || []).length ? (m.roles || []).map((r) => <span key={r} className="pill" style={{ marginRight: 4 }}>{r}</span>) : <span className="muted">—</span>}</td>
-                    <td className="num" style={{ whiteSpace: "nowrap" }}>{m.cagnotte != null ? euro.format(Number(m.cagnotte)) : <span className="muted">—</span>}</td>
+                    <td>
+                      {(parEmail.get(m.email) || []).map((j) => (
+                        <div key={(j.prenom || "") + j.nom} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", padding: "2px 0", opacity: j.actif ? 1 : 0.55 }}>
+                          <b>{j.prenom || j.nom}</b>
+                          {(parEmail.get(m.email) || []).length > 1 && j.titulaire ? <span className="pill adm">titulaire</span> : null}
+                          {(j.roles || []).map((r) => <span key={r} className="pill">{r}</span>)}
+                          {j.cagnotte != null ? <span className="pill on num">{euro.format(Number(j.cagnotte))}</span> : null}
+                        </div>
+                      ))}
+                    </td>
                     <td>
                       <form action={updateMembre} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                         <input type="hidden" name="email" value={m.email} />

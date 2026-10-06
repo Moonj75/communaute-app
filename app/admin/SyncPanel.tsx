@@ -22,15 +22,15 @@ export default function SyncPanel({ last }: { last: string | null }) {
       {state.error ? <div className="notice err">{state.error}</div> : null}
       {state.ok ? (
         <div className="notice ok">
-          <b>✓ {state.importes} joueurs à jour</b> depuis la Liste des joueurs de Notion
-          {state.inactifs ? ` (dont ${state.inactifs} inactifs, qui ne peuvent pas se connecter)` : ""}.
+          <b>✓ {state.personnes} fiches</b> et <b>{state.comptes} comptes de connexion</b> à jour depuis Notion
+          {state.inactifs ? ` (${state.inactifs} comptes inactifs ne peuvent pas se connecter)` : ""}.
+          {state.familles && state.familles.length ? (
+            <div style={{ marginTop: 6 }}>👨‍👧 Comptes famille : {state.familles.join(" ; ")}.</div>
+          ) : null}
           {state.sansEmail && state.sansEmail.length ? (
             <div style={{ marginTop: 6 }}>
-              ⚠️ Sans e-mail dans Notion, donc non importés : <b>{state.sansEmail.join(", ")}</b>.
+              ⚠️ Joueurs actifs sans e-mail (ils ne peuvent pas se connecter) : <b>{state.sansEmail.join(", ")}</b>.
             </div>
-          ) : null}
-          {state.doublons && state.doublons.length ? (
-            <div style={{ marginTop: 6 }}>⚠️ Doublons ignorés : {state.doublons.join(" ; ")}.</div>
           ) : null}
         </div>
       ) : null}
