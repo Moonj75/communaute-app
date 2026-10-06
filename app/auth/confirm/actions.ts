@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
+/** Verifies the one-time token only when the person clicks the button (mail scanners never POST). */
 export async function confirmLogin(formData: FormData) {
   const tokenHash = String(formData.get("token_hash") || "");
   const type = (String(formData.get("type") || "email") as EmailOtpType) || "email";

@@ -40,12 +40,11 @@ export default async function Home() {
 
         <p className="sec-title">Mon espace</p>
         <div className="cards">
-          <div className="card off">
-            <span className="soon">Étape 2</span>
+          <Link className="card" href="/fiche">
             <span className="ic">👤</span>
             <h3>Ma fiche</h3>
             <p>Mes informations, ma cagnotte, mes rôles au club.</p>
-          </div>
+          </Link>
           <div className="card off">
             <span className="soon">Étape 3</span>
             <span className="ic">🏁</span>
@@ -66,8 +65,8 @@ export default async function Home() {
             <div className="cards">
               <Link className="card gold" href="/admin">
                 <span className="ic">🗂️</span>
-                <h3>Membres</h3>
-                <p>Ajouter les joueurs autorisés à se connecter et choisir leur rôle.</p>
+                <h3>Joueurs</h3>
+                <p>Synchroniser la liste des joueurs depuis Notion et gérer les accès.</p>
               </Link>
               <div className="card off gold">
                 <span className="soon">Étape 4</span>

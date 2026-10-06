@@ -3,6 +3,11 @@ import { confirmLogin } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Landing page of the e-mail link. It does NOT log in on page load: mail scanners and link
+ * previews open links automatically, which used to burn the one-time token before the member
+ * clicked. The token is only used when the member presses the button.
+ */
 export default async function ConfirmPage({
   searchParams,
 }: {
