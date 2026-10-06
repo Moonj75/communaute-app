@@ -32,3 +32,6 @@ drop policy if exists "joueurs : admin écrit" on public.joueurs;
 create policy "joueurs : admin écrit"
   on public.joueurs for all to authenticated
   using (public.est_admin()) with check (public.est_admin());
+
+-- Étape 2c : suivi des invitations
+alter table public.membres add column if not exists invite_le timestamptz;

@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import { displayName, getSessionProfil } from "@/lib/profil";
 import AddForm from "./AddForm";
 import SyncPanel from "./SyncPanel";
+import InviteCell from "./InviteCell";
 import { updateMembre } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ type Membre = {
   role: "admin" | "joueur";
   actif: boolean;
   synced_at: string | null;
+  invite_le: string | null;
 };
 
 const euro = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" });
@@ -24,7 +26,7 @@ export default async function AdminPage() {
   if (profil?.role !== "admin") redirect("/");
 
   const [{ data: membres }, { data: profils }, { data: joueurs }] = await Promise.all([
-    supabase.from("membres").select("email,nom,prenom,role,actif,synced_at").order("nom"),
+    supabase.from("membres").select("email,nom,prenom,role,actif,synced_at,invite_le").order("nom"),
     supabase.from("profils").select("email"),
     supabase.from("joueurs").select("email,prenom,nom,actif,titulaire,roles,cagnotte"),
   ]);
@@ -84,6 +86,7 @@ export default async function AdminPage() {
                   <th>Accès</th>
                   <th>Statut</th>
                   <th>Connexion</th>
+                  <th>Invitation</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,6 +126,9 @@ export default async function AdminPage() {
                       </form>
                     </td>
                     <td>{connected.has(m.email) ? <span className="pill on">✓ déjà connecté</span> : <span className="pill">jamais</span>}</td>
+                    <td>
+                      <InviteCell email={m.email} prenom={m.prenom} actif={m.actif} connecte={connected.has(m.email)} inviteLe={m.invite_le} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
