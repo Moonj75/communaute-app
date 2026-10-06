@@ -46,6 +46,34 @@ export default async function AdminPage() {
           ← Retour à l&apos;accueil
         </a>
 
+        <section className="panel" style={{ borderTop: "3px solid var(--night)" }}>
+          <div className="hd">
+            <h2>👁️ Voir l&apos;appli comme un joueur</h2>
+            <span className="muted" style={{ fontSize: 13 }}>
+              Pour tester : tu vois exactement ce que voit ce membre (menu, calendrier, inscriptions, fiche).
+            </span>
+          </div>
+          <div className="bd">
+            <form action={commencerApercu} className="addform" style={{ gridTemplateColumns: "minmax(0, 1fr) auto" }}>
+              <label className="f">
+                Membre
+                <select className="input" name="email" required defaultValue="">
+                  <option value="" disabled>Choisir un membre…</option>
+                  {list
+                    .filter((m) => m.actif && m.email !== (user.email || "").toLowerCase())
+                    .map((m) => (
+                      <option key={m.email} value={m.email}>
+                        {[m.prenom, m.nom].filter(Boolean).join(" ")}
+                        {(parEmail.get(m.email)?.length || 0) > 1 ? ` (famille de ${parEmail.get(m.email)!.length})` : ""}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <button className="btn primary" type="submit">Lancer l&apos;aperçu →</button>
+            </form>
+          </div>
+        </section>
+
         <section className="panel" style={{ borderTop: "3px solid var(--gold)" }}>
           <div className="hd">
             <h2>Liste des joueurs Notion</h2>

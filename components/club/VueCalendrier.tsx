@@ -148,7 +148,7 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur }: Cal
                   </span>
                   <span className="row-end">
                     {decisionBadge(x.decision)}
-                    {famille.length && estCompetition(x) && x.decision === DECISION_OUI ? <StatutChip s={mine.every((s) => s) ? mine[0] : null} ouvert={inscriptionsOuvertes(x, today)} clos={Boolean(x.limite && x.limite < today)} /> : null}
+                    {famille.length && estCompetition(x) && x.decision === DECISION_OUI && (inscriptionsOuvertes(x, today) || mine.some(Boolean)) ? <StatutChip s={mine.every((s) => s) ? mine[0] : null} ouvert={inscriptionsOuvertes(x, today)} clos={Boolean(x.limite && x.limite < today)} /> : null}
                   </span>
                 </Link>
               );

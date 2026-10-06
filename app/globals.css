@@ -500,3 +500,117 @@ table.matrix td { padding: 5px 6px; border-bottom: 1px solid var(--line2); text-
   .values .wrap { font-size: 13px; gap: 18px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* =====================================================================
+   Ma fiche : photo, catégorie, cagnotte
+   ===================================================================== */
+.fiche { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: stretch; }
+.fiche-side { display: flex; flex-direction: column; gap: 16px; }
+.fiche-side .panel { flex: 1; }
+.id-card { align-items: flex-start; gap: 26px; padding: 26px; }
+.id-txt { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding-top: 6px; }
+.id-pills, .id-roles { display: flex; gap: 6px; flex-wrap: wrap; }
+.id-tel { margin: 6px 0 0; display: flex; flex-direction: column; gap: 2px; }
+.id-tel .fl-l { color: rgba(255,255,255,.55); }
+.id-tel b { font-size: 18px; letter-spacing: .02em; }
+.photo { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
+.photo-box {
+  width: 150px; height: 180px; display: grid; place-items: center; overflow: hidden;
+  background: var(--night-3); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+.photo-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-box.busy { opacity: .55; }
+.photo-ini { font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 56px; color: rgba(255,255,255,.85); }
+.photo-act { display: flex; align-items: center; gap: 10px; }
+.small-btn { min-height: 36px !important; font-size: 13.5px !important; padding: 0 14px !important; }
+.linkbtn { background: none; border: 0; padding: 0; color: rgba(255,255,255,.7); text-decoration: underline; cursor: pointer; font-size: 13px; }
+.photo-err { margin: 0; max-width: 200px; font-size: 12.5px; color: #ffb3ab; text-align: center; }
+.bloc-cat, .cagnotte { display: flex; flex-direction: column; gap: 6px; justify-content: center; padding: 22px 24px; }
+.cat-big { font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: clamp(34px, 4vw, 46px); line-height: .95; text-transform: uppercase; color: var(--fg); }
+.cat-serie { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+.cat-serie b { font-size: 16px; }
+
+/* =====================================================================
+   « Calme » : sous le bandeau, la couleur est réservée à l'essentiel.
+   Titres plus marqués, accents rouge/or seulement pour l'action,
+   les alertes et l'information importante.
+   ===================================================================== */
+:root { --maybe: #c76a00; --maybe-soft: #fff0dc; }
+@media (prefers-color-scheme: dark) { :root { --maybe: #ffa94d; --maybe-soft: #3a2410; } }
+
+/* Titles: stronger, neutral */
+.hello .kicker { color: var(--muted); }
+.hello h2 { color: var(--fg); }
+.panel > .hd h2 { font-size: 27px; }
+.sec-title { font-size: 19px; }
+.sec-title::before { background: var(--fg); }
+.panel::before { background: var(--fg); width: 44px; height: 3px; }
+.cagnotte::before, .id-card::before { background: rgba(255,255,255,.0); }
+.cagnotte::before { background: var(--fg); width: 44px; height: 3px; }
+.panel > .hd { border-bottom-color: var(--line); }
+
+/* Home scoreboard: one highlight only */
+.score .main { background: var(--night-3); }
+.score .main .lbl { color: var(--gold); }
+.score .main .val { color: #fff; }
+.score .val { color: #fff; }
+
+/* Cards: neutral, the accent only on hover */
+.card, .card.gold, .card.club { box-shadow: inset 0 -3px 0 var(--line2); }
+.card .go { color: var(--fg); }
+.card.dark .go { color: var(--gold); }
+a.card:hover { box-shadow: inset 0 -3px 0 var(--accent), 0 18px 30px -22px rgba(0,0,0,.5); }
+a.card:hover .idx { color: var(--line2); }
+.card.dark:hover .idx { color: rgba(255,255,255,.07); }
+
+/* Lists, dates, selection */
+.row-d small, .rm-d small, .ins-d .m { color: var(--muted); }
+.row.on { background: var(--sunk); border-left-color: var(--fg); }
+.rm.on { background: var(--sunk); border-left-color: var(--accent); box-shadow: inset 0 0 0 1px var(--line); }
+.tk.lie { background: var(--sunk); border-left-color: var(--fg); }
+.grp-t span, .g-today .grp-t span { background: var(--sunk); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
+.tk-ev { color: var(--fg); }
+
+/* Badges: outlined and soft instead of solid colours */
+.dec { background: transparent !important; }
+.dec-o { color: var(--yes); box-shadow: inset 0 0 0 1.5px var(--yes); }
+.dec-n { color: var(--no); box-shadow: inset 0 0 0 1.5px var(--no); }
+.dec-p { color: var(--muted); box-shadow: inset 0 0 0 1.5px var(--line); }
+.ev-top .dec-o { color: #7ee2a8; box-shadow: inset 0 0 0 1.5px #7ee2a8; }
+.ev-top .dec-p { color: rgba(255,255,255,.8); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.4); }
+.st-o { background: var(--yes-soft); color: var(--yes); }
+.st-m { background: var(--maybe-soft); color: var(--maybe); }
+.cell.o { background: var(--yes-soft); color: var(--yes); }
+.cell.m { background: var(--maybe-soft); color: var(--maybe); }
+.chip.m i { background: var(--maybe); }
+.bar3 .m, .t-m { border-color: var(--maybe); }
+.tagx.gold { background: var(--sunk); color: var(--fg); }
+.ev-top .tagx.gold { background: rgba(255,255,255,.14); color: #fff; }
+.role-chip { background: var(--sunk); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
+.id-card .role-chip { background: rgba(255,255,255,.1); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+.pill.adm { background: var(--gold); color: var(--night); }
+
+/* Event card date: calmer block, gold only on the month */
+.ev-date { background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+
+/* Inscriptions: only « to answer » keeps the red edge */
+.ins.done, .ins.soon { box-shadow: inset 5px 0 0 var(--line), 0 14px 28px -24px rgba(0,0,0,.5); }
+
+/* Reminders / KPIs */
+.remind { background: var(--accent-soft); color: var(--fg); box-shadow: inset 6px 0 0 var(--accent); }
+.remind h3 { color: var(--accent-ink); }
+.kpi.warn { box-shadow: inset 0 -4px 0 var(--line); }
+.kpi.warn .s { color: var(--accent-ink); font-weight: 700; }
+.box { border-top-width: 3px; }
+.box.b-p { border-color: var(--line); }
+
+/* Admin & forms */
+.panel[style*="border-top"] { border-top: 0 !important; }
+
+@media (max-width: 760px) {
+  .fiche { grid-template-columns: minmax(0, 1fr); }
+  .id-card { flex-direction: column; align-items: center; text-align: center; }
+  .id-txt { align-items: center; }
+  .id-pills, .id-roles { justify-content: center; }
+}
