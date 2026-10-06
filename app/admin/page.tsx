@@ -5,6 +5,7 @@ import AddForm from "./AddForm";
 import SyncPanel from "./SyncPanel";
 import InviteCell from "./InviteCell";
 import { updateMembre } from "./actions";
+import { commencerApercu } from "./apercu";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,7 @@ export default async function AdminPage() {
                   <th>Statut</th>
                   <th>Connexion</th>
                   <th>Invitation</th>
+                  <th>Aperçu</th>
                 </tr>
               </thead>
               <tbody>
@@ -128,6 +130,12 @@ export default async function AdminPage() {
                     <td>{connected.has(m.email) ? <span className="pill on">✓ déjà connecté</span> : <span className="pill">jamais</span>}</td>
                     <td>
                       <InviteCell email={m.email} prenom={m.prenom} actif={m.actif} connecte={connected.has(m.email)} inviteLe={m.invite_le} />
+                    </td>
+                    <td>
+                      <form action={commencerApercu}>
+                        <input type="hidden" name="email" value={m.email} />
+                        <button className="btn" type="submit" title="Voir l'application comme ce membre">👁️ Voir comme</button>
+                      </form>
                     </td>
                   </tr>
                 ))}

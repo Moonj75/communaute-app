@@ -31,3 +31,13 @@ cp .env.example .env.local
 npm install
 npm run dev
 ```
+
+## Étape 4 : tout le club dans l'application
+
+Menu adapté à chaque personne :
+
+- **Tous** : Accueil, Calendrier, Mes inscriptions (bouton « Répondre » vers le formulaire Tally), Ma fiche.
+- **Administrateurs** : Tableau de bord des inscriptions, Planning (tâches et rappels modifiables, enregistrés dans Notion), Joueurs.
+
+La connexion Notion « Lions Eugies App » doit être reliée à toute la page **Deplacements** et avoir les capacités
+« Lire », « Mettre à jour » et « Insérer » (pour le planning).

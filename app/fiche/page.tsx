@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
-import { displayName, getSessionProfil } from "@/lib/profil";
+import { displayName, getVue } from "@/lib/profil";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +80,7 @@ function CarteJoueur({ f, famille }: { f: Fiche; famille: boolean }) {
 }
 
 export default async function FichePage() {
-  const { supabase, user, profil } = await getSessionProfil();
+  const { supabase, user, profil, apercu } = await getVue();
   if (!user) redirect("/login");
   const { data } = await supabase
     .from("joueurs")
@@ -94,7 +94,7 @@ export default async function FichePage() {
 
   return (
     <>
-      <Header subtitle={famille ? "Ma famille au club" : "Ma fiche joueur"} profil={profil} name={displayName(profil, user.email)} />
+      <Header subtitle={famille ? "Ma famille au club" : "Ma fiche joueur"} profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
         <a href="/" className="muted" style={{ textDecoration: "none", fontWeight: 700 }}>
           ← Retour à l&apos;accueil

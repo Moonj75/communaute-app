@@ -94,3 +94,50 @@ export async function lireJoueurs(): Promise<JoueurNotion[]> {
   } while (cursor);
   return out.filter((j) => j.nomComplet);
 }
+
+/** « Calendrier Déplacements » database. */
+const CALENDRIER_DB = process.env.NOTION_CALENDRIER_DB || "5e3396f3cbec42f996a9a79023a209c7";
+
+export type Competition = { id: string; nom: string; date: string; fin: string | null; lieu: string | null; deplacement: string | null };
+
+/** Next competitions the club has decided to attend (cached one hour). Returns [] if Notion is unreachable. */
+export async function prochainesCompetitions(limit = 3): Promise<Competition[]> {
+  const token = process.env.NOTION_TOKEN;
+  if (!token) return [];
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const res = await fetch(`https://api.notion.com/v1/databases/${CALENDRIER_DB}/query`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Notion-Version": "2022-06-28", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        page_size: limit,
+        filter: {
+          and: [
+            { property: "Date", date: { on_or_after: today } },
+            { property: "Type d'évènement", select: { equals: "Compétition" } },
+            { property: "Décision participation", select: { equals: "✅ On y va" } },
+          ],
+        },
+        sorts: [{ property: "Date", direction: "ascending" }],
+      }),
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { results: { id: string; properties: Record<string, Prop> }[] };
+    return data.results
+      .map((p) => {
+        const d = p.properties["Date"]?.date as { start?: string; end?: string | null } | null;
+        return {
+          id: p.id,
+          nom: (text(p.properties["Nom"]) || "").replace(/^[^0-9A-Za-zÀ-ÿ]+/, "").trim(),
+          date: d?.start || "",
+          fin: d?.end || null,
+          lieu: text(p.properties["Lieu"]),
+          deplacement: (p.properties["Type de déplacement"]?.select as { name?: string } | null)?.name || null,
+        };
+      })
+      .filter((c) => c.nom && c.date);
+  } catch {
+    return [];
+  }
+}

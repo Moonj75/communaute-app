@@ -10,11 +10,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SC Lions d'Eugies",
-  description: "Espace du club de Subbuteo SC Lions d'Eugies",
-  icons: { icon: "/crest.png" },
+  description: "LEAW – Lions Eugies Around the World · espace membres du club de Subbuteo",
+  icons: { icon: "/icon-192.png", apple: "/icon-192.png" },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#7e0a1c" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0e0b0a" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
