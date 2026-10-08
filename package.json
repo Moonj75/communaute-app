@@ -16,12 +16,15 @@
     "next": "15.5.27",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "server-only": "0.0.1"
+    "server-only": "0.0.1",
+    "web-push": "^3.6.7",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "typescript": "^5"
   }
 }

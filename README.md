@@ -41,3 +41,17 @@ Menu adapté à chaque personne :
 
 La connexion Notion « Lions Eugies App » doit être reliée à toute la page **Deplacements** et avoir les capacités
 « Lire », « Mettre à jour » et « Insérer » (pour le planning).
+
+## Étape 6 : fiche enrichie, club, notifications, appli installable
+
+- Pages en « vignettes » : chaque bloc d'une page est une miniature à gauche ; un clic l'affiche seul.
+- Accueil : classements du club, derniers résultats, prochains entraînements (bases Notion « Classements du club »,
+  « Résultats du club » et « Séances d'entraînement »).
+- Fiche : photo recadrable (synchronisée avec la colonne Photo de Notion), classements belge et international, palmarès.
+- Appli installable (logo LEAW) et notifications.
+
+Supabase : lancer `supabase/etape6-fiche-notifications.sql`.
+
+Vercel → Environment Variables (pour les notifications) :
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `CRON_SECRET` : générées sur la page Staff → Notifs → Réglages ;
+- `SUPABASE_SECRET_KEY` : Supabase → Project Settings → API Keys → clé secrète (à coller directement dans Vercel, jamais ailleurs).
