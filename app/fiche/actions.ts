@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSessionProfil } from "@/lib/profil";
+import { envoyerPhotoNotion, retirerPhotoNotion } from "@/lib/notion";
 
 export type RetourPhoto = { ok: boolean; message?: string };
 
@@ -34,8 +35,18 @@ export async function envoyerPhoto(notionId: string, ancien: string | null, fd: 
     return { ok: false, message: expliquer(error.message) };
   }
   if (ancien && ancien.startsWith(notionId + "/")) await supabase.storage.from("photos").remove([ancien]);
+
+  // Copy into the Notion « Photo » column (not blocking: the app photo is already saved).
+  let message: string | undefined;
+  try {
+    const nom = path.replace("/", "-");
+    await envoyerPhotoNotion(notionId, file, nom);
+    await supabase.rpc("definir_photo_notion", { p_notion_id: notionId, p_nom: nom });
+  } catch {
+    message = "Photo enregistrée ✓ (la copie dans Notion n'a pas pu être faite, elle se fera plus tard).";
+  }
   revalidatePath("/fiche");
-  return { ok: true };
+  return { ok: true, message };
 }
 
 export async function retirerPhoto(notionId: string, ancien: string | null): Promise<RetourPhoto> {
@@ -45,6 +56,12 @@ export async function retirerPhoto(notionId: string, ancien: string | null): Pro
   const { error } = await supabase.rpc("definir_photo", { p_notion_id: notionId, p_path: null });
   if (error) return { ok: false, message: expliquer(error.message) };
   if (ancien && ancien.startsWith(notionId + "/")) await supabase.storage.from("photos").remove([ancien]);
+  try {
+    await retirerPhotoNotion(notionId);
+    await supabase.rpc("definir_photo_notion", { p_notion_id: notionId, p_nom: null });
+  } catch {
+    /* Notion will be cleaned at the next sync */
+  }
   revalidatePath("/fiche");
   return { ok: true };
 }

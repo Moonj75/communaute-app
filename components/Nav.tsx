@@ -8,12 +8,15 @@ type Item = { href: string; label: string; ic: string };
 const JOUEUR: Item[] = [
   { href: "/", label: "Accueil", ic: "🏠" },
   { href: "/calendrier", label: "Calendrier", ic: "📅" },
-  { href: "/inscriptions", label: "Mes inscriptions", ic: "🏁" },
+  { href: "/inscriptions", label: "Inscriptions", ic: "🏁" },
+  { href: "/club/classements", label: "Classements", ic: "📊" },
   { href: "/fiche", label: "Ma fiche", ic: "👤" },
 ];
 const STAFF: Item[] = [
-  { href: "/staff/inscriptions", label: "Tableau de bord", ic: "📊" },
+  { href: "/staff/inscriptions", label: "Tableau", ic: "📊" },
   { href: "/staff/planning", label: "Planning", ic: "🗓️" },
+  { href: "/staff/notifications", label: "Notifs", ic: "🔔" },
+  { href: "/staff/classements", label: "MAJ clt", ic: "🔄" },
   { href: "/admin", label: "Joueurs", ic: "🗂️" },
 ];
 

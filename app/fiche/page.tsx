@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import { displayName, getVue } from "@/lib/profil";
+import Blocs from "@/components/Blocs";
+import Notifs from "@/components/Notifs";
 import { CarteJoueur, COLS, type Fiche } from "./CarteJoueur";
+import { MesClassements } from "@/components/club/Classements";
+import { lireExtraits } from "@/lib/classements-lire";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +17,10 @@ export default async function FichePage() {
   const email = (user.email || "").toLowerCase();
   const lire = (cols: string) =>
     supabase.from("joueurs").select(cols).eq("email", email).order("titulaire", { ascending: false }).order("prenom");
-  let res = await lire(COLS + ",photo_path");
-  if (res.error) res = await lire(COLS); // photos not enabled yet (step 5 SQL)
+  // Newer columns may not exist yet if a SQL step was not run: fall back gracefully.
+  let res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares");
+  if (res.error) res = await lire(COLS + ",photo_path");
+  if (res.error) res = await lire(COLS);
   const fiches = ((res.data || []) as unknown) as Fiche[];
   const famille = fiches.length > 1;
   const synced = fiches.map((f) => f.synced_at).filter(Boolean).sort().pop();
@@ -25,6 +31,7 @@ export default async function FichePage() {
     const { data } = await supabase.storage.from("photos").createSignedUrls(paths, 60 * 60);
     (data || []).forEach((d) => d.path && d.signedUrl && urls.set(d.path, d.signedUrl));
   }
+  const extraits = await Promise.all(fiches.map((f) => lireExtraits(supabase, f.notion_id)));
   const total = fiches.reduce((s, f) => s + (Number(f.cagnotte) || 0), 0);
 
   return (
@@ -43,9 +50,28 @@ export default async function FichePage() {
 
         {fiches.length === 0 ? (
           <div className="notice">Ta fiche n&apos;est pas encore disponible. Un administrateur doit synchroniser la liste des joueurs.</div>
-        ) : (
-          fiches.map((f) => <CarteJoueur key={f.notion_id} f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} />)
-        )}
+        ) : null}
+        <Blocs
+          blocs={[
+            ...fiches.flatMap((f, i) => [
+              {
+                id: f.notion_id.slice(0, 8),
+                titre: [f.prenom, f.nom].filter(Boolean).join(" "),
+                ic: f.titulaire || !famille ? "🦁" : "🐾",
+                badge: f.categorie || null,
+                contenu: <CarteJoueur f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} />,
+              },
+              {
+                id: `cl-${f.notion_id.slice(0, 8)}`,
+                titre: famille ? `Classements · ${f.prenom || f.nom}` : "Mes classements",
+                ic: "📊",
+                badge: extraits[i].length ? `#${Math.min(...extraits[i].map((x) => x.lignes.find((l) => l.joueur_id === f.notion_id)?.rang || 9999))}` : null,
+                contenu: <MesClassements extraits={extraits[i]} moi={f.notion_id} />,
+              },
+            ]),
+            { id: "notifications", titre: "Notifications", ic: "🔔", contenu: <Notifs /> },
+          ]}
+        />
 
         <p className="foot">
           Une information est fausse ? Préviens un administrateur du club : elle sera corrigée dans la liste officielle.

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Header from "@/components/Header";
 import LoginForm from "./LoginForm";
 
@@ -12,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <>
       <Header subtitle="Espace membres" />
       <div className="login">
-        <section className="login-hero" aria-hidden="true">
+        <section className="login-hero">
           <span className="kicker">LEAW · Subbuteo Beyond Borders · Saison 2026 – 2027</span>
           <h2>
             Une équipe.
@@ -31,6 +32,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               <LoginForm error={erreur ? ERRORS[erreur] || ERRORS.lien : undefined} />
             </div>
           </section>
+          <Link className="decouvrir" href="/club">
+            <span aria-hidden="true">🦁</span>
+            <span><b>Découvrir le club</b><small>Infos, calendrier et entraînements, sans connexion</small></span>
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
       </div>
     </>

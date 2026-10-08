@@ -1,13 +1,19 @@
 import Link from "next/link";
-import type { Evenement, JoueurLite, Participation } from "@/lib/club-types";
+import type { Evenement, FicheLogistique as FicheLogistiqueT, JoueurLite, Participation } from "@/lib/club-types";
+import FicheLogistique from "./FicheLogistique";
 import {
-  aujourdhui, compteARebours, dateMoyenne, estCompetition, estRetenu, indexReponses, inscriptionsOuvertes, lienTally, moisCourt, DECISION_OUI,
+  aujourdhui, compteARebours, dateMoyenne, estCompetition, estRetenu, indexReponses, inscriptionsOuvertes, lienReponse, modifiable, moisCourt, phase, DECISION_OUI,
 } from "@/lib/club-types";
 import Mois from "./Mois";
+import Blocs from "@/components/Blocs";
 import Jalons from "./Jalons";
 import StatutChip from "./StatutChip";
 
 export type CalendrierProps = {
+  fiches?: Map<string, FicheLogistiqueT>;
+  noms?: Map<string, string>;
+  base?: string;
+  public?: boolean;
   evs: Evenement[];
   parts: Participation[];
   famille: JoueurLite[];
@@ -30,7 +36,7 @@ export function decisionBadge(d: string | null) {
   return <span className="dec dec-p">{d.replace(/^[^A-Za-zÀ-ÿ]+/, "")}</span>;
 }
 
-export default function VueCalendrier({ evs, parts, famille, m, e, erreur }: CalendrierProps) {
+export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiches, noms }: CalendrierProps) {
   const today = aujourdhui();
   const visibles = evs.filter((x) => x.date && !x.jourSpecial && estRetenu(x));
   const avenir = visibles.filter((x) => (x.fin || x.date)! >= today);
@@ -48,12 +54,15 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur }: Cal
       </section>
       {erreur ? <div className="notice err">{erreur}</div> : null}
 
-      <div className="split">
+      <Blocs initial={e && sel ? "evenement" : undefined} blocs={[
+        { id: "mois", titre: "Le mois", ic: "📅", contenu: (
         <section className="panel">
           <div className="bd">
             <Mois ym={ym} evs={evs} selId={sel?.id} lien={lien} />
           </div>
         </section>
+        ) },
+        { id: "evenement", titre: "Évènement choisi", ic: "🏁", badge: sel ? compteARebours(sel.date, today) : null, contenu: (<>
 
         {sel ? (
           <section className="panel ev-card" aria-live="polite">
@@ -92,17 +101,26 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur }: Cal
                     return (
                       <div key={j.notionId} className="fam-row">
                         <b>{j.nom}</b>
-                        <StatutChip s={r?.statut} ouvert={inscriptionsOuvertes(sel, today)} clos={Boolean(sel.limite && sel.limite < today)} />
+                        <span>
+                          <StatutChip s={r?.statut} ouvert={inscriptionsOuvertes(sel, today)} clos={Boolean(sel.limite && sel.limite < today)} />
+                          {r?.valide ? <span className="st-lock" title="Validée définitivement">🔒</span> : null}
+                        </span>
                       </div>
                     );
                   })}
                 </div>
               ) : null}
               <div className="ev-actions">
-                {inscriptionsOuvertes(sel, today) ? (
-                  <a className="btn primary" href={lienTally(sel)} target="_blank" rel="noopener">
-                    Répondre à cet évènement ↗
-                  </a>
+                {famille.some((j) => modifiable(sel, idx.get(sel.id)?.get(j.notionId), today)) || (!famille.length && inscriptionsOuvertes(sel, today)) ? (
+                  famille.length ? (
+                    famille.filter((j) => modifiable(sel, idx.get(sel.id)?.get(j.notionId), today)).map((j) => (
+                      <a key={j.notionId} className="btn primary" href={lienReponse(sel, j.notionId)}>
+                        {phase(sel, today) === "confirmation" ? "🔒 Confirmer" : "Répondre"}{famille.length > 1 ? ` pour ${j.nom.split(" ")[0]}` : ""} →
+                      </a>
+                    ))
+                  ) : (
+                    <a className="btn primary" href={lienReponse(sel)}>Répondre à cet évènement →</a>
+                  )
                 ) : (
                   <span className="muted small">
                     {sel.date && sel.date < today
@@ -123,8 +141,10 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur }: Cal
         ) : (
           <section className="panel"><div className="bd muted">Aucun évènement à venir pour l&apos;instant.</div></section>
         )}
-      </div>
+        </>) },
 
+        { id: "logistique", titre: "Fiche logistique", ic: "🧳", badge: sel && fiches?.get(sel.id) ? "✓" : null, contenu: sel ? <FicheLogistique f={fiches?.get(sel.id)} ev={sel} noms={noms} /> : <p className="vide">Choisis un évènement dans le calendrier.</p> },
+        { id: "liste", titre: "Prochains évènements", ic: "🗓️", badge: avenir.length || null, contenu: (
       <section className="panel list">
         <div className="hd">
           <h2>Prochains évènements</h2>
@@ -158,6 +178,8 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur }: Cal
           )}
         </div>
       </section>
+        ) },
+      ]} />
     </>
   );
 }

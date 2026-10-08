@@ -1,12 +1,17 @@
 import Link from "next/link";
-import type { Evenement, JoueurLite, Participation } from "@/lib/club-types";
+import type { Evenement, FicheLogistique as FicheLogistiqueT, JoueurLite, Participation } from "@/lib/club-types";
+import { Anneau, couleurObjectif, Donut, Rythme } from "./Graphes";
+import FicheLogistique from "./FicheLogistique";
 import {
   ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, lienTally, moisCourt, DECISION_OUI,
 } from "@/lib/club-types";
 import Jalons from "./Jalons";
 import CopierLien from "./CopierLien";
+import Blocs from "@/components/Blocs";
 
 type Props = {
+  fiches?: Map<string, FicheLogistiqueT>;
+  noms?: Map<string, string>;
   evs: Evenement[];
   parts: Participation[];
   joueurs: JoueurLite[];
@@ -17,7 +22,7 @@ type Props = {
 
 const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 
-export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraichir }: Props) {
+export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraichir, fiches, noms }: Props) {
   const today = aujourdhui();
   const actifs = joueurs.filter((j) => j.actif);
   const N = actifs.length;
@@ -37,10 +42,13 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
 
   const c = sel ? compte(sel) : null;
   const rows = c ? [...c.o, ...c.p].map((j) => ({ j, r: c.m.get(j.notionId)! })) : [];
+  const fiche = sel ? fiches?.get(sel.id) : null;
+  const objectif = fiche?.objectif || null;
+  const points = c ? actifs.map((j) => c.m.get(j.notionId)).filter((p): p is Participation => Boolean(p?.statut && p.statut !== "En attente")).map((p) => ({ t: p.creeLe, oui: p.statut === "Oui" })) : [];
   const relance = sel && c
     ? `🦁 Rappel SC Lions d'Eugies : ${sel.nom} (${dateMoyenne(sel.date)}${sel.lieu ? ", " + sel.lieu : ""}). ` +
       `Il manque encore la réponse de : ${c.att.map((j) => j.nom.split(" ")[0]).join(", ")}. ` +
-      (sel.limite ? `Réponse avant le ${dateMoyenne(sel.limite)} 👉 ` : "Réponds ici 👉 ") + lienTally(sel)
+      (sel.limite ? `Réponse avant le ${dateMoyenne(sel.limite)} 👉 ` : "Réponds ici 👉 ") + "https://lions-eugies.vercel.app/inscriptions"
     : "";
   const cols = suivis.filter((x) => x.date! >= today).slice(0, 8);
 
@@ -56,7 +64,8 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
       </section>
       {erreur ? <div className="notice err">{erreur}</div> : null}
 
-      <div className="split dash">
+      <Blocs initial={e ? "detail" : undefined} blocs={[
+        { id: "liste", titre: "Compétitions", ic: "🏁", badge: suivis.length || null, contenu: (
         <section className="panel list">
           <div className="hd"><h2>Compétitions</h2><span className="muted small">{N} joueurs actifs</span></div>
           <div className="scroller">
@@ -80,39 +89,64 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
             }) : <p className="muted bd">Aucune compétition retenue à venir. Décide dans le planning.</p>}
           </div>
         </section>
+        ) },
 
-        {sel && c ? (
+        { id: "detail", titre: sel ? sel.nom : "Détail", ic: "📊", badge: c ? `${c.o.length} oui` : null, contenu: sel && c ? (<>
           <section className="panel detail">
             <div className="hero-ev">
-              <span className="eyebrow">{dateMoyenne(sel.date)} · {compteARebours(sel.date, today)}{sel.lieu ? ` · ${sel.lieu}` : ""}</span>
-              <h2>{sel.nom}</h2>
-              <div className="tiles">
+              <div className="stat-hero">
+                <div>
+                  <span className="eyebrow">{dateMoyenne(sel.date)} · {compteARebours(sel.date, today)}{sel.lieu ? ` · ${sel.lieu}` : ""}</span>
+                  <h2>{sel.nom}</h2>
+                </div>
+                <div className="gauge">
+                  <div className="gauge-l">
+                    <b className="num">{objectif ? pct(c.o.length, objectif) : pct(N - c.att.length, N)} %</b>
+                    <span>{objectif ? `de l'objectif (${c.o.length} / ${objectif} inscrits)` : `ont répondu (${N - c.att.length} / ${N})`}</span>
+                  </div>
+                  <Anneau v={objectif ? pct(c.o.length, objectif) : pct(N - c.att.length, N)} couleur={couleurObjectif(objectif ? pct(c.o.length, objectif) : pct(N - c.att.length, N))} piste="rgba(255,255,255,.15)" />
+                </div>
+              </div>
+              <div className="track"><i style={{ width: `${Math.min(100, objectif ? pct(c.o.length, objectif) : pct(N - c.att.length, N))}%` }} /></div>
+            </div>
+            <div className="dist">
+              <div className="donut-c">
+                <Donut total={Math.max(N, 1)} segs={[{ label: "Oui", v: c.o.length, col: "var(--yes)" }, { label: "Peut-être", v: c.p.length, col: "#e8890c" }, { label: "Non", v: c.n.length, col: "var(--no)" }, { label: "En attente", v: c.att.length, col: "var(--faint)", pointille: true }]} />
+                <span className="ctr"><b className="num">{pct(N - c.att.length, N)}%</b><span>ont répondu</span></span>
+              </div>
+              <div className="gts">
                 {[
                   { k: "o", l: "Oui", v: c.o.length },
                   { k: "m", l: "Peut-être", v: c.p.length },
                   { k: "n", l: "Non", v: c.n.length },
                   { k: "p", l: "En attente", v: c.att.length },
                 ].map((t) => (
-                  <div key={t.k} className={`tile t-${t.k}`}>
-                    <span className="tl">{t.l}</span>
-                    <span className="tv num">{t.v}</span>
-                    <span className="tb"><i style={{ width: `${pct(t.v, N)}%` }} /></span>
-                    <span className="ts">{pct(t.v, N)} %</span>
+                  <div key={t.k} className={`gt gt-${t.k}`}>
+                    <span className="gt-l">{t.l}</span>
+                    <span className="gt-row"><span className="gt-v num">{t.v}</span><span className="gt-pc num">{pct(t.v, N)}<small>%</small></span></span>
+                    <span className="gt-bar"><i style={{ width: `${Math.min(100, pct(t.v, N))}%` }} /></span>
+                    <span className="gt-s">sur {N} joueurs</span>
                   </div>
                 ))}
               </div>
-              <p className="hero-sub">{N - c.att.length} réponses sur {N} joueurs · {pct(N - c.att.length, N)} % ont répondu</p>
             </div>
+            {points.length ? (
+              <div className="rythme-box">
+                <div className="legend"><b>Rythme des réponses</b><span><i style={{ background: "var(--fg)" }} />Réponses</span><span><i style={{ background: "var(--yes)" }} />Oui</span>{objectif ? <span><i style={{ background: "var(--accent)" }} />Objectif ({objectif})</span> : null}</div>
+                <Rythme points={points} debut={points.map((x) => x.t).sort()[0]} fin={sel.date! < today ? sel.date! : today} objectif={objectif} max={N} />
+              </div>
+            ) : null}
             <div className="bd">
               <Jalons e={sel} compact />
               <div className="ev-actions">
-                <a className="btn primary" href={lienTally(sel)} target="_blank" rel="noopener">Formulaire de l&apos;évènement ↗</a>
+                <a className="btn" href={lienTally(sel)} target="_blank" rel="noopener">Formulaire Tally ↗</a>
                 {c.att.length ? <CopierLien texte={relance} label="📋 Relance WhatsApp" /> : null}
+                {c.att.length ? <Link className="btn" href={`/staff/notifications?cible=attente:${sel.id}`}>🔔 Notifier les {c.att.length}</Link> : null}
                 <a className="btn" href={sel.url} target="_blank" rel="noopener">Page Notion ↗</a>
               </div>
 
               <div className="three">
-                <div className="box b-o"><span className="bh">Participent ({c.o.length})</span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className="chip o"><i>{initiales(j.nom)}</i>{j.nom}</span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
+                <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}</span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className="chip o"><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}</span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
                 <div className="box b-p"><span className="bh">En attente ({c.att.length})</span><div className="chips">{c.att.length ? c.att.map((j) => <span key={j.notionId} className="chip"><i>{initiales(j.nom)}</i>{j.nom}</span>) : <span className="muted small">Tout le monde a répondu 🎉</span>}</div></div>
                 <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <span key={j.notionId} className={`chip ${c.p.includes(j) ? "m" : "n"}`}><i>{initiales(j.nom)}</i>{j.nom}</span>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
               </div>
@@ -142,10 +176,12 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
               ) : null}
             </div>
           </section>
-        ) : null}
-      </div>
 
-      {cols.length ? (
+        </>) : <p className="vide">Choisis une compétition.</p> },
+
+        { id: "logistique", titre: "Logistique", ic: "🧳", badge: fiche ? (fiche.statut === "Prête" ? "✓" : "…") : null, contenu: sel ? <FicheLogistique f={fiche} ev={sel} noms={noms} staff /> : <p className="vide">Choisis une compétition.</p> },
+
+        { id: "matrice", titre: "Par joueur", ic: "🧮", contenu: cols.length ? (
         <section className="panel">
           <div className="hd"><h2>Inscriptions par joueur</h2><span className="muted small">Les {cols.length} prochaines compétitions</span></div>
           <div className="bd scroll-x">
@@ -176,7 +212,8 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
             </table>
           </div>
         </section>
-      ) : null}
+        ) : <p className="vide">Aucune compétition à venir.</p> },
+      ]} />
     </>
   );
 }

@@ -32,6 +32,8 @@ export default function SyncPanel({ last }: { last: string | null }) {
               ⚠️ Joueurs actifs sans e-mail (ils ne peuvent pas se connecter) : <b>{state.sansEmail.join(", ")}</b>.
             </div>
           ) : null}
+          {state.photos ? <div style={{ marginTop: 6 }}>📷 {state.photos} photo(s) mise(s) à jour depuis Notion.</div> : null}
+          {state.avertissement ? <div style={{ marginTop: 6 }}>⚠️ {state.avertissement}</div> : null}
         </div>
       ) : null}
     </form>

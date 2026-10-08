@@ -34,6 +34,8 @@ export type Participation = {
   retour: string | null;
   restrictions: string[];
   creeLe: string;
+  valide: boolean;
+  valideLe: string | null;
 };
 
 export type Tache = {
@@ -48,6 +50,63 @@ export type Tache = {
   responsableIds: string[];
   notes: string | null;
 };
+
+export type Seance = {
+  id: string;
+  titre: string;
+  date: string;
+  debut: string | null;
+  fin: string | null;
+  lieu: string | null;
+  themes: string[];
+  annule: boolean;
+  motif: string | null;
+  entraineurIds: string[];
+};
+
+export type Resultat = {
+  id: string;
+  titre: string;
+  date: string | null;
+  type: string | null;
+  place: number | null;
+  sur: number | null;
+  categorie: string | null;
+  competitionIds: string[];
+  joueurIds: string[];
+  remarque: string | null;
+};
+
+export type ClassementClub = { date: string | null; national: number | null; international: number | null; source: string | null };
+
+export type FicheLogistique = {
+  id: string;
+  url: string;
+  evenementIds: string[];
+  statut: string | null;
+  adresse: string | null;
+  horaires: string | null;
+  hebergement: string | null;
+  distHebEvenement: number | null;
+  distHebCentre: number | null;
+  distance: number | null;
+  accesHebEvenement: string | null;
+  accesAeroport: string | null;
+  documents: string[];
+  disponibilite: string[];
+  contactNom: string | null;
+  contactTel: string | null;
+  contactMail: string | null;
+  couts: { label: string; v: number }[];
+  hotelNuit: number | null;
+  objectif: number | null;
+  vacances: boolean;
+  zone: string | null;
+  referentPrincipalIds: string[];
+  referentComIds: string[];
+};
+
+export type InfoPublique = { id: string; titre: string; texte: string | null; icone: string | null; lien: string | null };
 
 export type JoueurLite = { notionId: string; nom: string; email: string | null; actif: boolean };
 
@@ -127,14 +186,25 @@ export function inscriptionsOuvertes(e: Evenement, today = aujourdhui()) {
   return e.decision === DECISION_OUI || Boolean(e.ouverture);
 }
 
-export function lienTally(e: Evenement, joueur?: string) {
+/** Option label used by the Tally form for an event: « Nom — jj/mm/aaaa ». */
+export function libelleTally(e: Evenement) {
+  if (!e.date) return e.nom;
+  const [y, m, d] = e.date.split("-");
+  return `${e.nom} — ${d}/${m}/${y}`;
+}
+
+/** Link to the Tally form, pre-filled with the event and (optionally) the player. */
+export function lienTally(e: Evenement, joueur?: string | null) {
   const p = new URLSearchParams();
-  p.set("evenement", e.nom);
+  p.set("evenement", libelleTally(e));
   const two = Boolean(e.fin && e.fin !== e.date);
   const loin = Boolean(e.deplacement && !/local|sur place|aucun/i.test(e.deplacement));
   p.set("vehicule_requis", loin ? "Oui" : "Non");
   p.set("restriction_requise", two || loin ? "Oui" : "Non");
-  if (joueur) p.set("joueur", joueur);
+  if (joueur) {
+    p.set("joueur", joueur);
+    p.set("prenom", joueur.split(" ")[0]);
+  }
   return `${TALLY_URL}?${p.toString()}`;
 }
 
@@ -203,4 +273,41 @@ export function initiales(nom: string) {
     .slice(0, 2)
     .map((s) => s[0]!.toUpperCase())
     .join("");
+}
+
+/** In-app answer form (replaces the Tally link for signed-in players). */
+export function lienReponse(e: Evenement, joueurId?: string | null) {
+  return `/inscriptions/repondre?e=${encodeURIComponent(e.id)}${joueurId ? `&j=${encodeURIComponent(joueurId)}` : ""}`;
+}
+
+export function estLoin(e: Evenement) {
+  return Boolean(e.deplacement && !/local|sur place|aucun/i.test(e.deplacement));
+}
+export function surDeuxJours(e: Evenement) {
+  return Boolean(e.fin && e.fin !== e.date);
+}
+
+/**
+ * Answer periods of an event:
+ * - « avant »        : answers not open yet;
+ * - « reponses »     : players answer and can change their mind;
+ * - « confirmation » : after the answer deadline, until the validation date — players who answered
+ *                      confirm definitively (no more changes afterwards);
+ * - « close »        : everything is frozen.
+ */
+export type Phase = "avant" | "reponses" | "confirmation" | "close";
+export function phase(e: Evenement, today = aujourdhui()): Phase {
+  if (!e.date || e.date < today || !estRetenu(e)) return "close";
+  if (inscriptionsOuvertes(e, today)) return "reponses";
+  if (e.ouverture && e.ouverture > today) return "avant";
+  if (e.limite && e.limite < today && e.validation && e.validation >= today) return "confirmation";
+  if (e.decision === DECISION_OUI && !e.limite && !e.ouverture) return "reponses";
+  return "close";
+}
+
+/** Can this answer still be changed by the player? */
+export function modifiable(e: Evenement, p: Participation | null | undefined, today = aujourdhui()) {
+  if (p?.valide) return false;
+  const ph = phase(e, today);
+  return ph === "reponses" || (ph === "confirmation" && Boolean(p?.statut && p.statut !== "En attente"));
 }

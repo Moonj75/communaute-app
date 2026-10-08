@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Profil } from "@/lib/profil";
 import Nav from "./Nav";
+import MesureEntete from "./MesureEntete";
 import { quitterApercu } from "@/app/admin/apercu";
 
 export default function Header({
@@ -18,6 +19,7 @@ export default function Header({
 }) {
   return (
     <>
+      <div className="entete" id="entete">
       {apercu ? (
         <form action={quitterApercu} className="apercu-bar">
           <span>
@@ -53,6 +55,8 @@ export default function Header({
         </div>
       </header>
       {name ? <Nav isAdmin={profil?.role === "admin"} /> : null}
+      </div>
+      <MesureEntete />
       {valeurs || !name ? (
       <div className="values" aria-label="Nos valeurs">
         <div className="wrap">

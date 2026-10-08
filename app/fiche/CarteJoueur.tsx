@@ -15,6 +15,9 @@ export type Fiche = {
   serie: string | null;
   synced_at: string | null;
   photo_path?: string | null;
+  classement_belge?: number | null;
+  classement_international?: number | null;
+  palmares?: string | null;
 };
 
 const euro = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" });
@@ -22,7 +25,8 @@ export const COLS = "notion_id,email,nom,prenom,actif,titulaire,roles,cagnotte,t
 
 export function CarteJoueur({ f, famille, photoUrl }: { f: Fiche; famille: boolean; photoUrl: string | null }) {
   const full = [f.prenom, f.nom].filter(Boolean).join(" ");
-  const cagnotte = f.cagnotte != null ? Number(f.cagnotte) : null;
+  const cagnotte = Number(f.cagnotte) || 0;
+  const titres = (f.palmares || "").split(/\n+/).map((t) => t.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
   return (
     <article className="fiche">
       <section className="panel id-card">
@@ -58,10 +62,35 @@ export function CarteJoueur({ f, famille, photoUrl }: { f: Fiche; famille: boole
 
         <section className="panel cagnotte">
           <span className="fl-l">Cagnotte</span>
-          <span className="big num">{cagnotte != null ? euro.format(cagnotte) : "—"}</span>
+          <span className="big num">{euro.format(cagnotte)}</span>
           <span className="muted small">Montant disponible pour les déplacements.</span>
         </section>
       </div>
+
+      <section className="panel palma">
+        <div className="classements">
+          <div className="clt">
+            <span className="fl-l">🇧🇪 Classement belge</span>
+            <span className="clt-v num">{f.classement_belge ? <><small>#</small>{f.classement_belge}</> : "—"}</span>
+          </div>
+          <div className="clt">
+            <span className="fl-l">🌍 Classement international</span>
+            <span className="clt-v num">{f.classement_international ? <><small>#</small>{f.classement_international}</> : "—"}</span>
+          </div>
+        </div>
+        <div className="palmares">
+          <span className="fl-l">🏆 Palmarès</span>
+          {titres.length ? (
+            <ul>
+              {titres.map((t, i) => (
+                <li key={i}>{t}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">Pas encore de titre enregistré… le premier arrive ! 💪</p>
+          )}
+        </div>
+      </section>
     </article>
   );
 }

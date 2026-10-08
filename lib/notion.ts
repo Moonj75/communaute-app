@@ -18,6 +18,10 @@ export type JoueurNotion = {
   vehicule: string | null;
   categorie: string | null;
   serie: string | null;
+  classementBelge: number | null;
+  classementInternational: number | null;
+  palmares: string | null;
+  photo: { nom: string; url: string } | null;
 };
 
 type Prop = Record<string, unknown> & { type: string };
@@ -30,6 +34,17 @@ function text(p?: Prop): string | null {
     return s || null;
   }
   return null;
+}
+
+function nombre(p?: Prop): number | null {
+  return typeof p?.number === "number" ? (p.number as number) : null;
+}
+
+function premierFichier(p?: Prop): { nom: string; url: string } | null {
+  const f = ((p?.files as { name: string; type: string; file?: { url: string }; external?: { url: string } }[] | undefined) || [])[0];
+  if (!f) return null;
+  const url = f.type === "external" ? f.external?.url : f.file?.url;
+  return url ? { nom: f.name || "photo", url } : null;
 }
 
 function parse(page: { id: string; properties: Record<string, Prop> }): JoueurNotion {
@@ -57,6 +72,10 @@ function parse(page: { id: string; properties: Record<string, Prop> }): JoueurNo
     vehicule,
     categorie: text(p["Catégorie"]),
     serie: text(p["Série"]),
+    classementBelge: nombre(p["Place au classement belge"]),
+    classementInternational: nombre(p["Place au classement international"]),
+    palmares: text(p["Palmarès"]),
+    photo: premierFichier(p["Photo"]),
   };
 }
 
@@ -140,4 +159,48 @@ export async function prochainesCompetitions(limit = 3): Promise<Competition[]> 
   } catch {
     return [];
   }
+}
+
+
+/* ---------- Writes on the players database (photo sync) ---------- */
+function entetes(token: string) {
+  return { Authorization: `Bearer ${token}`, "Notion-Version": "2022-06-28" };
+}
+
+/** Uploads a picture to Notion and puts it in the « Photo » column of the player's row. */
+export async function envoyerPhotoNotion(pageId: string, fichier: Blob, nom: string): Promise<void> {
+  const token = process.env.NOTION_TOKEN;
+  if (!token) throw new Error("NOTION_TOKEN manquant.");
+  const cree = await fetch("https://api.notion.com/v1/file_uploads", {
+    method: "POST",
+    headers: { ...entetes(token), "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: nom, content_type: "image/jpeg" }),
+    cache: "no-store",
+  });
+  if (!cree.ok) throw new Error(`Notion (création du fichier) : ${cree.status}`);
+  const { id } = (await cree.json()) as { id: string };
+  const fd = new FormData();
+  fd.append("file", fichier, nom);
+  const envoi = await fetch(`https://api.notion.com/v1/file_uploads/${id}/send`, { method: "POST", headers: entetes(token), body: fd, cache: "no-store" });
+  if (!envoi.ok) throw new Error(`Notion (envoi du fichier) : ${envoi.status}`);
+  const maj = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+    method: "PATCH",
+    headers: { ...entetes(token), "Content-Type": "application/json" },
+    body: JSON.stringify({ properties: { Photo: { files: [{ type: "file_upload", file_upload: { id }, name: nom }] } } }),
+    cache: "no-store",
+  });
+  if (!maj.ok) throw new Error(`Notion (mise à jour de la fiche) : ${maj.status}`);
+}
+
+/** Empties the « Photo » column of the player's row. */
+export async function retirerPhotoNotion(pageId: string): Promise<void> {
+  const token = process.env.NOTION_TOKEN;
+  if (!token) return;
+  const r = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+    method: "PATCH",
+    headers: { ...entetes(token), "Content-Type": "application/json" },
+    body: JSON.stringify({ properties: { Photo: { files: [] } } }),
+    cache: "no-store",
+  });
+  if (!r.ok) throw new Error(`Notion : ${r.status}`);
 }

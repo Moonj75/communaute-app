@@ -13,6 +13,8 @@ export type SyncState = {
   inactifs?: number;
   sansEmail?: string[];
   at?: string;
+  photos?: number;
+  avertissement?: string;
 };
 
 /**
@@ -49,7 +51,18 @@ export async function synchroniserNotion(): Promise<SyncState> {
     serie: j.serie,
     synced_at: now,
   }));
-  const { error: e1 } = await supabase.from("joueurs").upsert(fiches, { onConflict: "notion_id" });
+  const complets = fiches.map((f, i) => ({
+    ...f,
+    classement_belge: liste[i].classementBelge,
+    classement_international: liste[i].classementInternational,
+    palmares: liste[i].palmares,
+  }));
+  let avertissement: string | undefined;
+  let { error: e1 } = await supabase.from("joueurs").upsert(complets, { onConflict: "notion_id" });
+  if (e1 && /classement|palmares|column/i.test(e1.message)) {
+    avertissement = "Classements et palmarès pas encore copiés : lancez le script « etape6-fiche-notifications.sql » dans Supabase.";
+    ({ error: e1 } = await supabase.from("joueurs").upsert(fiches, { onConflict: "notion_id" }));
+  }
   if (e1) return { error: "Enregistrement des fiches impossible : " + e1.message };
   // Fiches removed from Notion disappear from the app too.
   const ids = fiches.map((f) => f.notion_id);
@@ -80,6 +93,39 @@ export async function synchroniserNotion(): Promise<SyncState> {
     if (e2) return { error: "Enregistrement des comptes impossible : " + e2.message };
   }
 
+  // 3. Photos added or changed directly in Notion → copied into the app.
+  let photos = 0;
+  if (!avertissement) {
+    const { data: etat } = await supabase.from("joueurs").select("notion_id,photo_path,photo_notion");
+    const connus = new Map(((etat || []) as { notion_id: string; photo_path: string | null; photo_notion: string | null }[]).map((r) => [r.notion_id, r]));
+    for (const j of liste) {
+      if (photos >= 12) break; // keep the sync quick; the rest comes next time
+      const r = connus.get(j.notionId);
+      if (!r) continue;
+      try {
+        if (j.photo && j.photo.nom !== r.photo_notion) {
+          const img = await fetch(j.photo.url, { cache: "no-store" });
+          if (!img.ok) continue;
+          const blob = await img.blob();
+          if (blob.size > 2 * 1024 * 1024) continue;
+          const path = `${j.notionId}/${Date.now()}.jpg`;
+          const up = await supabase.storage.from("photos").upload(path, blob, { contentType: blob.type || "image/jpeg" });
+          if (up.error) continue;
+          await supabase.from("joueurs").update({ photo_path: path, photo_notion: j.photo.nom }).eq("notion_id", j.notionId);
+          if (r.photo_path) await supabase.storage.from("photos").remove([r.photo_path]);
+          photos++;
+        } else if (!j.photo && r.photo_notion) {
+          // Photo removed in Notion → removed in the app too.
+          await supabase.from("joueurs").update({ photo_path: null, photo_notion: null }).eq("notion_id", j.notionId);
+          if (r.photo_path) await supabase.storage.from("photos").remove([r.photo_path]);
+          photos++;
+        }
+      } catch {
+        /* one bad picture must not stop the sync */
+      }
+    }
+  }
+
   revalidatePath("/admin");
   revalidatePath("/fiche");
   return {
@@ -90,5 +136,7 @@ export async function synchroniserNotion(): Promise<SyncState> {
     inactifs: comptes.filter((c) => !c.actif).length,
     sansEmail: liste.filter((j) => !j.email && j.actif).map((j) => j.nomComplet),
     at: now,
+    photos,
+    avertissement,
   };
 }

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import { displayName, getSessionProfil } from "@/lib/profil";
 import AddForm from "./AddForm";
+import Blocs from "@/components/Blocs";
 import SyncPanel from "./SyncPanel";
 import InviteCell from "./InviteCell";
 import { updateMembre } from "./actions";
@@ -46,6 +47,9 @@ export default async function AdminPage() {
           ← Retour à l&apos;accueil
         </a>
 
+        <section className="hello"><span className="kicker">Staff</span><h2>Joueurs</h2><p>Liste Notion, comptes de connexion, invitations et aperçu joueur.</p></section>
+        <Blocs blocs={[
+        { id: "apercu", titre: "Voir comme un joueur", ic: "👁️", contenu: (
         <section className="panel" style={{ borderTop: "3px solid var(--night)" }}>
           <div className="hd">
             <h2>👁️ Voir l&apos;appli comme un joueur</h2>
@@ -73,7 +77,9 @@ export default async function AdminPage() {
             </form>
           </div>
         </section>
+        ) },
 
+        { id: "notion", titre: "Synchronisation Notion", ic: "🔄", contenu: (
         <section className="panel" style={{ borderTop: "3px solid var(--gold)" }}>
           <div className="hd">
             <h2>Liste des joueurs Notion</h2>
@@ -85,7 +91,9 @@ export default async function AdminPage() {
             <SyncPanel last={lastSync} />
           </div>
         </section>
+        ) },
 
+        { id: "ajouter", titre: "Ajouter un membre", ic: "➕", contenu: (
         <section className="panel" style={{ borderTop: "3px solid var(--accent)" }}>
           <div className="hd">
             <h2>Ajouter un membre à la main</h2>
@@ -97,7 +105,9 @@ export default async function AdminPage() {
             <AddForm />
           </div>
         </section>
+        ) },
 
+        { id: "comptes", titre: "Comptes de connexion", ic: "🔑", badge: list.length, contenu: (
         <section className="panel">
           <div className="hd">
             <h2>Comptes de connexion ({list.length})</h2>
@@ -171,6 +181,8 @@ export default async function AdminPage() {
             </table>
           </div>
         </section>
+        ) },
+        ]} />
       </main>
     </>
   );

@@ -8,6 +8,7 @@ import Jalons from "./Jalons";
 import TacheLigne, { type TacheVue } from "./TacheLigne";
 import NouvelleTache from "./NouvelleTache";
 import Centrer from "./Centrer";
+import Blocs from "@/components/Blocs";
 import { decisionBadge } from "./VueCalendrier";
 
 type Props = {
@@ -89,6 +90,8 @@ export default function VuePlanning({ evs, taches, joueurs, m, e, erreur, rafrai
       </section>
       {erreur ? <div className="notice err">{erreur}</div> : null}
 
+      <Blocs initial={e ? "route" : undefined} blocs={[
+        { id: "apercu", titre: "Aperçu", ic: "📌", badge: retard.length ? `${retard.length} en retard` : null, contenu: (<>
       {rappels.length ? (
         <section className="remind">
           <h3>⏰ Rappels</h3>
@@ -107,8 +110,10 @@ export default function VuePlanning({ evs, taches, joueurs, m, e, erreur, rafrai
         <div className={`kpi${decRetard.length ? " warn" : ""}`}><span className="l">Décisions</span><span className="v num">{aDecider.length}</span><span className="s">{decRetard.length ? `${decRetard.length} en retard (8 mois)` : "évènements à trancher"}</span></div>
         <div className="kpi dark"><span className="l">Prochain évènement</span><span className="v num">{prochain ? compteARebours(prochain.date, T) : "—"}</span><span className="s">{prochain?.nom || "—"}</span></div>
       </section>
+        </>) },
 
-      <div className="plan">
+
+        { id: "taches", titre: "Mes tâches", ic: "✅", badge: ouvertes.length || null, contenu: (
         <section className="panel tasks">
           <div className="hd"><h2>Mes tâches</h2><span className="muted small">{ouvertes.length} ouvertes</span></div>
           <div className="scroller">
@@ -128,14 +133,18 @@ export default function VuePlanning({ evs, taches, joueurs, m, e, erreur, rafrai
             <NouvelleTache evenements={comps.map((x) => ({ id: x.id, nom: `${x.nom} — ${dateCourte(x.date)}` }))} evDefaut={sel?.id} />
           </div>
         </section>
+        ) },
 
-        <div className="plan-side">
+
+        { id: "calendrier", titre: "Calendrier", ic: "📅", contenu: (
           <section className="panel">
             <div className="bd">
               <Mois ym={ym} evs={evs} taches={taches} selId={sel?.id} lien={lien} />
             </div>
           </section>
+        ) },
 
+        { id: "route", titre: "Feuille de route", ic: "🧭", badge: feuille.length || null, contenu: (
           <section className="panel roadmap">
             <div className="hd"><h2>Feuille de route</h2>{sel ? <Link className="small" href={lien({ m: ym })} scroll={false}>Tout afficher</Link> : null}</div>
             <div className="scroller">
@@ -159,8 +168,9 @@ export default function VuePlanning({ evs, taches, joueurs, m, e, erreur, rafrai
               }) : <p className="muted bd">Aucune compétition à venir.</p>}
             </div>
           </section>
-        </div>
-      </div>
+        ) },
+
+      ]} />
       <Centrer cle={sel?.id} />
     </>
   );

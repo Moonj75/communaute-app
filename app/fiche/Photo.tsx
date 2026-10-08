@@ -3,23 +3,13 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { envoyerPhoto, retirerPhoto } from "./actions";
-
-/** Shrinks the picture in the browser (max 800 px, JPEG) before sending it. */
-async function reduire(file: File): Promise<Blob> {
-  const bmp = await createImageBitmap(file);
-  const max = 800;
-  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  const c = document.createElement("canvas");
-  c.width = Math.round(bmp.width * k);
-  c.height = Math.round(bmp.height * k);
-  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
-  return new Promise((ok, ko) => c.toBlob((b) => (b ? ok(b) : ko(new Error("conversion"))), "image/jpeg", 0.85));
-}
+import Recadrage from "./Recadrage";
 
 export default function Photo({ notionId, url, path, initiales, nom }: { notionId: string; url: string | null; path: string | null; initiales: string; nom: string }) {
   const input = useRef<HTMLInputElement>(null);
+  const [source, setSource] = useState<string | null>(null);
   const [apercu, setApercu] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
   const src = apercu || url;
@@ -27,35 +17,48 @@ export default function Photo({ notionId, url, path, initiales, nom }: { notionI
   const choisir = (f: File | undefined) => {
     if (!f) return;
     setMsg(null);
+    if (!f.type.startsWith("image/")) {
+      setMsg({ ok: false, txt: "Choisis une image (JPG ou PNG)." });
+      return;
+    }
+    setSource(URL.createObjectURL(f));
+    if (input.current) input.current.value = "";
+  };
+
+  const envoyer = (blob: Blob) => {
+    if (source) URL.revokeObjectURL(source);
+    setSource(null);
+    setApercu(URL.createObjectURL(blob));
     start(async () => {
-      try {
-        const blob = await reduire(f);
-        setApercu(URL.createObjectURL(blob));
-        const fd = new FormData();
-        fd.set("photo", new File([blob], "photo.jpg", { type: "image/jpeg" }));
-        const r = await envoyerPhoto(notionId, path, fd);
-        if (!r.ok) {
-          setApercu(null);
-          setMsg(r.message || "Erreur");
-        } else router.refresh();
-      } catch {
+      const fd = new FormData();
+      fd.set("photo", new File([blob], "photo.jpg", { type: "image/jpeg" }));
+      const r = await envoyerPhoto(notionId, path, fd);
+      if (!r.ok) {
         setApercu(null);
-        setMsg("Cette image n'a pas pu être lue. Essaie une photo JPG ou PNG.");
+        setMsg({ ok: false, txt: r.message || "Erreur" });
+      } else {
+        if (r.message) setMsg({ ok: true, txt: r.message });
+        router.refresh();
       }
-      if (input.current) input.current.value = "";
     });
   };
 
   return (
     <div className="photo">
-      <div className={`photo-box${pending ? " busy" : ""}`}>
+      <button
+        type="button"
+        className={`photo-box${pending ? " busy" : ""}`}
+        onClick={() => input.current?.click()}
+        aria-label={src ? `Changer la photo de ${nom}` : `Ajouter une photo de ${nom}`}
+        disabled={pending}
+      >
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={src} alt={`Photo de ${nom}`} />
         ) : (
           <span className="photo-ini" aria-hidden="true">{initiales}</span>
         )}
-      </div>
+      </button>
       <input ref={input} type="file" accept="image/*" hidden onChange={(e) => choisir(e.currentTarget.files?.[0])} />
       <div className="photo-act">
         <button type="button" className="btn small-btn" disabled={pending} onClick={() => input.current?.click()}>
@@ -68,7 +71,7 @@ export default function Photo({ notionId, url, path, initiales, nom }: { notionI
             onClick={() =>
               start(async () => {
                 const r = await retirerPhoto(notionId, path);
-                if (!r.ok) setMsg(r.message || "Erreur");
+                if (!r.ok) setMsg({ ok: false, txt: r.message || "Erreur" });
                 else {
                   setApercu(null);
                   router.refresh();
@@ -80,7 +83,17 @@ export default function Photo({ notionId, url, path, initiales, nom }: { notionI
           </button>
         ) : null}
       </div>
-      {msg ? <p className="photo-err">{msg}</p> : null}
+      {msg ? <p className={msg.ok ? "photo-ok" : "photo-err"}>{msg.txt}</p> : null}
+      {source ? (
+        <Recadrage
+          src={source}
+          onValider={envoyer}
+          onAnnuler={() => {
+            URL.revokeObjectURL(source);
+            setSource(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
