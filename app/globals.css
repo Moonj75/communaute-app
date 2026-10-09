@@ -2270,3 +2270,52 @@ table.t thead th:last-child { border-top-right-radius: 10px; }
 .bl-b { font-family: var(--font-body, inherit); font-style: normal; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 6px; background: var(--gold); color: var(--night); }
 .volet { top: calc(var(--entete-h, 100px) + 4px) !important; max-height: calc(100dvh - var(--entete-h, 100px) - var(--dock-h, 66px) - 40px) !important; }
 @media (max-width: 699px) { .bl-part { font-size: 16px; } .bl-page { font-size: 10px; letter-spacing: .1em; } }
+
+/* ===== Titre de page + volet : en place dès le départ, ne bougent jamais =====
+   Sur les pages à volet, le grand titre (qui défilait) est remplacé par la ligne fixe « Page › Partie ». */
+main.wrap:has(.volet-ok) { padding-top: 10px !important; }
+main.wrap:has(.volet-ok) > .hello:not(.row-hello) { display: none; }
+main.wrap:has(.volet-ok) > .row-hello > div:first-child { display: none; }
+main.wrap:has(.volet-ok) > .row-hello { justify-content: flex-end; padding: 0; }
+.volet { top: calc(var(--entete-h, 100px) + 10px) !important; }
+.bl-titre { top: var(--entete-h, 100px) !important; margin-top: -10px !important; padding: 10px 2px 10px !important; }
+.bl-page { font-size: 13px; letter-spacing: .1em; }
+.bl-part { font-size: 22px; }
+@media (max-width: 699px) { .bl-page { font-size: 11px; } .bl-part { font-size: 17px; } }
+/* Volet fixe à l'écran (il ne bouge plus jamais) ; une place vide le remplace dans la mise en page */
+.blocs.volet-ok { grid-template-columns: var(--rail-w) minmax(0, 1fr); }
+.volet-place { grid-column: 1; grid-row: 1; width: var(--rail-w); }
+.blocs.volet-ok > .bl-col { grid-column: 2; grid-row: 1; }
+.volet { position: fixed !important; width: var(--rail-w); }
+/* Accueil : « Bonsoir, Mongi » garde ses couleurs dans le titre fixe */
+.bl-page-html { text-transform: none; letter-spacing: 0; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 20px; color: var(--t-titre); }
+.bl-page-html .perso { font-size: 1em; }
+@media (max-width: 699px) { .bl-page-html { font-size: 15px; } }
+/* Pages staff : le bouton « Rafraîchir » se range à droite du titre fixe, sans décaler la page */
+main.wrap:has(.volet-ok) > .row-hello { position: sticky; top: var(--entete-h, 100px); z-index: 9; height: 0; margin: 0 !important; padding: 0 !important; overflow: visible; display: block; }
+main.wrap:has(.volet-ok) > .row-hello > :not(div:first-child) { position: absolute; right: 0; top: 6px; }
+main.wrap:has(.volet-ok) { gap: 0 !important; }
+main.wrap:has(.volet-ok) > * + * { margin-top: 14px; }
+main.wrap:has(.volet-ok) > .hello + *, main.wrap:has(.volet-ok) > .row-hello + * { margin-top: 0; }
+main.wrap:has(.volet-ok) > .foot { padding-left: calc(var(--rail-w) + 12px); }
+
+/* ===== « Cadre à 3 côtés » : en haut le bandeau + la ligne titre, à gauche le volet, en bas le dock =====
+   Seul le contenu au milieu défile. */
+:root { --cadre: #ece6da; --cadre-trait: #c9a227; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cadre: #201b19; --cadre-trait: #a8861c; } }
+.bl-titre {
+  background: var(--cadre) !important;
+  box-shadow: 0 0 0 100vmax var(--cadre), 0 10px 14px -12px rgba(0,0,0,.35) !important;
+  clip-path: inset(0 -100vmax -16px -100vmax);
+  border-bottom: 2px solid var(--cadre-trait);
+}
+.bl-titre::after { content: ""; position: absolute; left: -100vmax; right: -100vmax; bottom: -2px; height: 2px; background: var(--cadre-trait); }
+.volet {
+  top: calc(var(--entete-h, 100px) + var(--bande-h, 48px)) !important;
+  bottom: calc(var(--dock-h, 66px) + env(safe-area-inset-bottom) + 28px);
+  max-height: none !important;
+  width: calc(var(--rail-w) + 8px) !important; margin-left: -4px;
+  padding: 8px 4px !important; gap: 5px;
+  background: var(--cadre); border-right: 2px solid var(--cadre-trait); border-radius: 0 0 12px 0;
+  box-shadow: 6px 0 12px -10px rgba(0,0,0,.35);
+}
