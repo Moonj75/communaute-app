@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { LISTES, type LigneClassement } from "./classements-types";
+import { LISTES, resserrer, type LigneClassement } from "./classements-types";
 
 /* Readers of the rankings stored in Supabase. They return empty lists when the table does not exist yet. */
 
@@ -40,15 +40,14 @@ export async function lireExtraits(sb: SupabaseClient, joueurId: string, autour 
   const siennes = (data as LigneClassement[]).sort((a, b) => LISTES.findIndex((l) => l.id === a.liste) - LISTES.findIndex((l) => l.id === b.liste));
   return Promise.all(
     siennes.map(async (m) => {
-      const { data: v } = await sb
-        .from("classements")
-        .select(COLS)
-        .eq("liste", m.liste)
-        .gte("rang", Math.max(1, m.rang - autour))
-        .lte("rang", m.rang + autour)
-        .order("rang")
-        .limit(12);
-      return { liste: m.liste, lignes: ((v || []) as LigneClassement[]).sort(ordre) };
+      const [{ data: v }, { data: haut }] = await Promise.all([
+        sb.from("classements").select(COLS).eq("liste", m.liste).gte("rang", Math.max(1, m.rang - Math.max(autour, 5))).lte("rang", m.rang + Math.max(autour, 5)).order("rang").limit(20),
+        sb.from("classements").select(COLS).eq("liste", m.liste).lte("rang", 3).order("rang").limit(6),
+      ]);
+      const vues = new Map<string, LigneClassement>();
+      for (const l of [...((haut || []) as LigneClassement[]), ...((v || []) as LigneClassement[])]) vues.set(`${l.rang}|${l.nom}|${l.prenom}`, l);
+      const lignes = resserrer([...vues.values()].sort(ordre), (l) => l.joueur_id === joueurId);
+      return { liste: m.liste, lignes };
     }),
   );
 }
@@ -59,7 +58,7 @@ export async function lireImports(sb: SupabaseClient) {
 }
 
 /** Club rankings to situate the club: the whole Belgian clubs list, and the world team list
- *  (top 10 + three places around each of our teams). */
+ *  (summaries are cut down on display, see resserrer). */
 export async function lireClubs(sb: SupabaseClient): Promise<{ nat: LigneClassement[]; equipes: LigneClassement[] }> {
   const [n, t] = await Promise.all([
     sb.from("classements").select(COLS).eq("liste", "FBFTS-Clubs").order("rang").limit(60),
@@ -67,7 +66,5 @@ export async function lireClubs(sb: SupabaseClient): Promise<{ nat: LigneClassem
   ]);
   if (n.error || t.error) return { nat: [], equipes: [] };
   const toutes = (t.data || []) as LigneClassement[];
-  const nous = toutes.filter((e) => e.eugies).map((e) => e.rang);
-  const equipes = toutes.filter((e) => e.rang <= 10 || nous.some((r) => Math.abs(e.rang - r) <= 3));
-  return { nat: (n.data || []) as LigneClassement[], equipes };
+  return { nat: (n.data || []) as LigneClassement[], equipes: toutes };
 }

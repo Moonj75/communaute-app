@@ -102,8 +102,8 @@ export function lireFistf(buf: ArrayBuffer, mois: string): Lot {
     if (!rang || !nom) continue;
     lignes.push({ liste: "WR-Teams", mois, rang, nom, prenom: txt(r[2]), club: nom, pays: txt(r[3]), categorie: null, categorie_suivante: null, points: num(r[4]), evolution: txt(r[5]), a_defendre: null });
   }
-  if (!lignes.some((l) => l.liste === "WR-Open")) throw new Error("Ce fichier ne ressemble pas au classement mondial FISTF (onglet « WR-Open » introuvable).");
-  return { source: "fistf", mois, libelle: `Classement mondial · ${libelleMois(mois, true)}`, lignes, empreinte: empreinte(buf) };
+  if (!lignes.some((l) => l.liste === "WR-Open")) throw new Error("Ce fichier ne ressemble pas au classement international FISTF (onglet « WR-Open » introuvable).");
+  return { source: "fistf", mois, libelle: `Classement international · ${libelleMois(mois, true)}`, lignes, empreinte: empreinte(buf) };
 }
 
 /** « …-2026-2027-10.xlsx » → 2026-10 (season July → June). */
@@ -139,7 +139,7 @@ export async function telechargerFistf(): Promise<Lot> {
     mois: `${m[2]}-${m[3]}`,
     id: Number(m[4]),
   }));
-  if (!liens.length) throw new Error("Lien du classement mondial introuvable sur fistf.com");
+  if (!liens.length) throw new Error("Lien du classement international introuvable sur fistf.com");
   liens.sort((a, b) => b.mois.localeCompare(a.mois) || b.id - a.id);
   const l = liens[0];
   const buf = await lireFichier(`https://fistf.com/download/${l.slug}/?wpdmdl=${l.id}`);
@@ -215,7 +215,7 @@ export async function enregistrerLot(db: SupabaseClient, lot: Lot, par: string, 
 /* ------------------------- Players' places → app + Notion ------------------ */
 
 const ORDRE_INTER = ["WR-Open", "WR-Veterans", "WR-Women", "WR-U20", "WR-U16", "WR-U12"];
-const nomListe = (id: string) => (LISTES.find((l) => l.id === id)?.court || id).replace(/^Mondial /, "");
+const nomListe = (id: string) => (LISTES.find((l) => l.id === id)?.court || id).replace(/^International /, "");
 const ordinal = (n: number) => (n === 1 ? "1er" : `${n}e`);
 
 type Resume = { belge: number | null; inter: number | null; cat: string | null; texte: string | null };
@@ -229,8 +229,8 @@ export function resumer(lignes: LigneClassement[]): Resume {
       `🇧🇪 National FBFTS : ${ordinal(fb.rang)} · ${fb.categorie || "?"}${fb.categorie_suivante && fb.categorie_suivante !== fb.categorie ? ` → ${fb.categorie_suivante}` : ""} · ${pts(fb.points)} pts (${libelleMois(fb.mois)})`,
     );
   // Youth / veterans / women first when the player is better ranked there.
-  for (const l of [...wr].sort((a, b) => a.rang - b.rang)) parts.push(`🌍 Mondial ${nomListe(l.liste)} FISTF : ${ordinal(l.rang)} · ${pts(l.points)} pts (${libelleMois(l.mois)})`);
-  return { belge: fb?.rang ?? null, inter: wr[0]?.rang ?? null, cat: fb?.categorie ?? null, texte: parts.join("\n") || null };
+  for (const l of [...wr].sort((a, b) => a.rang - b.rang)) parts.push(`🌍 International ${nomListe(l.liste)} FISTF : ${ordinal(l.rang)} · ${pts(l.points)} pts (${libelleMois(l.mois)})`);
+  return { belge: fb?.rang ?? null, inter: (wr.find((l) => l.liste === "WR-Open") || wr[0])?.rang ?? null, cat: fb?.categorie ?? null, texte: parts.join("\n") || null };
 }
 
 const NOTION_V = "2022-06-28";

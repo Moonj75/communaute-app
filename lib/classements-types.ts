@@ -29,18 +29,18 @@ export type ListeDef = {
 export const LISTES: ListeDef[] = [
   { id: "FBFTS", source: "fbfts", titre: "Classement national FBFTS", court: "National", ic: "🇧🇪", type: "joueurs" },
   { id: "FBFTS-Clubs", source: "fbfts", titre: "Classement national des clubs", court: "Clubs belges", ic: "🇧🇪", type: "clubs" },
-  { id: "WR-Open", source: "fistf", titre: "Classement mondial FISTF · Open", court: "Mondial Open", ic: "🌍", type: "joueurs" },
-  { id: "WR-Veterans", source: "fistf", titre: "Classement mondial FISTF · Vétérans", court: "Vétérans", ic: "🌍", type: "joueurs" },
-  { id: "WR-Women", source: "fistf", titre: "Classement mondial FISTF · Femmes", court: "Femmes", ic: "🌍", type: "joueurs" },
-  { id: "WR-U20", source: "fistf", titre: "Classement mondial FISTF · U20", court: "U20", ic: "🌍", type: "joueurs" },
-  { id: "WR-U16", source: "fistf", titre: "Classement mondial FISTF · U16", court: "U16", ic: "🌍", type: "joueurs" },
-  { id: "WR-U12", source: "fistf", titre: "Classement mondial FISTF · U12", court: "U12", ic: "🌍", type: "joueurs" },
-  { id: "WR-Teams", source: "fistf", titre: "Classement mondial FISTF · Équipes de club", court: "Équipes", ic: "🌍", type: "equipes" },
+  { id: "WR-Open", source: "fistf", titre: "Classement international FISTF · Open", court: "International Open", ic: "🌍", type: "joueurs" },
+  { id: "WR-Veterans", source: "fistf", titre: "Classement international FISTF · Vétérans", court: "Vétérans", ic: "🌍", type: "joueurs" },
+  { id: "WR-Women", source: "fistf", titre: "Classement international FISTF · Femmes", court: "Femmes", ic: "🌍", type: "joueurs" },
+  { id: "WR-U20", source: "fistf", titre: "Classement international FISTF · U20", court: "U20", ic: "🌍", type: "joueurs" },
+  { id: "WR-U16", source: "fistf", titre: "Classement international FISTF · U16", court: "U16", ic: "🌍", type: "joueurs" },
+  { id: "WR-U12", source: "fistf", titre: "Classement international FISTF · U12", court: "U12", ic: "🌍", type: "joueurs" },
+  { id: "WR-Teams", source: "fistf", titre: "Classement international FISTF · Équipes de club", court: "Équipes", ic: "🌍", type: "equipes" },
 ];
 
 export const SOURCES = {
   fbfts: { nom: "FBFTS (Belgique)", page: "https://www.fbftsbstvb.com/nationalrankings.html" },
-  fistf: { nom: "FISTF (mondial)", page: "https://fistf.com/data-centre/rankings/" },
+  fistf: { nom: "FISTF (international)", page: "https://fistf.com/data-centre/rankings/" },
 };
 
 export const listeDef = (id: string) => LISTES.find((l) => l.id === id) || LISTES[0];
@@ -113,3 +113,47 @@ export function tendance(e: string | null): { cls: string; txt: string } | null 
 }
 
 export const nomComplet = (l: { nom: string; prenom: string | null }) => [l.prenom, l.nom].filter(Boolean).join(" ");
+
+/**
+ * Keeps only the useful part of a ranking: the first places, then the zone around our lines,
+ * never more than `max` lines in all. `nous` tells which lines are ours (club, player…).
+ */
+export function resserrer<T extends { rang: number }>(lignes: T[], nous: (l: T) => boolean, max = 12, tete = 3): T[] {
+  const tri = [...lignes].sort((a, b) => a.rang - b.rang);
+  if (tri.length <= max) return tri;
+  const cibles = tri.map((l, i) => (nous(l) ? i : -1)).filter((i) => i >= 0);
+  if (!cibles.length) return tri.slice(0, max);
+  const garde = new Set<number>();
+  for (let i = 0; i < Math.min(tete, tri.length); i++) garde.add(i);
+  // Room left, shared between our lines; each one gets a window centred on it.
+  const reste = max - garde.size;
+  const parCible = Math.max(1, Math.floor(reste / cibles.length));
+  for (const c of cibles) {
+    let a = c - Math.floor((parCible - 1) / 2);
+    let b = a + parCible - 1;
+    if (b >= tri.length) { a -= b - tri.length + 1; b = tri.length - 1; }
+    if (a < 0) { b -= a; a = 0; }
+    for (let i = a; i <= b && i < tri.length; i++) garde.add(i);
+  }
+  // Fill up to `max` with the neighbours of our lines if windows overlapped.
+  let pas = 1;
+  while (garde.size < max && pas < tri.length) {
+    for (const c of cibles) {
+      if (garde.size >= max) break;
+      if (c + pas < tri.length) garde.add(c + pas);
+      if (garde.size >= max) break;
+      if (c - pas >= 0) garde.add(c - pas);
+    }
+    pas++;
+  }
+  const idx = [...garde].sort((x, y) => x - y);
+  // Too many (several teams): drop the lines farthest from our lines, never ours nor the top.
+  const loin = (i: number) => Math.min(...cibles.map((c) => Math.abs(c - i)));
+  while (idx.length > max) {
+    let k = -1;
+    idx.forEach((i, n) => { if (i >= tete && !cibles.includes(i) && (k < 0 || loin(i) > loin(idx[k]))) k = n; });
+    if (k < 0) break;
+    idx.splice(k, 1);
+  }
+  return idx.map((i) => tri[i]);
+}
