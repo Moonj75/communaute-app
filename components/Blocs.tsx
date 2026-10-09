@@ -17,7 +17,7 @@ export type BlocDef = {
  * Page layout: a thin side rail (titles written vertically) lists every part of the page.
  * Clicking a title shows that part alone, next to the rail; the rail stays in place while scrolling.
  */
-export default function Blocs({ blocs, initial, page }: { blocs: BlocDef[]; initial?: string | null; page?: string }) {
+export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDef[]; initial?: string | null; page?: string; /** Buttons at the right of the fixed title line (e.g. refresh from Notion). */ actions?: ReactNode }) {
   const valides = blocs.filter(Boolean);
   const premier = valides[0]?.id;
   const [actif, setActif] = useState<string>(initial && valides.some((b) => b.id === initial) ? initial : premier);
@@ -144,7 +144,7 @@ export default function Blocs({ blocs, initial, page }: { blocs: BlocDef[]; init
     });
   }, []);
 
-  if (valides.length <= 1) return <div className="scene solo">{valides[0]?.contenu}</div>;
+  if (valides.length <= 1) return <div className="scene solo">{actions ? <div className="bl-actions solo">{actions}</div> : null}{valides[0]?.contenu}</div>;
   const courantB = valides.find((b) => b.id === actif) || valides[0];
 
   return (
@@ -184,6 +184,7 @@ export default function Blocs({ blocs, initial, page }: { blocs: BlocDef[]; init
           <span aria-hidden="true">{tout ? "▦" : courantB?.ic}</span> {tout ? "Tout" : courantB?.titre}
           {!tout && courantB?.badge ? <span className="bl-b">{courantB.badge}</span> : null}
         </span>
+        {actions ? <span className="bl-actions">{actions}</span> : null}
       </div>
       <div className="scene" id="scene" ref={scene}>
         {valides.map((b) => (
