@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import Blocs from "@/components/Blocs";
-import { NosJoueurs, PlacesClub, TableClassement } from "@/components/club/Classements";
+import { TableClassement } from "@/components/club/Classements";
 import { compterListes, lireEugies, lireImports, lireListe } from "@/lib/classements-lire";
 import { LISTES, SOURCES, libelleMois, listeDef } from "@/lib/classements-types";
 import { displayName, getVue } from "@/lib/profil";
@@ -81,20 +81,18 @@ export default async function Classements({ searchParams }: { searchParams: Prom
       <main className="wrap">
         <section className="hello">
           <span className="kicker">Classements officiels</span>
-          <h2>Les Lions au classement</h2>
+          <h2>Classements</h2>
           <p>
             🇧🇪 FBFTS {imp("fbfts") ? `(${libelleMois(imp("fbfts")!.mois, true)})` : ""} · 🌍 FISTF {imp("fistf") ? `(${libelleMois(imp("fistf")!.mois, true)})` : ""} — mis à jour
             automatiquement le 1<sup>er</sup> de chaque mois. <Link href="/club">← Le club</Link>
             {profil?.role === "admin" && !apercu ? <> · <Link href="/staff/classements">⚙️ Mettre à jour / importer un fichier</Link></> : null}
           </p>
         </section>
+        {/* One page only: the rankings, with their tabs (National, Clubs belges, International…) and filters. */}
         <Blocs
-          initial={sp.l ? "complet" : undefined}
-          blocs={[
-            { id: "nos-joueurs", titre: "Nos joueurs", ic: "🦁", badge: new Set(eug.filter((e) => e.prenom !== null).map((e) => e.joueur_id || e.nom)).size || null, contenu: <NosJoueurs lignes={eug} moi={moi} lien={false} /> },
-            { id: "club", titre: "Le club", ic: "🏆", badge: eug.find((e) => e.liste === "FBFTS-Clubs") ? `#${eug.find((e) => e.liste === "FBFTS-Clubs")!.rang}` : null, contenu: <PlacesClub clubs={eug.filter((e) => e.prenom === null || e.liste === "WR-Teams")} /> },
-            { id: "complet", titre: "Classement complet", ic: "📋", badge: def.court, contenu: complet, apercu: <TableClassement lignes={lignes.slice(0, 14)} def={def} compact /> },
-          ]}
+          page="Classements"
+          actions={profil?.role === "admin" && !apercu ? <Link className="rf-btn" href="/staff/classements" title="Mettre à jour / importer un classement"><span className="rf-e" aria-hidden="true">⚙️</span> <span className="rf-t">Mise à jour</span></Link> : null}
+          blocs={[{ id: "complet", titre: def.court, ic: def.ic, contenu: complet }]}
         />
       </main>
     </>
