@@ -3,7 +3,7 @@ import type { Evenement, FicheLogistique as FicheLogistiqueT, JoueurLite, Partic
 import { Anneau, couleurObjectif, Rythme } from "./Graphes";
 import FicheLogistique from "./FicheLogistique";
 import {
-  ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, inscriptionsOuvertes, lienReponse, moisCourt, DECISION_OUI,
+  ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, lienReponse, moisCourt, DECISION_OUI,
 } from "@/lib/club-types";
 import Jalons from "./Jalons";
 import CopierLien from "./CopierLien";
@@ -55,19 +55,15 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   const objectifDe = (x: Evenement) => fiches?.get(x.id)?.objectif || null;
   const jours = (d: string) => Math.round((Date.parse(d + "T12:00:00Z") - Date.parse(today + "T12:00:00Z")) / 864e5);
   const proximite = (d: string) => { const j = jours(d); return j < 0 ? "passe" : j <= 30 ? "proche" : j <= 60 ? "moyen" : "loin"; };
-  // KPIs (as on the « Inscriptions » page): next event, answers, waiting, cars.
-  const prochain = avenir[0] || null;
-  const kp = prochain ? compte(prochain) : null;
-  const butP = prochain ? objectifDe(prochain) : null;
-  const ouvertes = avenir.filter((x) => inscriptionsOuvertes(x, today));
-  const attenteTotal = ouvertes.reduce((t, x) => t + compte(x).att.length, 0);
+  // Key figures of the selected competition (the next one by default): a compact band that stays
+  // fixed while scrolling and follows the competition chosen in the list below.
+  const kp = c;
+  const butP = objectif;
   const voituresP = kp ? kp.o.filter((j) => kp.m.get(j.notionId)?.vehicule === "Oui").length : 0;
   const kpis = [
-    { k: "k-nat", ic: "🏁", l: "Prochaine compétition", v: prochain ? compteARebours(prochain.date, today) : "—", s: prochain ? prochain.nom : "Rien de prévu", w: prochain ? Math.max(4, 100 - jours(prochain.date!)) : 0 },
-    { k: "k-open", ic: "✅", l: "Inscrits", v: kp ? `${kp.o.length}${butP ? ` / ${butP}` : ""}` : "—", s: butP ? `${pct(kp!.o.length, butP)} % de l'objectif` : `sur ${N} joueurs actifs`, w: kp ? pct(kp.o.length, butP || N) : 0 },
-    { k: "k-temps", ic: "💬", l: "Ont répondu", v: kp ? `${pct(N - kp.att.length, N)} %` : "—", s: kp ? `${N - kp.att.length} réponses sur ${N}` : "", w: kp ? pct(N - kp.att.length, N) : 0 },
-    { k: "k-cat", ic: "⏳", l: "Réponses attendues", v: String(attenteTotal), s: `sur ${ouvertes.length} inscription${ouvertes.length > 1 ? "s" : ""} ouverte${ouvertes.length > 1 ? "s" : ""}`, w: pct(attenteTotal, Math.max(1, N * Math.max(1, ouvertes.length))) },
-    { k: "k-temps2", ic: "🚗", l: "Véhicules proposés", v: String(voituresP), s: prochain ? `pour ${prochain.nom}` : "", w: kp && kp.o.length ? pct(voituresP * 4, kp.o.length) : 0 },
+    { k: "k-open", ic: "✅", l: "Inscrits", v: kp ? `${kp.o.length}${butP ? ` / ${butP}` : ""}` : "—", s: kp ? (butP ? `${pct(kp.o.length, butP)} % de l'objectif` : `sur ${N} actifs`) : "", w: kp ? pct(kp.o.length, butP || N) : 0 },
+    { k: "k-temps", ic: "💬", l: "Ont répondu", v: kp ? `${pct(N - kp.att.length, N)} %` : "—", s: kp ? `${kp.att.length} en attente` : "", w: kp ? pct(N - kp.att.length, N) : 0 },
+    { k: "k-temps2", ic: "🚗", l: "Véhicules", v: String(voituresP), s: kp ? `${kp.o.length} inscrit${kp.o.length > 1 ? "s" : ""}` : "", w: kp && kp.o.length ? pct(voituresP * 4, kp.o.length) : 0 },
   ];
   // Priorities: competitions of the next 4 months.
   const dans4 = ajouterJours(today, 122);
@@ -81,16 +77,28 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   const avecRestr = ouiP.filter((x) => x.r.restrictions.length || x.r.depart || x.r.retour).map((x) => x.j.nom);
   const deuxJours = Boolean(sel?.fin && sel.fin !== sel.date);
   const chiffres = (
-    <section className="tb-kpis" aria-label="Chiffres clés">
-        {kpis.map((x) => (
-          <div key={x.l} className={`tb-kpi ${x.k}`}>
-            <span className="tb-kh"><span className="tb-ki" aria-hidden="true">{x.ic}</span><span className="tb-kl">{x.l}</span></span>
-            <span className="tb-kv num">{x.v}</span>
-            <span className="tb-kt"><i style={{ width: `${Math.min(100, x.w)}%` }} /></span>
-            <span className="tb-ks">{x.s}</span>
-          </div>
-        ))}
-      </section>
+    <section className="tb-kpis tb-bande" aria-label="Chiffres clés de la compétition choisie" aria-live="polite">
+      <div className="tb-kpi k-nat tb-ksel">
+        <span className="tb-kh"><span className="tb-kl">{sel && sel.date! >= today ? (sel.id === avenir[0]?.id ? "Prochaine compétition" : "Compétition choisie") : "Compétition"}</span>
+          {sel?.date ? <span className={`tb-cd ${proximite(sel.date)}`}>{compteARebours(sel.date, today)}</span> : null}</span>
+        <b className="tb-knom">{sel ? sel.nom : "Rien de prévu"}</b>
+        {sel ? <span className="tb-ks">{dateMoyenne(sel.date)}{sel.lieu ? ` · ${sel.lieu}` : ""}</span> : null}
+        {sel ? (
+          <span className="tb-kbtn">
+            <Link className="btn tb-kb" href={`/calendrier?e=${sel.id}&m=${sel.date!.slice(0, 7)}#bloc-mois`}>📋 Fiche complète</Link>
+            <Link className="btn tb-kb" href={`/staff/inscriptions?e=${sel.id}#bloc-detail`} scroll={false}>🔎 Détail</Link>
+          </span>
+        ) : null}
+      </div>
+      {kpis.map((x) => (
+        <div key={x.l} className={`tb-kpi ${x.k}`}>
+          <span className="tb-kh"><span className="tb-ki" aria-hidden="true">{x.ic}</span><span className="tb-kl">{x.l}</span></span>
+          <span className="tb-kv num">{x.v}</span>
+          <span className="tb-kt"><i style={{ width: `${Math.min(100, x.w)}%` }} /></span>
+          <span className="tb-ks">{x.s}</span>
+        </div>
+      ))}
+    </section>
   );
 
   return (
@@ -119,7 +127,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                 const but = objectifDe(x);
                 const f = fiches?.get(x.id);
                 return (
-                  <Link key={x.id} href={`/staff/inscriptions?e=${x.id}#bloc-detail`} scroll={false} className={`tb-pc${x.id === sel?.id ? " on" : ""}`}>
+                  <Link key={x.id} href={`/staff/inscriptions?e=${x.id}#bloc-prio`} scroll={false} className={`tb-pc${x.id === sel?.id ? " on" : ""}`}>
                     <span className="tb-t1"><span className="v-date">{dateMoyenne(x.date)}</span><span className={`tb-cd ${proximite(x.date!)}`}>{compteARebours(x.date, today)}</span></span>
                     <b className="tb-nm">{x.nom}</b>
                     <span className="tb-ds">{x.lieu ? <span className="v-lieu">📍 {x.lieu}</span> : null}{x.competition ? <span>🏆 {x.competition}</span> : null}</span>
