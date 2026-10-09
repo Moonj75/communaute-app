@@ -17,12 +17,27 @@ export type BlocDef = {
  * Page layout: a thin side rail (titles written vertically) lists every part of the page.
  * Clicking a title shows that part alone, next to the rail; the rail stays in place while scrolling.
  */
-export default function Blocs({ blocs, initial }: { blocs: BlocDef[]; initial?: string | null; page?: string }) {
+export default function Blocs({ blocs, initial, page }: { blocs: BlocDef[]; initial?: string | null; page?: string }) {
   const valides = blocs.filter(Boolean);
   const premier = valides[0]?.id;
   const [actif, setActif] = useState<string>(initial && valides.some((b) => b.id === initial) ? initial : premier);
   const [tout, setTout] = useState(false);
   const scene = useRef<HTMLDivElement>(null);
+  const barre = useRef<HTMLDivElement>(null);
+  const [titrePage, setTitrePage] = useState(page || "");
+  const [titreHtml, setTitreHtml] = useState<string | null>(null);
+  const place = useRef<HTMLDivElement>(null);
+  const volet = useRef<HTMLElement>(null);
+
+  // Page name for the fixed title: given, or read from the page heading.
+  useEffect(() => {
+    const el = document.querySelector(".hello h2");
+    // Keep the coloured first name (« Bonsoir, Mongi ») as in the page heading.
+    if (el && el.querySelector(".perso")) setTitreHtml(el.innerHTML);
+    if (page) return;
+    const h = el?.textContent?.trim();
+    if (h) setTitrePage(h);
+  }, [page]);
 
   // The address keeps the open part (#bloc-…), so « back » and shared links work.
   useEffect(() => {
@@ -44,9 +59,26 @@ export default function Blocs({ blocs, initial }: { blocs: BlocDef[]; initial?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
 
-  // No band on top any more: fixed table headers sit right under the top banner.
+  // The side rail is fixed on screen: it never moves. Its left edge follows its place in the layout.
   useEffect(() => {
-    document.documentElement.style.setProperty("--bande-h", "0px");
+    const caler = () => {
+      if (place.current && volet.current) volet.current.style.left = `${Math.round(place.current.getBoundingClientRect().left)}px`;
+    };
+    caler();
+    window.addEventListener("resize", caler);
+    const t = setTimeout(caler, 300);
+    return () => { window.removeEventListener("resize", caler); clearTimeout(t); };
+  }, []);
+
+  // Height of the fixed title bar, so fixed table headers sit right under it.
+  useEffect(() => {
+    const el = barre.current;
+    const maj = () => document.documentElement.style.setProperty("--bande-h", `${el ? Math.round(el.getBoundingClientRect().height) : 0}px`);
+    maj();
+    if (!el) return;
+    const ro = new ResizeObserver(maj);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   const ouvrir = useCallback((id: string) => {
@@ -57,17 +89,20 @@ export default function Blocs({ blocs, initial }: { blocs: BlocDef[]; initial?: 
     requestAnimationFrame(() => {
       const el = scene.current;
       if (!el) return;
-      const haut = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--entete-h")) || 100;
+      const cs = getComputedStyle(document.documentElement);
+      const haut = (parseFloat(cs.getPropertyValue("--entete-h")) || 100) + (parseFloat(cs.getPropertyValue("--bande-h")) || 0);
       const y = el.getBoundingClientRect().top;
       if (y < haut) window.scrollBy({ top: y - haut - 10, behavior: "smooth" });
     });
   }, []);
 
   if (valides.length <= 1) return <div className="scene solo">{valides[0]?.contenu}</div>;
+  const courantB = valides.find((b) => b.id === actif) || valides[0];
 
   return (
     <div className={`blocs volet-ok${tout ? " tout" : ""}`}>
-      <nav className="volet" id="onglets" aria-label="Parties de la page">
+      <div ref={place} className="volet-place" aria-hidden="true" />
+      <nav ref={volet} className="volet" id="onglets" aria-label="Parties de la page">
         {valides.map((b) => {
           const on = !tout && b.id === actif;
           const badge = b.badge !== undefined && b.badge !== null && b.badge !== "" ? b.badge : null;
@@ -93,6 +128,15 @@ export default function Blocs({ blocs, initial }: { blocs: BlocDef[]; initial?: 
         </button>
       </nav>
 
+      <div className="bl-col">
+      <div ref={barre} className="bl-titre" aria-live="polite">
+        {titreHtml ? <span className="bl-page bl-page-html" dangerouslySetInnerHTML={{ __html: titreHtml }} /> : titrePage ? <span className="bl-page">{titrePage}</span> : null}
+        {titrePage ? <span className="bl-sep" aria-hidden="true">›</span> : null}
+        <span className="bl-part">
+          <span aria-hidden="true">{tout ? "▦" : courantB?.ic}</span> {tout ? "Tout" : courantB?.titre}
+          {!tout && courantB?.badge ? <span className="bl-b">{courantB.badge}</span> : null}
+        </span>
+      </div>
       <div className="scene" id="scene" ref={scene}>
         {valides.map((b) => (
           <section key={b.id} className="scene-bloc" hidden={!tout && b.id !== actif} aria-label={b.titre}>
@@ -106,6 +150,7 @@ export default function Blocs({ blocs, initial }: { blocs: BlocDef[]; initial?: 
             <div className="scene-c">{b.contenu}</div>
           </section>
         ))}
+      </div>
       </div>
     </div>
   );
