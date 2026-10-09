@@ -14,11 +14,12 @@ export default async function CalendrierPage({ searchParams }: { searchParams: P
   if (estInactif(profil)) redirect("/#bloc-calendrier");
   const sp = await searchParams;
   const [cal, parts, famille, fiches, noms] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email), essayer(lireFiches), essayer(nomsJoueurs)]);
+  const joueurs = [...(noms.data || new Map<string, string>()).entries()].map(([notionId, nom]) => ({ notionId, nom, email: null, actif: true }));
   return (
     <>
       <Header subtitle="Calendrier des compétitions" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
-        <VueCalendrier fiches={fiches.data || undefined} noms={noms.data || undefined} evs={cal.data || []} parts={parts.data || []} famille={famille} m={sp.m} e={sp.e} erreur={cal.erreur} />
+        <VueCalendrier fiches={fiches.data || undefined} noms={noms.data || undefined} joueurs={joueurs} evs={cal.data || []} parts={parts.data || []} famille={famille} m={sp.m} e={sp.e} erreur={cal.erreur} />
       </main>
     </>
   );
