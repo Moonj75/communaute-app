@@ -34,6 +34,7 @@ export default function VuePublique({ infos, evs, seances, classements, m, conne
       </section>
 
       <Blocs
+        page="Espace visiteur"
         initial={m ? "calendrier" : undefined}
         blocs={[
           {
