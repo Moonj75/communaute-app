@@ -2458,3 +2458,43 @@ a.hud-visiteur .hud-role { color: var(--gold); }
 .tb-facts { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
 @media (max-width: 699px) { .tb-facts { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
 .ce-ref { font-style: normal; margin-left: 4px; font-size: .9em; }
+
+/* ===== Bandes d'onglets fixes (classement complet : National · Clubs belges · International Open… ;
+   calendrier : mois précédent / suivant). Tout ce qui est fixe en dessous se range juste sous elles. ===== */
+.scene .bande-fixe {
+  position: sticky; top: var(--haut-fixe); z-index: 7;
+  background: var(--bg); padding: 8px 0 2px; margin-top: -4px;
+  box-shadow: 0 10px 12px -14px rgba(0,0,0,.5);
+}
+.cl-bande .cl-tabs { margin-bottom: 8px; }
+.cl-bande .cl-filtres { margin-bottom: 6px; }
+.scene .sec-title,
+.scene .panel > .hd { top: calc(var(--haut-fixe) + var(--sous-bande, 0px)); }
+.scene table thead th,
+.scene .cl-t thead th,
+.scene .nos-h,
+.scene .cc-cols { top: calc(var(--haut-fixe) + var(--sous-bande, 0px) + var(--sous-h, 0px)); }
+.scene .scroller thead th, .scene .mx-box thead th { top: 0 !important; }
+/* Calendrier : l'en-tête du mois reste visible en faisant défiler les jours */
+.scene .bande-mois {
+  position: sticky; top: calc(var(--haut-fixe) + var(--sous-bande, 0px)); z-index: 6;
+  background: var(--surface); margin: -6px -4px 10px; padding: 8px 4px;
+  box-shadow: 0 10px 12px -14px rgba(0,0,0,.45);
+}
+@media (max-width: 699px) {
+  /* Bandes fixes compactes sur téléphone : on garde de la place pour le contenu */
+  .scene .bande-fixe { padding-top: 4px; }
+  .cl-bande .cl-tabs a { padding: 6px 10px; font-size: 13px; }
+  .cl-bande .cl-filtres .chip { padding: 4px 10px; font-size: 12px; }
+  .scene .panel > .hd { padding: 8px 12px !important; flex-wrap: nowrap; }
+  .scene .panel > .hd h2 { font-size: 16px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scene .panel > .hd .muted.small { font-size: 11px; white-space: nowrap; }
+}
+@media (max-width: 699px) {
+  /* Classements sur téléphone : le tableau tient dans l'écran, ses titres de colonnes restent donc fixes */
+  .cl-t th, .cl-t td { padding: 7px 5px !important; }
+  .cl-t thead th { font-size: 10px !important; letter-spacing: .04em !important; }
+  .cl-t td.nm { font-size: 13.5px; line-height: 1.2; }
+  .cl-t .evo { font-size: 11px; }
+  .cl-t .cat-c { font-size: 11px; padding: 2px 6px; }
+}
