@@ -2506,3 +2506,5 @@ main.wrap:has(.blocs.seul) { padding-top: 10px !important; gap: 0 !important; }
 a.rf-btn { text-decoration: none; }
 .rf-e { font-size: 14px; font-style: normal; }
 @media (max-width: 699px) { .cl-bande .cl-filtres { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .cl-bande .cl-filtres .chip { white-space: nowrap; } }
+/* Volet : une entrée qui ouvre une autre page (ex. Classements) */
+a.vl-i.vl-lien { text-decoration: none; color: inherit; }
