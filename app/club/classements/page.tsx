@@ -36,6 +36,7 @@ export default async function Classements({ searchParams }: { searchParams: Prom
 
   const complet = (
     <>
+      <div className="bande-fixe cl-bande">
       <nav className="cl-tabs" aria-label="Classements">
         {LISTES.map((l) => (
           <Link key={l.id} href={lien(l.id, l.source === "fistf" || filtre !== "bel" ? filtre : "")} className={l.id === def.id ? "on" : undefined} aria-current={l.id === def.id ? "page" : undefined}>
@@ -55,6 +56,7 @@ export default async function Classements({ searchParams }: { searchParams: Prom
             ↓ Aller à {moi.length && lignes.some((l) => l.joueur_id && moi.includes(l.joueur_id)) ? "ma ligne" : "notre premier joueur"}
           </a>
         ) : null}
+      </div>
       </div>
       <section className="panel">
         <div className="hd">
