@@ -2227,3 +2227,31 @@ main.wrap > .hello { padding-block: 0; }
 .cc-l.nous .cc-n b, .cc-l.nous .cc-p, .cc-l.nous small { color: var(--fluo-club-ink) !important; }
 .cl-legende .lg.eug { background: var(--fluo-club) !important; box-shadow: inset 3px 0 0 var(--fluo-club-bord) !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --fluo-club: #00d5e8; --fluo-club-ink: #00262d; } }
+/* La place prend la couleur de sa catégorie */
+.nos-j .nos-c .pl[style*="--cc"] .pl-n, .nos-j .nos-c .pl[style*="--cc"] .pl-n sup { color: var(--cc) !important; }
+.cl-t td.rg[style*="--cc"] { color: var(--cc) !important; font-weight: 800; }
+.mcl .mcl-r[style*="--cc"], .mcl .mcl-r[style*="--cc"] small { color: var(--cc) !important; }
+.nos-j.moi .pl-tag[style*="--cc"] { background: var(--cc) !important; color: #fff !important; box-shadow: none; }
+/* Lignes successives un peu plus nuancées pour la lisibilité */
+:root { --zebra: #f1ebe0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --zebra: #221c1a; } }
+
+/* Badges de catégorie : même couleur que les chiffres, en plus flashy */
+.pl-tag[style*="--cc"], .nos-j.moi .pl-tag[style*="--cc"], .cat-c[style*="--cc"] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cc) 55%, #ffffff 45%) 0%, var(--cc) 55%, color-mix(in srgb, var(--cc) 85%, #000 15%) 100%) !important;
+  color: #fff !important; text-shadow: 0 1px 1px rgba(0,0,0,.35);
+  filter: saturate(1.45) brightness(1.08);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--cc) 70%, #fff 30%), 0 3px 10px -3px var(--cc), inset 0 1px 0 rgba(255,255,255,.45) !important;
+}
+
+/* Titres de colonnes des tableaux : plus lisibles, sobres */
+:root { --th-bg: #ece6da; --th-ink: #3a3631; --th-trait: #23305e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --th-bg: #2a2522; --th-ink: #e9e3da; --th-trait: #8fa8ff; } }
+table.t thead th, .cl-t thead th {
+  background: var(--th-bg) !important; color: var(--th-ink); font-size: 11.5px; font-weight: 800; letter-spacing: .08em;
+  text-transform: uppercase; padding: 9px 10px; border-bottom: 2px solid var(--th-trait); white-space: nowrap;
+}
+table.t thead th:first-child { border-top-left-radius: 10px; }
+table.t thead th:last-child { border-top-right-radius: 10px; }
+.nos-h { background: var(--th-bg) !important; border-radius: 10px 10px 0 0; border-bottom: 2px solid var(--th-trait); padding-top: 9px !important; padding-bottom: 9px !important; font-size: 11.5px !important; letter-spacing: .08em !important; color: var(--th-ink) !important; }
+.cc-cols { background: var(--th-bg); color: var(--th-ink) !important; font-size: 11px !important; letter-spacing: .08em !important; padding-top: 8px !important; padding-bottom: 8px !important; border-bottom: 2px solid var(--th-trait) !important; }
