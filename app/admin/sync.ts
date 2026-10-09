@@ -15,6 +15,7 @@ export type SyncState = {
   at?: string;
   photos?: number;
   avertissement?: string;
+  anciens?: number;
 };
 
 /**
@@ -92,6 +93,17 @@ export async function synchroniserNotion(): Promise<SyncState> {
     const { error: e2 } = await supabase.from("membres").upsert(comptes, { onConflict: "email" });
     if (e2) return { error: "Enregistrement des comptes impossible : " + e2.message };
   }
+  // An e-mail changed in Notion leaves the old account behind: accounts created by an earlier
+  // sync whose e-mail is no longer on any fiche are removed (accounts added by hand are kept).
+  let anciens = 0;
+  const gardes = new Set([...parEmail.keys(), profil.email]);
+  const { data: syncs } = await supabase.from("membres").select("email").not("synced_at", "is", null);
+  const perimes = ((syncs || []) as { email: string }[]).map((m) => m.email).filter((e) => !gardes.has(e));
+  if (perimes.length) {
+    const { error: e3 } = await supabase.from("membres").delete().in("email", perimes);
+    if (e3) await supabase.from("membres").update({ actif: false }).in("email", perimes);
+    anciens = perimes.length;
+  }
 
   // 3. Photos added or changed directly in Notion → copied into the app.
   let photos = 0;
@@ -138,5 +150,6 @@ export async function synchroniserNotion(): Promise<SyncState> {
     at: now,
     photos,
     avertissement,
+    anciens,
   };
 }

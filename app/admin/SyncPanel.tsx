@@ -24,6 +24,9 @@ export default function SyncPanel({ last }: { last: string | null }) {
         <div className="notice ok">
           <b>✓ {state.personnes} fiches</b> et <b>{state.comptes} comptes de connexion</b> à jour depuis Notion
           {state.inactifs ? ` (${state.inactifs} comptes non actifs : accès à l’espace découverte)` : ""}.
+          {state.anciens ? (
+            <div style={{ marginTop: 6 }}>🧹 {state.anciens} ancienne{state.anciens > 1 ? "s" : ""} adresse{state.anciens > 1 ? "s" : ""} retirée{state.anciens > 1 ? "s" : ""} (e-mail changé dans Notion).</div>
+          ) : null}
           {state.familles && state.familles.length ? (
             <div style={{ marginTop: 6 }}>👨‍👧 Comptes famille : {state.familles.join(" ; ")}.</div>
           ) : null}
