@@ -1,5 +1,6 @@
+import type React from "react";
 import Link from "next/link";
-import { LISTES, libelleMois, listeDef, nomComplet, pts, resserrer, tendance, type LigneClassement, type ListeDef } from "@/lib/classements-types";
+import { couleurCategorie, LISTES, libelleMois, listeDef, nomComplet, pts, resserrer, tendance, type LigneClassement, type ListeDef } from "@/lib/classements-types";
 import { Fragment } from "react";
 
 const ordinal = (n: number) => (n === 1 ? "1er" : `${n}e`);
@@ -61,7 +62,7 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
                 {def.type === "equipes" ? <td className="small">{l.prenom}</td> : null}
                 {def.id === "FBFTS" ? (
                   <td className="small">
-                    <b>{l.categorie || "—"}</b>
+                    <b className="cat-c" style={couleurCategorie(l.categorie) ? ({ "--cc": couleurCategorie(l.categorie) } as React.CSSProperties) : undefined}>{l.categorie || "—"}</b>
                     {l.categorie_suivante && l.categorie_suivante !== l.categorie ? <span className="muted"> → {l.categorie_suivante}</span> : null}
                   </td>
                 ) : def.source === "fistf" ? (
@@ -91,7 +92,7 @@ function Place({ l, tag, sous }: { l?: LigneClassement | null; tag?: string | nu
         {l.rang}
         <sup>{sup(l.rang)}</sup>
       </b>
-      {tag ? <span className="pl-tag">{tag}</span> : null}
+      {tag ? <span className="pl-tag" style={couleurCategorie(tag) ? ({ "--cc": couleurCategorie(tag) } as React.CSSProperties) : undefined}>{tag}</span> : null}
       {t && t.cls !== "eq" ? <span className={`evo ${t.cls}`} title="Par rapport au classement précédent">{t.txt}</span> : null}
       {sous ? <span className="pl-sous">{sous}</span> : null}
     </span>
@@ -224,7 +225,7 @@ export function MesClassements({ extraits, moi }: { extraits: { liste: string; l
               </span>
               <span className="mcl-d">
                 <b className="num">{pts(l.points)} pts</b>
-                {l.categorie ? <span>Catégorie <b>{l.categorie}</b>{l.categorie_suivante && l.categorie_suivante !== l.categorie ? ` → ${l.categorie_suivante}` : ""}</span> : null}
+                {l.categorie ? <span>Catégorie <b className="cat-c" style={{ "--cc": couleurCategorie(l.categorie) } as React.CSSProperties}>{l.categorie}</b>{l.categorie_suivante && l.categorie_suivante !== l.categorie ? ` → ${l.categorie_suivante}` : ""}</span> : null}
                 {t ? <span className={`evo ${t.cls}`}>{t.txt === "=" ? "= stable" : t.txt}</span> : null}
               </span>
             </div>
