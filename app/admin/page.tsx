@@ -5,7 +5,7 @@ import AddForm from "./AddForm";
 import Blocs from "@/components/Blocs";
 import SyncPanel from "./SyncPanel";
 import InviteCell from "./InviteCell";
-import { updateMembre } from "./actions";
+import { retirerMembre, updateMembre } from "./actions";
 import { commencerApercu } from "./apercu";
 
 export const dynamic = "force-dynamic";
@@ -128,6 +128,7 @@ export default async function AdminPage() {
                   <th>Connexion</th>
                   <th>Invitation</th>
                   <th>Aperçu</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -136,6 +137,7 @@ export default async function AdminPage() {
                     <td style={{ fontWeight: 700 }}>{[m.prenom, m.nom].filter(Boolean).join(" ")}</td>
                     <td>{m.email}</td>
                     <td>
+                      {!parEmail.has(m.email) ? <span className="pill" title="Aucune fiche Notion n'utilise cette adresse">⚠️ sans fiche Notion</span> : null}
                       {(parEmail.get(m.email) || []).map((j) => (
                         <div key={(j.prenom || "") + j.nom} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", padding: "2px 0", opacity: j.actif ? 1 : 0.55 }}>
                           <b>{j.prenom || j.nom}</b>
@@ -175,6 +177,14 @@ export default async function AdminPage() {
                         <input type="hidden" name="email" value={m.email} />
                         <button className="btn" type="submit" title="Voir l'application comme ce membre">👁️ Voir comme</button>
                       </form>
+                    </td>
+                    <td>
+                      {!parEmail.has(m.email) && m.email !== (user.email || "").toLowerCase() ? (
+                        <form action={retirerMembre}>
+                          <input type="hidden" name="email" value={m.email} />
+                          <button className="btn" type="submit" title="Retirer ce compte (ancienne adresse)">🗑️ Retirer</button>
+                        </form>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

@@ -38,3 +38,16 @@ export async function updateMembre(formData: FormData) {
   if (Object.keys(patch).length) await supabase.from("membres").update(patch).eq("email", email);
   revalidatePath("/admin");
 }
+
+/** Removes a login account that no Notion fiche uses any more (e.g. an old e-mail address). */
+export async function retirerMembre(formData: FormData) {
+  const { supabase, profil } = await getSessionProfil();
+  if (profil?.role !== "admin") return;
+  const email = String(formData.get("email") || "").toLowerCase();
+  if (!email || email === profil.email) return;
+  const { count } = await supabase.from("joueurs").select("notion_id", { count: "exact", head: true }).eq("email", email);
+  if (count) return; // still used by a fiche: change the e-mail in Notion instead
+  const { error } = await supabase.from("membres").delete().eq("email", email);
+  if (error) await supabase.from("membres").update({ actif: false }).eq("email", email);
+  revalidatePath("/admin");
+}
