@@ -157,3 +157,32 @@ export function resserrer<T extends { rang: number }>(lignes: T[], nous: (l: T) 
   }
   return idx.map((i) => tri[i]);
 }
+
+/**
+ * One colour per category, everywhere in the app (never red / green, kept for ▲ ▼).
+ * National FBFTS categories by letter (A1, A2 → A…), FISTF categories by name.
+ */
+export const COULEURS_CATEGORIES: { cle: string; nom: string; c: string }[] = [
+  { cle: "A", nom: "Catégorie A", c: "#8e1e6a" },
+  { cle: "B", nom: "Catégorie B", c: "#1d6fa5" },
+  { cle: "C", nom: "Catégorie C", c: "#b35a00" },
+  { cle: "D", nom: "Catégorie D", c: "#6d5a2e" },
+  { cle: "E", nom: "Catégorie E", c: "#4a5d73" },
+  { cle: "open", nom: "Open", c: "#6a35b5" },
+  { cle: "veterans", nom: "Vétérans", c: "#7a4b1e" },
+  { cle: "femmes", nom: "Femmes", c: "#c2185b" },
+  { cle: "u20", nom: "U20", c: "#0b6f7a" },
+  { cle: "u16", nom: "U16", c: "#2a7ab0" },
+  { cle: "u12", nom: "U12", c: "#c98500" },
+];
+export function couleurCategorie(cat: string | null | undefined): string | undefined {
+  if (!cat) return undefined;
+  const s = simplifier(cat).replace(/ /g, "");
+  const parNom = COULEURS_CATEGORIES.find((x) => x.cle.length > 1 && (s === x.cle || s.includes(x.cle) || s === simplifier(x.nom).replace(/ /g, "")));
+  if (parNom) return parNom.c;
+  if (/^wr/.test(s)) return COULEURS_CATEGORIES.find((x) => s.includes(x.cle))?.c;
+  if (s.startsWith("vet")) return "#7a4b1e";
+  if (s.startsWith("wom") || s.startsWith("fem")) return "#c2185b";
+  const lettre = s.charAt(0).toUpperCase();
+  return COULEURS_CATEGORIES.find((x) => x.cle === lettre)?.c;
+}
