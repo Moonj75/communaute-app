@@ -17,6 +17,14 @@ export type Evenement = {
   nePasFaire: boolean;
   jourSpecial: string | null;
   priorite: string[];
+  /** Kind of competition (Grand Prix, Major, Open, Championnat…). */
+  competition?: string | null;
+  /** Free note (e.g. FBFTS / FISTF). */
+  notes?: string | null;
+  /** Car-pooling organised by the club. */
+  covoiturage?: boolean;
+  /** Club target of players (from the logistics sheet). */
+  objectif?: number | null;
 };
 
 export type Reponse = "Oui" | "Non" | "Peut-être" | "En attente";

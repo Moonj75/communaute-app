@@ -105,6 +105,13 @@ function coche(p?: Prop) {
 function rel(p?: Prop): string[] {
   return ((p?.relation as { id: string }[] | undefined) || []).map((r) => r.id);
 }
+/** Number from a rollup (sum) or a number property. */
+function cumul(p?: Prop): number | null {
+  if (!p) return null;
+  if (typeof p.number === "number") return p.number as number;
+  const r = p.rollup as { type?: string; number?: number | null } | undefined;
+  return r && typeof r.number === "number" && r.number > 0 ? r.number : null;
+}
 function nettoyerNom(s: string) {
   return s.replace(/^[^0-9A-Za-zÀ-ÿ]+/, "").trim();
 }
@@ -132,6 +139,10 @@ export async function lireCalendrier(): Promise<Evenement[]> {
         nePasFaire: coche(p["Ne sera pas fait"]),
         jourSpecial: choix(p["Jour spécial"]),
         priorite: multi(p["Priorité"]),
+        competition: choix(p["Compétitions"]),
+        notes: texte(p["Notes"]),
+        covoiturage: coche(p["Logistique véhicule"]),
+        objectif: cumul(p["Objectif (auto)"]),
       };
     })
     .filter((e) => e.nom);
