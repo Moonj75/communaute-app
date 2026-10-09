@@ -21,6 +21,8 @@ function clubCourt(l: LigneClassement) {
  */
 export function TableClassement({ lignes, def, moi = [], compact = false, ancre = !compact }: { lignes: LigneClassement[]; def: ListeDef; moi?: string[]; compact?: boolean; ancre?: boolean }) {
   const cible = lignes.find((l) => l.joueur_id && moi.includes(l.joueur_id)) || lignes.find((l) => l.eugies);
+  // Only our players listed (filter « Club »): no need to highlight them, the zebra stripes are enough.
+  const tousNous = lignes.length > 0 && lignes.every((l) => l.eugies);
   return (
     <div className="scroll-x">
       <table className={`t cl-t${compact ? " compact" : ""}`}>
@@ -45,8 +47,8 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
               {saut ? (
                 <tr className="cl-saut" aria-hidden="true"><td colSpan={8}>⋯</td></tr>
               ) : null}
-              <tr id={ancre && l === cible ? "ma-ligne" : undefined} className={estMoi ? "moi" : l.eugies ? "eug" : undefined}>
-                <td className="r num rg">{l.rang}</td>
+              <tr id={ancre && l === cible ? "ma-ligne" : undefined} className={estMoi ? "moi" : l.eugies && !tousNous ? "eug" : undefined}>
+                <td className="r num rg" style={couleurRang(l, def) ? ({ "--cc": couleurRang(l, def) } as React.CSSProperties) : undefined}>{l.rang}</td>
                 <td><Evo e={l.evolution} /></td>
                 <td className="nm">
                   {def.type === "joueurs" ? (
@@ -80,14 +82,22 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
   );
 }
 
+/** Colour of a place: the player's national category (FBFTS) or the FISTF list (Open, Vétérans, U20…). */
+function couleurRang(l: LigneClassement, def: ListeDef) {
+  if (def.id === "FBFTS") return couleurCategorie(l.categorie);
+  if (def.source === "fistf" && def.type === "joueurs") return couleurCategorie(def.court);
+  return undefined;
+}
+
 const sup = (n: number) => (n === 1 ? "er" : "e");
 
 /** A place, big, with an optional label next to it (category, list…). */
-function Place({ l, tag, sous }: { l?: LigneClassement | null; tag?: string | null; sous?: string | null }) {
+function Place({ l, tag, sous, cat }: { l?: LigneClassement | null; tag?: string | null; sous?: string | null; cat?: string }) {
   if (!l) return <span className="pl pl-vide">—</span>;
   const t = tendance(l.evolution);
+  const cc = couleurCategorie(cat || tag);
   return (
-    <span className="pl">
+    <span className="pl" style={cc ? ({ "--cc": cc } as React.CSSProperties) : undefined}>
       <b className="pl-n num">
         {l.rang}
         <sup>{sup(l.rang)}</sup>
@@ -178,7 +188,7 @@ export function NosJoueurs({ lignes, moi = [], lien = true, max = lien ? 12 : 0 
                 <Place l={fb} tag={fb?.categorie} sous={fb?.categorie_suivante && fb.categorie_suivante !== fb.categorie ? `→ ${fb.categorie_suivante}` : null} />
               </span>
               <span className="nos-c" data-l="🌍 International Open">
-                <Place l={open} />
+                <Place l={open} cat="Open" />
               </span>
               <span className="nos-c" data-l="🌍 International catégorie">
                 <Place l={cats[0]} tag={cats[0] ? listeDef(cats[0].liste).court : null} sous={cats[1] ? `${listeDef(cats[1].liste).court} ${ordinal(cats[1].rang)}` : null} />
@@ -219,7 +229,7 @@ export function MesClassements({ extraits, moi }: { extraits: { liste: string; l
               <span className="muted small">{libelleMois(l.mois, true)}</span>
             </header>
             <div className="mcl-big">
-              <span className="mcl-r num">
+              <span className="mcl-r num" style={couleurRang(l, def) ? ({ "--cc": couleurRang(l, def) } as React.CSSProperties) : undefined}>
                 {l.rang}
                 <small>{l.rang === 1 ? "er" : "e"}</small>
               </span>
