@@ -165,6 +165,7 @@ export async function lireParticipations(): Promise<Participation[]> {
       statut: (["Oui", "Non", "Peut-être", "En attente"].includes(s || "") ? s : null) as Reponse | null,
       jours: choix(p["Jours de participation"]),
       vehicule: choix(p["Véhicule disponible"]),
+      referent: choix(p["Référent principal"]),
       depart: choix(p["Restriction départ"]),
       retour: choix(p["Restriction retour"]),
       restrictions: multi(p["Détail restrictions"]),
@@ -406,6 +407,7 @@ export type ReponseNative = {
   depart: string | null;
   retour: string | null;
   vehicule: "Oui" | "Non" | null;
+  referent: "Oui" | "Non" | null;
   definitif: boolean;
 };
 
@@ -422,6 +424,7 @@ export async function enregistrerReponse(r: ReponseNative) {
     "Restriction départ": sel(r.statut === "Oui" && r.restrictions === "Oui" ? r.depart : null),
     "Restriction retour": sel(r.statut === "Oui" && r.restrictions === "Oui" ? r.retour : null),
     "Véhicule disponible": sel(r.statut === "Oui" ? r.vehicule : null),
+    "Référent principal": sel(r.statut === "Oui" ? r.referent : null),
   };
   if (r.definitif) {
     properties["Validation définitive"] = { checkbox: true };

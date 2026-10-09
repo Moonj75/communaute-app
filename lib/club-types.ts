@@ -38,6 +38,8 @@ export type Participation = {
   statut: Reponse | null;
   jours: string | null;
   vehicule: string | null;
+  /** « Peux-tu être référent principal ? » (Oui / Non). */
+  referent: string | null;
   depart: string | null;
   retour: string | null;
   restrictions: string[];
