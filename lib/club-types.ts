@@ -154,15 +154,16 @@ const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août"
 const MOIS_LONG = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 const JOURS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
 
+/** « jeu. 29/10 » : day of the week + day/month, enough everywhere in the app. */
 export function dateCourte(d: string | null) {
   if (!d) return "—";
   const x = new Date(d.slice(0, 10) + "T12:00:00Z");
-  return `${JOURS[x.getUTCDay()]} ${x.getUTCDate()} ${MOIS[x.getUTCMonth()]}`;
+  const dd = String(x.getUTCDate()).padStart(2, "0"), mm = String(x.getUTCMonth() + 1).padStart(2, "0");
+  return `${JOURS[x.getUTCDay()]} ${dd}/${mm}`;
 }
+/** Same short format (kept as a separate name: used in many places). */
 export function dateMoyenne(d: string | null) {
-  if (!d) return "—";
-  const x = new Date(d.slice(0, 10) + "T12:00:00Z");
-  return `${x.getUTCDate()} ${MOIS[x.getUTCMonth()]} ${x.getUTCFullYear()}`;
+  return dateCourte(d);
 }
 export function nomMois(ym: string) {
   const [y, m] = ym.split("-").map(Number);
