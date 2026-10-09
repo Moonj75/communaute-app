@@ -8,8 +8,9 @@
 
 ## 2. Supabase → SQL Editor (un script à la fois, bouton Run)
 - [x] `supabase/etape5-photos.sql` (déjà fait)
-- [ ] `supabase/etape6-fiche-notifications.sql` (classements/palmarès sur la fiche + notifications)
-- [ ] `supabase/etape7-classements.sql` (tableaux des classements)
+- [x] `supabase/etape6-fiche-notifications.sql` (classements/palmarès sur la fiche + notifications)
+- [x] `supabase/etape7-classements.sql` (tableaux des classements)
+- [ ] `supabase/etape8-non-actifs.sql` (les membres non actifs accèdent à l'espace « découverte »)
 
 Chaque script peut être relancé sans risque.
 
