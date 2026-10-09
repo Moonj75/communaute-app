@@ -3,6 +3,7 @@ import type { Profil } from "@/lib/profil";
 import BarreBas from "./BarreBas";
 import BarrePublique from "./BarrePublique";
 import MesureEntete from "./MesureEntete";
+import Installer from "./Installer";
 import { quitterApercu } from "@/app/admin/apercu";
 
 export default function Header({
@@ -79,6 +80,7 @@ export default function Header({
       </div>
       {name ? <BarreBas isAdmin={profil?.role === "admin"} nom={name} inactif={profil?.role !== "admin" && profil?.actif === false} /> : <BarrePublique connecte={connecte} />}
       <MesureEntete />
+      <Installer />
       {!name && valeurs ? (
       <div className="values" aria-label="Nos valeurs">
         <div className="wrap">
