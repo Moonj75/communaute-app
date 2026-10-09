@@ -59,14 +59,14 @@ export function CarteJoueur({ f, famille, photoUrl }: { f: Fiche; famille: boole
           <span className="fc-s">déplacements</span>
         </div>
         <div className="fc-t t-nat">
-          <span className="fl-l">🇧🇪 Belge</span>
+          <span className="fl-l">🇧🇪 National</span>
           <b className="fc-v num">{f.classement_belge ? <>{f.classement_belge}<sup>{f.classement_belge === 1 ? "er" : "e"}</sup></> : "—"}</b>
           <span className="fc-s">FBFTS</span>
         </div>
         <div className="fc-t t-int">
-          <span className="fl-l">🌍 Mondial</span>
+          <span className="fl-l">🌍 International</span>
           <b className="fc-v num">{f.classement_international ? <>{f.classement_international}<sup>{f.classement_international === 1 ? "er" : "e"}</sup></> : "—"}</b>
-          <span className="fc-s">FISTF</span>
+          <span className="fc-s">FISTF · Open</span>
         </div>
       </div>
 
