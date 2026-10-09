@@ -3,7 +3,7 @@ import Blocs from "@/components/Blocs";
 import Installer from "@/components/Installer";
 import type { ClassementClub, Evenement, Resultat, Seance } from "@/lib/club-types";
 import { BlocClassements, BlocEntrainements, BlocResultats } from "./VueClub";
-import { NosJoueurs, PlacesClub } from "./Classements";
+import { ClassementsClubs, NosJoueurs, PlacesClub } from "./Classements";
 import type { LigneClassement } from "@/lib/classements-types";
 
 const euro = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -25,6 +25,7 @@ export default function VueAccueil(p: {
   evs: Evenement[];
   noms: Map<string, string>;
   eug?: LigneClassement[];
+  clubsComplet?: { nat: LigneClassement[]; equipes: LigneClassement[] };
   moi?: string[];
 }) {
   const { gens } = p;
@@ -37,93 +38,57 @@ export default function VueAccueil(p: {
   const natAuto = eug.find((e) => e.liste === "FBFTS-Clubs")?.rang;
   const nbJoueurs = new Set(eug.filter((e) => e.prenom !== null && e.liste !== "WR-Teams").map((e) => e.joueur_id || e.nom)).size;
 
+  const moi = p.moi || [];
+  const maNat = eug.filter((e) => e.liste === "FBFTS" && e.joueur_id && moi.includes(e.joueur_id)).sort((a, b) => a.rang - b.rang)[0];
+  const monWr = eug.filter((e) => e.liste.startsWith("WR-") && e.liste !== "WR-Teams" && e.joueur_id && moi.includes(e.joueur_id)).sort((a, b) => a.rang - b.rang)[0];
+  const seance = p.seances.find((x) => !x.annule);
+  const qui = maNat ? `${maNat.prenom} ${maNat.nom}` : monWr ? `${monWr.prenom} ${monWr.nom.charAt(0)}${monWr.nom.slice(1).toLowerCase()}` : p.name;
+  const dateLongue = (d: string) => new Date(d.slice(0, 10) + "T12:00:00Z").toLocaleDateString("fr-BE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+
   const score = (
-    <section className="score" aria-label="Tableau de score">
-      <div className="main">
-        <span className="lbl">Prochaine compétition</span>
-        <span className="val num">{p.j === null ? "—" : p.j === 0 ? "Jour J" : `J-${p.j}`}</span>
-        <span className="sub">
-          {p.prochaine
-            ? `${p.prochaine.nom} · ${new Date(p.prochaine.date).toLocaleDateString("fr-BE", { day: "numeric", month: "long" })}${p.prochaine.lieu ? " · " + p.prochaine.lieu : ""}`
-            : "Calendrier en préparation"}
-        </span>
-      </div>
-      <div>
-        <span className="lbl">{famille ? "Cagnotte famille" : "Ma cagnotte"}</span>
-        <span className="val num">{euro.format(cagnotte)}</span>
-        <span className="sub">Pour les déplacements</span>
-      </div>
-      <div>
-        <span className="lbl">{famille ? "Famille" : "Mes rôles"}</span>
-        <span className="val num">{famille ? gens.length : roles.length || "—"}</span>
-        <span className="sub">{famille ? gens.map((g) => g.prenom).filter(Boolean).join(" · ") : roles.join(" · ") || "Joueur du club"}</span>
-      </div>
-    </section>
-  );
+    <div className="vg">
+      <section className="vg-hero" aria-label="Prochaine compétition">
+        <div className="vg-cpt">
+          <span className="vg-l">Prochaine compétition</span>
+          <span className="vg-j num">{p.j === null ? "—" : p.j === 0 ? "Jour J" : p.j === 1 ? "Demain" : <>J-{p.j}</>}</span>
+        </div>
+        <div className="vg-ev">
+          <b>{p.prochaine?.nom || "Calendrier en préparation"}</b>
+          {p.prochaine ? (
+            <span>
+              {dateLongue(p.prochaine.date)}
+              {p.prochaine.lieu ? ` · ${p.prochaine.lieu}` : ""}
+            </span>
+          ) : null}
+          <span className="vg-act">
+            <Link className="btn primary" href="/inscriptions">🏁 Mes inscriptions</Link>
+            <Link className="btn" href="/calendrier">📅 Calendrier</Link>
+          </span>
+        </div>
+      </section>
+      <div className="vg-tuiles">
+        <Link className="vg-t" href="/fiche">
+          <span className="vg-l">🇧🇪 {famille ? "Classement national" : "Ma place nationale"}</span>
+          <span className="vg-v num">{maNat ? <>{maNat.rang}<sup>{maNat.rang === 1 ? "er" : "e"}</sup></> : "—"}</span>
+          <span className="vg-qui">{qui}</span>
+          <span className="vg-s">{maNat ? `Catégorie ${maNat.categorie || "?"}` : monWr ? `Mondial : ${monWr.rang}e` : "Pas encore classé"}</span>
+        </Link>
+        <Link className="vg-t" href="/fiche">
+          <span className="vg-l">💶 {famille ? "Cagnotte famille" : "Ma cagnotte"}</span>
+          <span className="vg-v num">{euro.format(cagnotte)}</span>
+          <span className="vg-qui">{famille ? gens.map((g) => g.prenom).filter(Boolean).join(" · ") : qui}</span>
+          <span className="vg-s">Pour les déplacements</span>
+        </Link>
+        <a className="vg-t" href="#bloc-entrainements">
+          <span className="vg-l">🎯 Prochain entraînement</span>
+          <span className="vg-qui v-club">SC Lions d&apos;Eugies</span>
+          <span className="vg-v vg-v-txt">{seance ? dateLongue(seance.date) : "—"}</span>
+          <span className="vg-s">{seance ? [seance.debut && seance.fin ? `${seance.debut} – ${seance.fin}` : seance.debut, seance.lieu].filter(Boolean).join(" · ") : "Aucune séance prévue"}</span>
+        </a>
 
-  const espace = (
-    <div className="cards">
-      <Link className="card dark" href="/fiche">
-        <span className="idx">01</span>
-        <span className="ic">👤</span>
-        <h3>{famille ? "Ma famille" : "Ma fiche"}</h3>
-        <p>Photo, classements, palmarès et cagnotte.</p>
-        <span className="go">Ouvrir →</span>
-      </Link>
-      <Link className="card" href="/inscriptions">
-        <span className="idx">02</span>
-        <span className="ic">🏁</span>
-        <h3>Mes inscriptions</h3>
-        <p>Répondre aux compétitions et voir mes déplacements.</p>
-        <span className="go">Répondre →</span>
-      </Link>
-      <Link className="card" href="/calendrier">
-        <span className="idx">03</span>
-        <span className="ic">📅</span>
-        <h3>Calendrier</h3>
-        <p>Toutes les compétitions de la saison, mois par mois.</p>
-        <span className="go">Voir →</span>
-      </Link>
-    </div>
-  );
-
-  const staff = (
-    <div className="cards">
-      <Link className="card gold" href="/admin">
-        <span className="idx">04</span>
-        <span className="ic">🗂️</span>
-        <h3>Joueurs</h3>
-        <p>Synchroniser avec Notion, gérer les accès, inviter.</p>
-        <span className="go">Gérer →</span>
-      </Link>
-      <Link className="card gold" href="/staff/inscriptions">
-        <span className="idx">05</span>
-        <span className="ic">📊</span>
-        <h3>Tableau de bord</h3>
-        <p>Inscriptions par évènement, relances, logistique.</p>
-        <span className="go">Analyser →</span>
-      </Link>
-      <Link className="card gold" href="/staff/planning">
-        <span className="idx">06</span>
-        <span className="ic">🗓️</span>
-        <h3>Planning</h3>
-        <p>Tâches, rappels, calendrier et feuille de route.</p>
-        <span className="go">Organiser →</span>
-      </Link>
-      <Link className="card gold" href="/staff/notifications">
-        <span className="idx">07</span>
-        <span className="ic">🔔</span>
-        <h3>Notifications</h3>
-        <p>Prévenir les joueurs, réglages et envois automatiques.</p>
-        <span className="go">Envoyer →</span>
-      </Link>
-      <Link className="card gold" href="/staff/classements">
-        <span className="idx">08</span>
-        <span className="ic">📊</span>
-        <h3>Classements</h3>
-        <p>Mise à jour mensuelle FBFTS + FISTF, import manuel si besoin.</p>
-        <span className="go">Vérifier →</span>
-      </Link>
+      </div>
+      <p className="sec-title">Le club au classement</p>
+      {clubs.length ? <PlacesClub clubs={clubs} /> : <BlocClassements classements={p.classements} />}
     </div>
   );
 
@@ -132,7 +97,7 @@ export default function VueAccueil(p: {
       <section className="hello">
         <span className="kicker">{p.isAdmin ? "Staff · Administrateur" : famille ? "Compte famille" : "Joueur"}</span>
         <h2>
-          {p.salut}, {p.name}
+          {p.salut}, <span className="perso">{p.name}</span>
         </h2>
         <p>{p.isAdmin ? "Tout le club est entre tes mains. Prépare la suite." : "Prêt pour la prochaine ? Voici ton tableau de bord."}</p>
       </section>
@@ -140,13 +105,12 @@ export default function VueAccueil(p: {
       {!p.lie ? <div className="notice">Ton compte est connecté mais pas encore relié à une fiche du club. Un administrateur doit vérifier ton adresse ({p.email}).</div> : null}
 
       <Blocs
+        page="Accueil"
         blocs={[
-          { id: "score", titre: "Tableau de score", ic: "🏁", badge: p.j !== null ? (p.j === 0 ? "J" : `J-${p.j}`) : null, contenu: score },
-          { id: "club", titre: "Le club", ic: "🏆", badge: natAuto ? `#${natAuto}` : now?.national ? `#${now.national}` : null, contenu: <>{clubs.length ? <PlacesClub clubs={clubs} /> : <BlocClassements classements={p.classements} />}<p className="sec-title">Derniers résultats</p><BlocResultats resultats={p.resultats} evs={p.evs} noms={p.noms} /></> },
+          { id: "vue", titre: "Vue générale", ic: "🏁", contenu: score },
+          { id: "club", titre: "Le club", ic: "🏆", badge: natAuto ? `${natAuto}e` : now?.national ? `${now.national}e` : null, contenu: <><ClassementsClubs nat={p.clubsComplet?.nat || []} equipes={p.clubsComplet?.equipes || []} /><p className="sec-title">Derniers résultats</p><BlocResultats resultats={p.resultats} evs={p.evs} noms={p.noms} /></> },
           { id: "classements", titre: "Classements", ic: "📊", badge: nbJoueurs || null, contenu: <NosJoueurs lignes={eug} moi={p.moi} /> },
           { id: "entrainements", titre: "Entraînements", ic: "🎯", badge: p.seances.filter((s) => !s.annule).length || null, contenu: <BlocEntrainements seances={p.seances} noms={p.noms} /> },
-          { id: "espace", titre: "Mon espace", ic: "👤", contenu: espace },
-          ...(p.isAdmin ? [{ id: "staff", titre: "Staff", ic: "⭐", contenu: staff }] : []),
         ]}
       />
       <p className="foot">Connecté en tant que {p.email}.</p>

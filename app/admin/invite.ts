@@ -15,7 +15,6 @@ export async function inviterMembre(_prev: InviteState, formData: FormData): Pro
 
   const { data: m } = await supabase.from("membres").select("actif").eq("email", email).maybeSingle();
   if (!m) return { error: "Ce compte n'existe pas." };
-  if (!m.actif) return { error: "Compte inactif : activez-le d'abord." };
 
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") || "https"}://${h.get("x-forwarded-host") || h.get("host")}`;

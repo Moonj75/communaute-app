@@ -101,7 +101,7 @@ export function libelleMois(m: string | null | undefined, long = false) {
   return `${(long ? MOIS_LONG : MOIS)[mm - 1]} ${y}`;
 }
 
-/** « ▲ 3 », « ▼ 2 », « = », « Nouveau ». */
+/** « ▲ +3 » (places gagnées, vert), « ▼ −2 » (places perdues, rouge), « = », « Nouveau ». */
 export function tendance(e: string | null): { cls: string; txt: string } | null {
   if (e === null || e === undefined || e === "") return null;
   const s = String(e).trim();
@@ -109,7 +109,7 @@ export function tendance(e: string | null): { cls: string; txt: string } | null 
   if (/^new/i.test(s)) return { cls: "new", txt: "Nouveau" };
   const n = Number(s.replace("+", ""));
   if (!Number.isFinite(n)) return null;
-  return n > 0 ? { cls: "up", txt: `▲ ${n}` } : { cls: "down", txt: `▼ ${-n}` };
+  return n > 0 ? { cls: "up", txt: `▲ +${n}` } : { cls: "down", txt: `▼ −${-n}` };
 }
 
 export const nomComplet = (l: { nom: string; prenom: string | null }) => [l.prenom, l.nom].filter(Boolean).join(" ");

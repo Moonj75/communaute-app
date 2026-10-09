@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { pageDeRetour } from "@/lib/retour";
 
 /** Magic-link landing: exchanges the one-time code for a session cookie. */
 export async function GET(request: NextRequest) {
@@ -11,10 +12,10 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}/`);
+    if (!error) return NextResponse.redirect(`${origin}${await pageDeRetour()}`);
   } else if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as "email" | "magiclink" });
-    if (!error) return NextResponse.redirect(`${origin}/`);
+    if (!error) return NextResponse.redirect(`${origin}${await pageDeRetour()}`);
   }
   return NextResponse.redirect(`${origin}/login?erreur=lien`);
 }

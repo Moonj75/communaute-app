@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Profil } from "@/lib/profil";
-import Nav from "./Nav";
+import BarreBas from "./BarreBas";
 import MesureEntete from "./MesureEntete";
 import { quitterApercu } from "@/app/admin/apercu";
 
@@ -42,22 +42,27 @@ export default function Header({
             </div>
           </Link>
           {name ? (
-            <div className="who">
-              <span className="name">{name}</span>
+            <div className="hud" aria-label={`Connecté : ${[profil?.prenom || name, profil?.nom].filter(Boolean).join(" ")}`}>
+              <span className="hud-coin hg" aria-hidden="true" />
+              <span className="hud-coin hd" aria-hidden="true" />
+              <span className="hud-nom">
+                <span className="hud-prenom">{profil?.prenom || name}</span>
+                {profil?.nom ? <span className="hud-famille">{profil.nom}</span> : null}
+              </span>
               {profil ? (
-                <span className={`badge ${profil.role}`}>{profil.role === "admin" ? "Administrateur" : "Joueur"}</span>
+                <span className={`hud-role ${profil.role}`}>
+                  <i aria-hidden="true" />
+                  {profil.role === "admin" ? "Administrateur" : profil.actif === false ? "Membre non actif" : "Joueur"}
+                </span>
               ) : null}
-              <form action="/auth/signout" method="post">
-                <button className="btn" type="submit">Déconnexion</button>
-              </form>
             </div>
           ) : null}
         </div>
       </header>
-      {name ? <Nav isAdmin={profil?.role === "admin"} /> : null}
       </div>
+      {name ? <BarreBas isAdmin={profil?.role === "admin"} nom={name} inactif={profil?.role !== "admin" && profil?.actif === false} /> : null}
       <MesureEntete />
-      {valeurs || !name ? (
+      {!name ? (
       <div className="values" aria-label="Nos valeurs">
         <div className="wrap">
           <span>Équipe</span>

@@ -3,7 +3,7 @@ import type { Evenement, FicheLogistique as FicheLogistiqueT, JoueurLite, Partic
 import { Anneau, couleurObjectif, Donut, Rythme } from "./Graphes";
 import FicheLogistique from "./FicheLogistique";
 import {
-  ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, lienTally, moisCourt, DECISION_OUI,
+  ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, lienReponse, moisCourt, DECISION_OUI,
 } from "@/lib/club-types";
 import Jalons from "./Jalons";
 import CopierLien from "./CopierLien";
@@ -48,7 +48,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   const relance = sel && c
     ? `🦁 Rappel SC Lions d'Eugies : ${sel.nom} (${dateMoyenne(sel.date)}${sel.lieu ? ", " + sel.lieu : ""}). ` +
       `Il manque encore la réponse de : ${c.att.map((j) => j.nom.split(" ")[0]).join(", ")}. ` +
-      (sel.limite ? `Réponse avant le ${dateMoyenne(sel.limite)} 👉 ` : "Réponds ici 👉 ") + "https://lions-eugies.vercel.app/inscriptions"
+      (sel.limite ? `Réponse avant le ${dateMoyenne(sel.limite)} 👉 ` : "Réponds ici 👉 ") + `https://lions-eugies.vercel.app${lienReponse(sel)}`
     : "";
   const cols = suivis.filter((x) => x.date! >= today).slice(0, 8);
 
@@ -139,7 +139,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
             <div className="bd">
               <Jalons e={sel} compact />
               <div className="ev-actions">
-                <a className="btn" href={lienTally(sel)} target="_blank" rel="noopener">Formulaire Tally ↗</a>
+                <Link className="btn" href={lienReponse(sel)}>📝 Voir le formulaire</Link>
                 {c.att.length ? <CopierLien texte={relance} label="📋 Relance WhatsApp" /> : null}
                 {c.att.length ? <Link className="btn" href={`/staff/notifications?cible=attente:${sel.id}`}>🔔 Notifier les {c.att.length}</Link> : null}
                 <a className="btn" href={sel.url} target="_blank" rel="noopener">Page Notion ↗</a>
@@ -147,7 +147,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
 
               <div className="three">
                 <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}</span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className="chip o"><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}</span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
-                <div className="box b-p"><span className="bh">En attente ({c.att.length})</span><div className="chips">{c.att.length ? c.att.map((j) => <span key={j.notionId} className="chip"><i>{initiales(j.nom)}</i>{j.nom}</span>) : <span className="muted small">Tout le monde a répondu 🎉</span>}</div></div>
+                <div className="box b-p"><span className="bh">En attente ({c.att.length})</span><div className="chips">{c.att.length ? c.att.map((j) => <Link key={j.notionId} className="chip chip-lien" href={lienReponse(sel, j.notionId)} title={`Répondre pour ${j.nom}`}><i>{initiales(j.nom)}</i>{j.nom} ✎</Link>) : <span className="muted small">Tout le monde a répondu 🎉</span>}</div></div>
                 <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <span key={j.notionId} className={`chip ${c.p.includes(j) ? "m" : "n"}`}><i>{initiales(j.nom)}</i>{j.nom}</span>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
               </div>
 

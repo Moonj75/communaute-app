@@ -4,7 +4,7 @@ import type { ClassementClub, Evenement, InfoPublique, Seance } from "@/lib/club
 import { aujourdhui, compteARebours, estCompetition, estRetenu, moisCourt } from "@/lib/club-types";
 import Mois from "./Mois";
 import { BlocClassements, BlocEntrainements } from "./VueClub";
-import { NosJoueurs, PlacesClub } from "./Classements";
+import { ClassementsClubs, NosJoueurs, PlacesClub } from "./Classements";
 import type { LigneClassement } from "@/lib/classements-types";
 
 function lien(q: { m?: string; e?: string }) {
@@ -14,7 +14,7 @@ function lien(q: { m?: string; e?: string }) {
 }
 
 /** Public space (no login): general info, calendar, trainings, club rankings. No personal data. */
-export default function VuePublique({ infos, evs, seances, classements, m, connecte, eug = [] }: { infos: InfoPublique[]; evs: Evenement[]; seances: Seance[]; classements: ClassementClub[]; m?: string; connecte: boolean; eug?: LigneClassement[] }) {
+export default function VuePublique({ infos, evs, seances, classements, m, connecte, eug = [], clubsComplet }: { infos: InfoPublique[]; evs: Evenement[]; seances: Seance[]; classements: ClassementClub[]; m?: string; connecte: boolean; eug?: LigneClassement[]; clubsComplet?: { nat: LigneClassement[]; equipes: LigneClassement[] } }) {
   const T = aujourdhui();
   const comps = evs.filter((e) => e.date && e.date >= T && estCompetition(e) && estRetenu(e) && !e.jourSpecial).slice(0, 10);
   const ym = m && /^\d{4}-\d{2}$/.test(m) ? m : T.slice(0, 7);
@@ -86,6 +86,7 @@ export default function VuePublique({ infos, evs, seances, classements, m, conne
             contenu: (
               <>
                 {eug.some((e) => e.prenom === null || e.liste === "WR-Teams") ? <PlacesClub clubs={eug.filter((e) => e.prenom === null || e.liste === "WR-Teams")} /> : <BlocClassements classements={classements} />}
+                {clubsComplet ? <ClassementsClubs nat={clubsComplet.nat} equipes={clubsComplet.equipes} /> : null}
                 <p className="sec-title">Nos joueurs classés</p>
                 <NosJoueurs lignes={eug} />
               </>

@@ -23,7 +23,7 @@ export default function SyncPanel({ last }: { last: string | null }) {
       {state.ok ? (
         <div className="notice ok">
           <b>✓ {state.personnes} fiches</b> et <b>{state.comptes} comptes de connexion</b> à jour depuis Notion
-          {state.inactifs ? ` (${state.inactifs} comptes inactifs ne peuvent pas se connecter)` : ""}.
+          {state.inactifs ? ` (${state.inactifs} comptes non actifs : accès à l’espace découverte)` : ""}.
           {state.familles && state.familles.length ? (
             <div style={{ marginTop: 6 }}>👨‍👧 Comptes famille : {state.familles.join(" ; ")}.</div>
           ) : null}

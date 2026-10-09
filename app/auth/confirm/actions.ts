@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { pageDeRetour } from "@/lib/retour";
 
 /** Verifies the one-time token only when the person clicks the button (mail scanners never POST). */
 export async function confirmLogin(formData: FormData) {
@@ -15,5 +16,5 @@ export async function confirmLogin(formData: FormData) {
     const msg = (error.message || "").toLowerCase();
     redirect(msg.includes("database error") ? "/login?erreur=acces" : "/login?erreur=lien");
   }
-  redirect("/");
+  redirect(await pageDeRetour());
 }

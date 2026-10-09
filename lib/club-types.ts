@@ -104,6 +104,8 @@ export type FicheLogistique = {
   zone: string | null;
   referentPrincipalIds: string[];
   referentComIds: string[];
+  /** Fields marked « not useful » in the app (hidden from players). */
+  masques: string[];
 };
 
 export type InfoPublique = { id: string; titre: string; texte: string | null; icone: string | null; lien: string | null };

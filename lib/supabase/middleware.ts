@@ -34,7 +34,10 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
-    return NextResponse.redirect(url);
+    const redir = NextResponse.redirect(url);
+    // Remember where the person wanted to go (e.g. a form link from WhatsApp) to bring them back after login.
+    if (path !== "/" && !path.startsWith("/auth")) redir.cookies.set("lions_retour", path + request.nextUrl.search, { path: "/", maxAge: 60 * 60, sameSite: "lax", httpOnly: true });
+    return redir;
   }
   if (user && path === "/login") {
     const url = request.nextUrl.clone();

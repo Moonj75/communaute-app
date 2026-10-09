@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import VueInscriptions from "@/components/club/VueInscriptions";
-import { displayName, getVue } from "@/lib/profil";
+import { displayName, getVue, estInactif } from "@/lib/profil";
 import { essayer, lireCalendrier, lireParticipations } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
 
@@ -10,6 +10,8 @@ export const dynamic = "force-dynamic";
 export default async function InscriptionsPage() {
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) redirect("/login");
+  // Members not active this season only see the discovery space (home page).
+  if (estInactif(profil)) redirect("/");
   const [cal, parts, famille] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email)]);
   return (
     <>

@@ -4,7 +4,7 @@ import { lireCalendrier, lireParticipations, lireTaches } from "@/lib/club";
 import { pousser, pushPret, type Abonnement, type MessagePush } from "@/lib/push";
 import { comptesActifs, inscritsOui, sansReponse } from "@/lib/audiences";
 import type { JoueurLite } from "@/lib/club-types";
-import { ajouterJours, ajouterMois, aujourdhui, dateCourte, estCompetition, estRetenu, indexReponses, DECISION_OUI } from "@/lib/club-types";
+import { ajouterJours, ajouterMois, aujourdhui, dateCourte, estCompetition, estRetenu, indexReponses, lienReponse, DECISION_OUI } from "@/lib/club-types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `ouverture:${e.id}`,
       emails: actifs,
-      msg: { title: `🏁 Inscriptions ouvertes : ${e.nom}`, body: e.limite ? `Réponds avant le ${dateCourte(e.limite)}.` : "Donne ta réponse dans l'appli.", url: "/inscriptions", tag: `ins-${e.id}` },
+      msg: { title: `🏁 Inscriptions ouvertes : ${e.nom}`, body: e.limite ? `Réponds avant le ${dateCourte(e.limite)}.` : "Donne ta réponse dans l'appli.", url: lienReponse(e), tag: `ins-${e.id}` },
     });
 
   // 2. Deadline in 3 days → those who have not answered yet.
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `rappel3:${e.id}`,
       emails: sansReponse(e, evs, parts, joueurs),
-      msg: { title: `⏰ Plus que 3 jours pour répondre`, body: `${e.nom} : on attend ta réponse avant le ${dateCourte(e.limite)}.`, url: "/inscriptions", tag: `ins-${e.id}` },
+      msg: { title: `⏰ Plus que 3 jours pour répondre`, body: `${e.nom} : on attend ta réponse avant le ${dateCourte(e.limite)}.`, url: lienReponse(e), tag: `ins-${e.id}` },
     });
 
   // 2b. Confirmation period starts (day after the answer deadline) → answered but not validated yet.
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `confirmation:${e.id}`,
       emails,
-      msg: { title: `🔒 Confirme ta participation : ${e.nom}`, body: `Valide définitivement ta réponse avant le ${dateCourte(e.validation)}.`, url: "/inscriptions", tag: `ins-${e.id}` },
+      msg: { title: `🔒 Confirme ta participation : ${e.nom}`, body: `Valide définitivement ta réponse avant le ${dateCourte(e.validation)}.`, url: lienReponse(e), tag: `ins-${e.id}` },
     });
   }
 

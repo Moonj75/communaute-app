@@ -22,14 +22,24 @@ export default function FicheLogistique({ f, ev, noms, staff = false }: { f: Fic
   if (!f)
     return (
       <p className="vide">
-        Pas encore de fiche logistique pour <b>{ev.nom}</b>.{staff ? " Crée-la dans Notion → Fiches logistiques événements, reliée à cet évènement." : " Le staff la prépare."}
+        Pas encore de fiche logistique pour <b>{ev.nom}</b>.{staff ? <> <a href="/staff/logistique">Crée-la depuis la page Fiches logistiques →</a></> : " Le staff la prépare."}
       </p>
     );
-  const total = f.couts.reduce((s, c) => s + c.v, 0);
+  if (!staff && f.statut !== "Prête")
+    return (
+      <p className="vide">
+        La fiche logistique de <b>{ev.nom}</b> est en préparation : elle apparaîtra ici dès que le staff l&apos;aura publiée.
+      </p>
+    );
+  // Fields marked « Pas utile » by the staff are never shown.
+  const vis = (k: string) => !(f.masques || []).includes(k);
+  const CLE_COUT: Record<string, string> = { Essence: "essence", Péages: "peages", "Location voiture": "location", "Billet d'avion": "avion", "Transfert aéroport": "transfert" };
+  const couts = f.couts.filter((c) => vis(CLE_COUT[c.label] || ""));
+  const total = couts.reduce((s, c) => s + c.v, 0);
   const nb = (ids: string[]) => ids.map((id) => noms?.get(id)).filter(Boolean).join(", ");
-  const refP = nb(f.referentPrincipalIds);
-  const refC = nb(f.referentComIds);
-  const lieu = f.adresse || ev.lieu;
+  const refP = vis("refPrincipal") ? nb(f.referentPrincipalIds) : "";
+  const refC = vis("refCom") ? nb(f.referentComIds) : "";
+  const lieu = (vis("adresse") && f.adresse) || ev.lieu;
 
   return (
     <div className="logi">
@@ -56,41 +66,41 @@ export default function FicheLogistique({ f, ev, noms, staff = false }: { f: Fic
             </span>
           </Tuile>
         ) : null}
-        {f.horaires ? (
+        {f.horaires && vis("horaires") ? (
           <Tuile ic="🕘" titre="Horaires">
             <p className="pre">{f.horaires}</p>
           </Tuile>
         ) : null}
-        {f.distance ? (
+        {f.distance && vis("distance") ? (
           <Tuile ic="🚗" titre="Trajet">
             <p className="lg-big num">{f.distance} km</p>
             <span className="muted small">depuis Eugies</span>
           </Tuile>
         ) : null}
-        {f.hebergement ? (
+        {f.hebergement && vis("hebergement") ? (
           <Tuile ic="🏨" titre="Hébergement" large>
             <p>{f.hebergement}</p>
             <span className="muted small">
-              {[f.distHebEvenement ? `${f.distHebEvenement} km du tournoi` : null, f.distHebCentre ? `${f.distHebCentre} km du centre` : null, f.hotelNuit ? `≈ ${euro.format(f.hotelNuit)} / nuit` : null].filter(Boolean).join(" · ")}
+              {[f.distHebEvenement && vis("distHebEvenement") ? `${f.distHebEvenement} km du tournoi` : null, f.distHebCentre && vis("distHebCentre") ? `${f.distHebCentre} km du centre` : null, f.hotelNuit && vis("hotelNuit") ? `≈ ${euro.format(f.hotelNuit)} / nuit` : null].filter(Boolean).join(" · ")}
             </span>
-            {f.accesHebEvenement ? <p className="small">🚶 {f.accesHebEvenement}</p> : null}
+            {f.accesHebEvenement && vis("accesHebEvenement") ? <p className="small">🚶 {f.accesHebEvenement}</p> : null}
             <span className="lg-act">
               <a className="small" href={carte(f.hebergement)} target="_blank" rel="noopener">Voir sur la carte ↗</a>
             </span>
           </Tuile>
         ) : null}
-        {f.accesAeroport ? (
+        {f.accesAeroport && vis("accesAeroport") ? (
           <Tuile ic="✈️" titre="Aéroport">
             <p>{f.accesAeroport}</p>
           </Tuile>
         ) : null}
-        {f.disponibilite.length ? (
+        {f.disponibilite.length && vis("disponibilite") ? (
           <Tuile ic="📆" titre="Disponibilité requise">
             <span className="chips">{f.disponibilite.map((d) => <span key={d} className="tagx">{d}</span>)}</span>
-            {f.vacances ? <span className="small muted">Pendant les vacances scolaires</span> : null}
+            {f.vacances && vis("vacances") ? <span className="small muted">Pendant les vacances scolaires</span> : null}
           </Tuile>
         ) : null}
-        {f.documents.length ? (
+        {f.documents.length && vis("documents") ? (
           <Tuile ic="🪪" titre="Documents à prévoir">
             <span className="chips">{f.documents.map((d) => <span key={d} className="tagx gold">{d}</span>)}</span>
           </Tuile>
@@ -99,19 +109,19 @@ export default function FicheLogistique({ f, ev, noms, staff = false }: { f: Fic
           <Tuile ic="💶" titre="Budget estimé">
             <p className="lg-big num">{euro.format(total)}</p>
             <ul className="lg-couts">
-              {f.couts.map((c) => (
+              {couts.map((c) => (
                 <li key={c.label}><span>{c.label}</span><b className="num">{euro.format(c.v)}</b></li>
               ))}
             </ul>
-            {f.zone === "Hors zone Euro" ? <span className="small muted">⚠️ Hors zone euro : prévoir le change.</span> : null}
+            {f.zone === "Hors zone Euro" && vis("zone") ? <span className="small muted">⚠️ Hors zone euro : prévoir le change.</span> : null}
           </Tuile>
         ) : null}
-        {f.contactNom || f.contactTel || f.contactMail ? (
+        {(vis("contactNom") && f.contactNom) || (vis("contactTel") && f.contactTel) || (vis("contactMail") && f.contactMail) ? (
           <Tuile ic="☎️" titre="Contact sur place">
-            {f.contactNom ? <p><b>{f.contactNom}</b></p> : null}
+            {f.contactNom && vis("contactNom") ? <p><b>{f.contactNom}</b></p> : null}
             <span className="lg-act">
-              {f.contactTel ? <a className="btn small-btn" href={`tel:${f.contactTel.replace(/\s/g, "")}`}>📞 Appeler</a> : null}
-              {f.contactMail ? <a className="small" href={`mailto:${f.contactMail}`}>{f.contactMail}</a> : null}
+              {f.contactTel && vis("contactTel") ? <a className="btn small-btn" href={`tel:${f.contactTel.replace(/\s/g, "")}`}>📞 Appeler</a> : null}
+              {f.contactMail && vis("contactMail") ? <a className="small" href={`mailto:${f.contactMail}`}>{f.contactMail}</a> : null}
             </span>
           </Tuile>
         ) : null}
@@ -124,7 +134,7 @@ export default function FicheLogistique({ f, ev, noms, staff = false }: { f: Fic
       </div>
       {staff ? (
         <p className="small">
-          <a href={f.url} target="_blank" rel="noopener">Modifier la fiche dans Notion ↗</a>
+          <a href={`/staff/logistique/${f.id}`}>✎ Remplir / modifier la fiche</a>
           {f.objectif ? ` · Objectif : ${f.objectif} participants` : ""}
         </p>
       ) : null}

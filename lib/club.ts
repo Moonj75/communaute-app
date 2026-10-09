@@ -1,4 +1,5 @@
 import "server-only";
+import { CHAMPS, PROP_MASQUES, lireMasques, type Valeur } from "./logistique";
 import type { ClassementClub, FicheLogistique, InfoPublique, Evenement, Participation, Reponse, Resultat, Seance, Tache } from "./club-types";
 
 /* Notion data sources of the « Deplacements » page (API version 2025-09-03). */
@@ -362,6 +363,7 @@ export async function lireFiches(): Promise<Map<string, FicheLogistique>> {
       zone: choix(p["Zone monétaire"]),
       referentPrincipalIds: rel(p["Référent principal"]),
       referentComIds: rel(p["Référent communication"]),
+      masques: lireMasques(texte(p[PROP_MASQUES])),
     };
     for (const id of f.evenementIds) out.set(id, f);
   }
@@ -416,4 +418,68 @@ export async function enregistrerReponse(r: ReponseNative) {
   }
   if (r.participationId) await notion(`pages/${r.participationId}`, { method: "PATCH", body: { properties } });
   else await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS.participations }, properties } });
+}
+
+/* ---------- Fiche logistique : édition depuis l'appli ---------- */
+export type FicheEdition = { id: string; url: string; titre: string; evenementId: string | null; statut: string | null; masques: string[]; valeurs: Record<string, Valeur> };
+
+export async function lireFicheEdition(id: string): Promise<FicheEdition> {
+  const pg = (await notion(`pages/${id}`, { method: "GET" })) as Page;
+  const p = pg.properties;
+  const valeurs: Record<string, Valeur> = {};
+  for (const c of CHAMPS) {
+    const x = p[c.prop];
+    if (c.type === "nombre" || c.type === "euro" || c.type === "km") valeurs[c.cle] = nombreP(x);
+    else if (c.type === "tel") valeurs[c.cle] = (x?.phone_number as string | null) || null;
+    else if (c.type === "email") valeurs[c.cle] = (x?.email as string | null) || null;
+    else if (c.type === "multi") valeurs[c.cle] = multi(x);
+    else if (c.type === "select") valeurs[c.cle] = choix(x);
+    else if (c.type === "coche") valeurs[c.cle] = coche(x);
+    else if (c.type === "ref") valeurs[c.cle] = rel(x)[0] || null;
+    else valeurs[c.cle] = texte(x);
+  }
+  const titre = Object.values(p).find((v) => v.type === "title");
+  return { id: pg.id, url: pg.url, titre: texte(titre) || "Fiche logistique", evenementId: rel(p["Événement lié"])[0] || null, statut: choix(p["Statut fiche"]), masques: lireMasques(texte(p[PROP_MASQUES])), valeurs };
+}
+
+const rt = (s: string | null | undefined) => ({ rich_text: s ? [{ type: "text", text: { content: String(s).slice(0, 1900) } }] : [] });
+
+export async function enregistrerFiche(id: string, valeurs: Record<string, Valeur>, masques: string[], statut?: "Brouillon" | "Prête") {
+  const properties: Record<string, unknown> = { [PROP_MASQUES]: rt(masques.join(", ")) };
+  for (const c of CHAMPS) {
+    const v = valeurs[c.cle];
+    if (c.type === "nombre" || c.type === "euro" || c.type === "km") properties[c.prop] = { number: typeof v === "number" && Number.isFinite(v) ? v : null };
+    else if (c.type === "tel") properties[c.prop] = { phone_number: typeof v === "string" && v.trim() ? v.trim() : null };
+    else if (c.type === "email") properties[c.prop] = { email: typeof v === "string" && v.trim() ? v.trim() : null };
+    else if (c.type === "multi") properties[c.prop] = { multi_select: (Array.isArray(v) ? v : []).filter((o) => c.options?.includes(o)).map((name) => ({ name })) };
+    else if (c.type === "select") properties[c.prop] = { select: typeof v === "string" && c.options?.includes(v) ? { name: v } : null };
+    else if (c.type === "coche") properties[c.prop] = { checkbox: v === true };
+    else if (c.type === "ref") properties[c.prop] = { relation: typeof v === "string" && v ? [{ id: v }] : [] };
+    else properties[c.prop] = rt(typeof v === "string" ? v.trim() : null);
+  }
+  if (statut) properties["Statut fiche"] = { select: { name: statut } };
+  await notion(`pages/${id}`, { method: "PATCH", body: { properties } });
+}
+
+export async function creerFiche(evenementId: string, nom: string): Promise<string> {
+  const pg = (await notion("pages", {
+    body: {
+      parent: { type: "data_source_id", data_source_id: DS.fiches },
+      properties: {
+        Titre: { title: [{ type: "text", text: { content: `Fiche – ${nom}`.slice(0, 200) } }] },
+        "Événement lié": { relation: [{ id: evenementId }] },
+        "Statut fiche": { select: { name: "Brouillon" } },
+      },
+    },
+  })) as Page;
+  return pg.id;
+}
+
+/** People of « Liste actifs » (target of « Référent principal »). */
+export async function lireActifs(): Promise<{ id: string; nom: string }[]> {
+  const pages = await toutLire(DS.listeActifs, 3600, TAGS.club).catch(() => [] as Page[]);
+  return pages
+    .map((pg) => ({ id: pg.id, nom: (texte(Object.values(pg.properties).find((v) => v.type === "title")) || "").replace(/\s*\(\d+\)\s*$/, "") }))
+    .filter((x) => x.nom)
+    .sort((a, b) => a.nom.localeCompare(b.nom));
 }

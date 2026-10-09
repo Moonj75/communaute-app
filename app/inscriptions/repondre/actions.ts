@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidateTag } from "next/cache";
-import { getVue } from "@/lib/profil";
+import { estInactif, getVue } from "@/lib/profil";
 import { enregistrerReponse, lireCalendrier, lireParticipations, NotionErreur, TAGS } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
 import { indexReponses, libelleTally, modifiable } from "@/lib/club-types";
@@ -20,6 +20,7 @@ const parmi = (v: FormDataEntryValue | null, l: string[]) => (typeof v === "stri
 export async function envoyerReponse(_p: RetourReponse | null, fd: FormData): Promise<RetourReponse> {
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) return { ok: false, message: "Reconnecte-toi." };
+  if (estInactif(profil)) return { ok: false, message: "Ton compte n'est pas actif cette saison : contacte le staff pour t'inscrire." };
   if (apercu) return { ok: false, message: "Mode aperçu : la réponse n'est pas envoyée (tu vois la page comme le joueur)." };
   const evId = String(fd.get("e") || "");
   const jId = String(fd.get("j") || "");

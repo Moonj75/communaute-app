@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import VueAccueil, { type Gens } from "@/components/club/VueAccueil";
-import { displayName, getVue } from "@/lib/profil";
+import { displayName, estInactif, getVue } from "@/lib/profil";
+import VueDecouverte from "@/components/club/VueDecouverte";
 import { prochainesCompetitions } from "@/lib/notion";
-import { lireEugies } from "@/lib/classements-lire";
+import { lireClubs, lireEugies } from "@/lib/classements-lire";
+import { lireInfosPubliques } from "@/lib/club";
 import { essayer, lireCalendrier, lireClassementsClub, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +21,12 @@ function jours(dateIso: string) {
   return Math.round((d.getTime() - t.getTime()) / 86400000);
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) redirect("/login");
   const name = displayName(profil, user.email);
 
-  const [{ data: fiches }, compets, cl, res, se, cal, noms, eug] = await Promise.all([
+  const [{ data: fiches }, compets, cl, res, se, cal, noms, eug, clubsComplet] = await Promise.all([
     supabase.from("joueurs").select("notion_id,prenom,cagnotte,roles,actif").eq("email", (user.email || "").toLowerCase()),
     prochainesCompetitions(1),
     essayer(lireClassementsClub),
@@ -33,8 +35,23 @@ export default async function Home() {
     essayer(lireCalendrier),
     essayer(nomsJoueurs),
     lireEugies(supabase),
+    lireClubs(supabase),
   ]);
   const next = compets[0];
+  const moi = ((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id);
+
+  // Member not active this season: discovery space only.
+  if (estInactif(profil)) {
+    const [infos, sp] = await Promise.all([essayer(lireInfosPubliques), searchParams]);
+    return (
+      <>
+        <Header subtitle="Espace membres" profil={profil} name={name} apercu={apercu} />
+        <main className="wrap">
+          <VueDecouverte salut={greeting()} name={name} infos={infos.data || []} evs={cal.data || []} seances={se.data || []} resultats={res.data || []} classements={cl.data || []} eug={eug} clubsComplet={clubsComplet} moi={moi} noms={noms.data || new Map()} m={sp.m} />
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -55,6 +72,7 @@ export default async function Home() {
           evs={cal.data || []}
           noms={noms.data || new Map()}
           eug={eug}
+          clubsComplet={clubsComplet}
           moi={((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id)}
         />
       </main>

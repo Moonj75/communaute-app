@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
-import { displayName, getVue } from "@/lib/profil";
+import { displayName, getVue, estInactif } from "@/lib/profil";
 import { essayer, lireCalendrier, lireParticipations } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
 import { compteARebours, dateCourte, dateMoyenne, estLoin, indexReponses, modifiable, moisCourt, phase, surDeuxJours } from "@/lib/club-types";
@@ -12,9 +12,14 @@ export const dynamic = "force-dynamic";
 export default async function Repondre({ searchParams }: { searchParams: Promise<{ e?: string; j?: string }> }) {
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) redirect("/login");
+  // Members not active this season only see the discovery space (home page).
+  if (estInactif(profil)) redirect("/");
   const sp = await searchParams;
-  const [cal, parts, famille] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email)]);
-  const actifs = famille.filter((j) => j.actif);
+  const admin = profil?.role === "admin" && !apercu;
+  const [cal, parts, maFamille] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email)]);
+  // Staff can open the form for any player (link « Répondre pour… » from the dashboard).
+  const famille = admin && sp.j && !maFamille.some((j) => j.notionId === sp.j) ? await chargerJoueurs(supabase, null) : maFamille;
+  const actifs = famille.filter((j) => j.actif || (admin && j.notionId === sp.j));
   const ev = (cal.data || []).find((x) => x.id === sp.e);
   const joueur = actifs.find((j) => j.notionId === sp.j) || (actifs.length === 1 ? actifs[0] : null);
 
@@ -43,7 +48,7 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
   const p = indexReponses(parts.data || [], cal.data || [], famille).get(ev.id)?.get(joueur.notionId);
   const prenom = joueur.nom.split(" ")[0];
   const ph = phase(ev);
-  const ouvert = modifiable(ev, p) || profil?.role === "admin";
+  const ouvert = modifiable(ev, p) || admin;
   const jusquau = ph === "confirmation" ? (ev.validation ? `jusqu'au ${dateCourte(ev.validation)}` : null) : ev.limite ? `jusqu'au ${dateCourte(ev.limite)}` : null;
 
   return (
@@ -58,11 +63,11 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
           </div>
           <div>
             <span className="cdown">{compteARebours(ev.date)}</span>
-            <h2>Bonjour {prenom} !</h2>
+            <h2>{admin && !maFamille.some((j) => j.notionId === joueur.notionId) ? "Réponse de " : "Bonjour "}<span className="perso">{prenom}</span>{admin && !maFamille.some((j) => j.notionId === joueur.notionId) ? "" : " !"}</h2>
             <p>
-              {ev.nom}
-              {ev.lieu ? ` · ${ev.lieu}` : ""}
-              {ev.limite ? ` · réponse avant le ${dateMoyenne(ev.limite)}` : ""}
+              <b className="v-ev">{ev.nom}</b>
+              {ev.lieu ? <> · <span className="v-lieu">{ev.lieu}</span></> : null}
+              {ev.limite ? <> · réponse avant le <span className="v-date">{dateMoyenne(ev.limite)}</span></> : null}
             </p>
             {p?.statut && p.statut !== "En attente" && !p.valide ? <p className="small">Tu as déjà répondu « {p.statut} » : tu peux la modifier ou la valider définitivement ci-dessous.</p> : null}
           </div>
@@ -76,7 +81,7 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
             deuxJours={surDeuxJours(ev)}
             loin={estLoin(ev)}
             init={{ statut: p?.statut || null, jours: p?.jours || null, restrictions: p?.depart || p?.retour ? "Oui" : null, depart: p?.depart || null, retour: p?.retour || null, vehicule: p?.vehicule || null }}
-            autres={actifs.filter((j) => j.notionId !== joueur.notionId).map((j) => ({ id: j.notionId, prenom: j.nom.split(" ")[0] }))}
+            autres={(famille === maFamille ? actifs : []).filter((j) => j.notionId !== joueur.notionId).map((j) => ({ id: j.notionId, prenom: j.nom.split(" ")[0] }))}
             jusquau={jusquau}
             confirmation={ph === "confirmation"}
           />

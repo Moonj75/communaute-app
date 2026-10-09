@@ -64,11 +64,12 @@ export default async function AdminPage() {
                 <select className="input" name="email" required defaultValue="">
                   <option value="" disabled>Choisir un membre…</option>
                   {list
-                    .filter((m) => m.actif && m.email !== (user.email || "").toLowerCase())
+                    .filter((m) => m.email !== (user.email || "").toLowerCase())
                     .map((m) => (
                       <option key={m.email} value={m.email}>
                         {[m.prenom, m.nom].filter(Boolean).join(" ")}
                         {(parEmail.get(m.email)?.length || 0) > 1 ? ` (famille de ${parEmail.get(m.email)!.length})` : ""}
+                        {m.actif ? "" : " · non actif (espace découverte)"}
                       </option>
                     ))}
                 </select>

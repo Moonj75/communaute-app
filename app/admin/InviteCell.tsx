@@ -37,7 +37,6 @@ export default function InviteCell({
     }
   }
 
-  if (!actif) return <span className="muted" style={{ fontSize: 13 }}>—</span>;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 190 }}>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

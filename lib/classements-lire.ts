@@ -57,3 +57,17 @@ export async function lireImports(sb: SupabaseClient) {
   const { data, error } = await sb.from("classements_imports").select("source,mois,libelle,importe_le");
   return error ? [] : ((data || []) as { source: string; mois: string; libelle: string; importe_le: string }[]);
 }
+
+/** Club rankings to situate the club: the whole Belgian clubs list, and the world team list
+ *  (top 10 + three places around each of our teams). */
+export async function lireClubs(sb: SupabaseClient): Promise<{ nat: LigneClassement[]; equipes: LigneClassement[] }> {
+  const [n, t] = await Promise.all([
+    sb.from("classements").select(COLS).eq("liste", "FBFTS-Clubs").order("rang").limit(60),
+    sb.from("classements").select(COLS).eq("liste", "WR-Teams").order("rang").limit(400),
+  ]);
+  if (n.error || t.error) return { nat: [], equipes: [] };
+  const toutes = (t.data || []) as LigneClassement[];
+  const nous = toutes.filter((e) => e.eugies).map((e) => e.rang);
+  const equipes = toutes.filter((e) => e.rang <= 10 || nous.some((r) => Math.abs(e.rang - r) <= 3));
+  return { nat: (n.data || []) as LigneClassement[], equipes };
+}
