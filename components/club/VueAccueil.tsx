@@ -74,7 +74,7 @@ export default function VueAccueil(p: {
           <span className="fl-l">🇧🇪 {famille ? "Classement national" : "Ma place nationale"}</span>
           <b className="fc-v num">{maNat ? <>{maNat.rang}<sup>{maNat.rang === 1 ? "er" : "e"}</sup></> : "—"}</b>
           <span className="fc-qui">{qui}</span>
-          <span className="fc-s">{maNat ? `Catégorie ${maNat.categorie || "?"}` : monWr ? `Mondial : ${monWr.rang}e` : "Pas encore classé"}</span>
+          <span className="fc-s">{maNat ? `Catégorie ${maNat.categorie || "?"}` : monWr ? `International : ${monWr.rang}e` : "Pas encore classé"}</span>
         </Link>
         <Link className="fc-t t-euro" href="/fiche">
           <span className="fl-l">💶 {famille ? "Cagnotte famille" : "Ma cagnotte"}</span>
@@ -89,7 +89,7 @@ export default function VueAccueil(p: {
           <span className="fc-s">{clubNat ? `${pts(clubNat.points)} pts · ${libelleMois(clubNat.mois)}` : "clubs belges"}</span>
         </a>
         <a className="fc-t t-int" href="#bloc-club">
-          <span className="fl-l">🌍 Club · mondial</span>
+          <span className="fl-l">🌍 Club · international</span>
           <b className="fc-v num">{equipe ? <>{equipe.rang}<sup>{equipe.rang === 1 ? "er" : "e"}</sup></> : "—"}</b>
           <span className="fc-qui v-club">{equipe ? `Eugies ${equipe.prenom || "Team A"}` : "SC Lions d'Eugies"}</span>
           <span className="fc-s">{equipe ? `FISTF équipes${autresEq.length ? ` · ${autresEq.map((e) => `${e.prenom} ${e.rang}e`).join(" · ")}` : ""}` : "pas encore classé"}</span>

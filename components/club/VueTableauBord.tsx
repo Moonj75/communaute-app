@@ -3,7 +3,7 @@ import type { Evenement, FicheLogistique as FicheLogistiqueT, JoueurLite, Partic
 import { Anneau, couleurObjectif, Rythme } from "./Graphes";
 import FicheLogistique from "./FicheLogistique";
 import {
-  ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, lienReponse, moisCourt, DECISION_OUI,
+  ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, inscriptionsOuvertes, lienReponse, moisCourt, DECISION_OUI,
 } from "@/lib/club-types";
 import Jalons from "./Jalons";
 import CopierLien from "./CopierLien";
@@ -51,6 +51,35 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
       (sel.limite ? `Réponse avant le ${dateMoyenne(sel.limite)} 👉 ` : "Réponds ici 👉 ") + `https://lions-eugies.vercel.app${lienReponse(sel)}`
     : "";
   const cols = suivis.filter((x) => x.date! >= today).slice(0, 8);
+  const avenir = suivis.filter((x) => x.date! >= today);
+  const objectifDe = (x: Evenement) => fiches?.get(x.id)?.objectif || null;
+  const jours = (d: string) => Math.round((Date.parse(d + "T12:00:00Z") - Date.parse(today + "T12:00:00Z")) / 864e5);
+  const proximite = (d: string) => { const j = jours(d); return j < 0 ? "passe" : j <= 30 ? "proche" : j <= 60 ? "moyen" : "loin"; };
+  // KPIs (as on the « Inscriptions » page): next event, answers, waiting, cars.
+  const prochain = avenir[0] || null;
+  const kp = prochain ? compte(prochain) : null;
+  const butP = prochain ? objectifDe(prochain) : null;
+  const ouvertes = avenir.filter((x) => inscriptionsOuvertes(x, today));
+  const attenteTotal = ouvertes.reduce((t, x) => t + compte(x).att.length, 0);
+  const voituresP = kp ? kp.o.filter((j) => kp.m.get(j.notionId)?.vehicule === "Oui").length : 0;
+  const kpis = [
+    { k: "k-nat", ic: "🏁", l: "Prochaine compétition", v: prochain ? compteARebours(prochain.date, today) : "—", s: prochain ? prochain.nom : "Rien de prévu", w: prochain ? Math.max(4, 100 - jours(prochain.date!)) : 0 },
+    { k: "k-open", ic: "✅", l: "Inscrits", v: kp ? `${kp.o.length}${butP ? ` / ${butP}` : ""}` : "—", s: butP ? `${pct(kp!.o.length, butP)} % de l'objectif` : `sur ${N} joueurs actifs`, w: kp ? pct(kp.o.length, butP || N) : 0 },
+    { k: "k-temps", ic: "💬", l: "Ont répondu", v: kp ? `${pct(N - kp.att.length, N)} %` : "—", s: kp ? `${N - kp.att.length} réponses sur ${N}` : "", w: kp ? pct(N - kp.att.length, N) : 0 },
+    { k: "k-cat", ic: "⏳", l: "Réponses attendues", v: String(attenteTotal), s: `sur ${ouvertes.length} inscription${ouvertes.length > 1 ? "s" : ""} ouverte${ouvertes.length > 1 ? "s" : ""}`, w: pct(attenteTotal, Math.max(1, N * Math.max(1, ouvertes.length))) },
+    { k: "k-temps2", ic: "🚗", l: "Véhicules proposés", v: String(voituresP), s: prochain ? `pour ${prochain.nom}` : "", w: kp && kp.o.length ? pct(voituresP * 4, kp.o.length) : 0 },
+  ];
+  // Priorities: competitions of the next 4 months.
+  const dans4 = ajouterJours(today, 122);
+  const prio = avenir.filter((x) => x.date! <= dans4);
+  // Logistics of the selected event: departures / returns, cars, restrictions.
+  const ouiP = c ? c.o.map((j) => ({ j, r: c.m.get(j.notionId)! })) : [];
+  const repartir = (cle: "depart" | "retour", opts: string[]) => opts.map((o) => ({ o, gens: ouiP.filter((x) => x.r[cle] === o).map((x) => x.j.nom) }));
+  const departs = repartir("depart", ["Vendredi matin", "Vendredi après-midi", "Vendredi soir"]);
+  const retours = repartir("retour", ["Dimanche soir", "Lundi matin", "Lundi soir"]);
+  const avecVoiture = ouiP.filter((x) => x.r.vehicule === "Oui").map((x) => x.j.nom);
+  const avecRestr = ouiP.filter((x) => x.r.restrictions.length || x.r.depart || x.r.retour).map((x) => x.j.nom);
+  const deuxJours = Boolean(sel?.fin && sel.fin !== sel.date);
 
   return (
     <>
@@ -64,7 +93,48 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
       </section>
       {erreur ? <div className="notice err">{erreur}</div> : null}
 
+      <section className="tb-kpis" aria-label="Chiffres clés">
+        {kpis.map((x) => (
+          <div key={x.l} className={`tb-kpi ${x.k}`}>
+            <span className="tb-kh"><span className="tb-ki" aria-hidden="true">{x.ic}</span><span className="tb-kl">{x.l}</span></span>
+            <span className="tb-kv num">{x.v}</span>
+            <span className="tb-kt"><i style={{ width: `${Math.min(100, x.w)}%` }} /></span>
+            <span className="tb-ks">{x.s}</span>
+          </div>
+        ))}
+      </section>
+
       <Blocs initial={e ? "detail" : undefined} blocs={[
+        { id: "prio", titre: "Priorités · 4 mois", ic: "🔥", badge: prio.length || null, contenu: prio.length ? (
+          <section className="panel tb-prio">
+            <div className="hd"><h2>Inscriptions prioritaires · 4 mois</h2>
+              <span className="tb-leg"><span><i className="cd proche" />&lt; 1 mois</span><span><i className="cd moyen" />&lt; 2 mois</span><span><i className="cd loin" />plus tard</span></span>
+            </div>
+            <div className="tb-pg">
+              {prio.map((x) => {
+                const k = compte(x);
+                const but = objectifDe(x);
+                const f = fiches?.get(x.id);
+                return (
+                  <Link key={x.id} href={`/staff/inscriptions?e=${x.id}#bloc-detail`} scroll={false} className={`tb-pc${x.id === sel?.id ? " on" : ""}`}>
+                    <span className="tb-t1"><span className="v-date">{dateMoyenne(x.date)}</span><span className={`tb-cd ${proximite(x.date!)}`}>{compteARebours(x.date, today)}</span></span>
+                    <b className="tb-nm">{x.nom}</b>
+                    <span className="tb-ds">{x.lieu ? <span className="v-lieu">📍 {x.lieu}</span> : null}{x.competition ? <span>🏆 {x.competition}</span> : null}</span>
+                    <span className="tb-ct">
+                      <span className="tb-anneau" style={{ color: couleurObjectif(pct(k.o.length, but || N)) }}><Anneau v={pct(k.o.length, but || N)} taille={34} epaisseur={5} couleur="currentColor" /></span>
+                      <span><b className="num">{k.o.length}{but ? ` / ${but}` : ""}</b> inscrits · <b className="num">{k.att.length}</b> en attente</span>
+                    </span>
+                    <span className="tb-pied">
+                      {x.limite ? <span className="tb-lm">⏱️ avant le {dateCourte(x.limite)}</span> : null}
+                      {x.priorite[0] ? <span className="tb-pr">{x.priorite[0]}</span> : null}
+                      <span className={`tb-fi${f?.statut === "Prête" ? " ok" : ""}`}>🧳 {f ? (f.statut === "Prête" ? "Fiche prête" : "Fiche en cours") : "Pas de fiche"}</span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        ) : <p className="vide">Aucune compétition dans les 4 prochains mois.</p> },
         { id: "liste", titre: "Compétitions", ic: "🏁", badge: suivis.length || null, contenu: (
         <section className="panel list">
           <div className="hd"><h2>Compétitions</h2><span className="muted small">{N} joueurs actifs</span></div>
@@ -127,6 +197,19 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
               </div>
             </div>
             <div className="bd">
+              <div className="tb-facts">
+                {[
+                  { ic: "🚗", l: "Véhicules", gens: avecVoiture, vide: "Aucun véhicule proposé" },
+                  { ic: "⚠️", l: "Restrictions", gens: avecRestr, vide: "Aucune restriction" },
+                  { ic: "📆", l: deuxJours ? "Les deux jours" : "Sur 1 jour", gens: deuxJours ? ouiP.filter((x) => x.r.jours === "Les deux jours").map((x) => x.j.nom) : ouiP.map((x) => x.j.nom), vide: "Personne" },
+                ].map((f) => (
+                  <div key={f.l} className="tb-fact">
+                    <span className="tb-fh">{f.ic} {f.l}</span>
+                    <b className="tb-fv num">{f.gens.length}</b>
+                    <span className="tb-fn">{f.gens.length ? f.gens.map((n) => n.split(" ")[0]).join(" · ") : f.vide}</span>
+                  </div>
+                ))}
+              </div>
               <Jalons e={sel} compact />
               <div className="ev-actions">
                 <Link className="btn" href={lienReponse(sel)}>📝 Voir le formulaire</Link>
@@ -155,7 +238,22 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
           <section className="panel"><div className="bd">
               {rows.length ? (
                 <>
-                  
+                  {ouiP.some((x) => x.r.depart || x.r.retour) ? (
+                    <div className="tb-dist">
+                      {[{ t: "🛫 Départs", l: departs }, { t: "🛬 Retours", l: retours }].map((d) => (
+                        <div key={d.t} className="tb-db">
+                          <span className="tb-dt">{d.t}</span>
+                          {d.l.map((o) => (
+                            <div key={o.o} className="tb-dr" title={o.gens.join(", ")}>
+                              <span>{o.o}</span>
+                              <span className="tb-dbar"><i style={{ width: `${pct(o.gens.length, Math.max(1, ouiP.length))}%` }} /></span>
+                              <b className="num">{o.gens.length}</b>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                   <div className="scroll-x">
                     <table className="t">
                       <thead><tr><th>Joueur</th><th>Réponse</th><th>Jours</th><th>Véhicule</th><th>Départ</th><th>Retour</th><th>Restrictions</th></tr></thead>
@@ -202,6 +300,8 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
               <thead>
                 <tr>
                   <th>Joueur</th>
+                  <th>Inscrit</th>
+                  <th>A répondu</th>
                   {cols.map((x) => (
                     <th key={x.id} title={`${x.nom} — ${dateMoyenne(x.date)}`}>
                       <Link href={`/staff/inscriptions?e=${x.id}`}>{x.nom.slice(0, 14)}</Link>
@@ -211,16 +311,23 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                 </tr>
               </thead>
               <tbody>
-                {actifs.map((j) => (
+                {actifs.map((j) => {
+                  const st = cols.map((x) => idx.get(x.id)?.get(j.notionId)?.statut);
+                  const oui = st.filter((v) => v === "Oui").length;
+                  const rep = pct(st.filter((v) => v && v !== "En attente").length, cols.length);
+                  return (
                   <tr key={j.notionId}>
                     <td><b>{j.nom}</b></td>
+                    <td className="num mx-oui"><b>{oui}</b></td>
+                    <td><span className="mx-rep"><span className="tb-dbar"><i style={{ width: `${rep}%` }} /></span><small className="num">{rep} %</small></span></td>
                     {cols.map((x) => {
                       const s = idx.get(x.id)?.get(j.notionId)?.statut;
                       const k = s === "Oui" ? "o" : s === "Peut-être" ? "m" : s === "Non" ? "n" : "p";
                       return <td key={x.id}><span className={`cell ${k}`} title={`${j.nom} · ${x.nom} : ${s || "en attente"}`}>{s === "Oui" ? "Oui" : s === "Peut-être" ? "?" : s === "Non" ? "Non" : "·"}</span></td>;
                     })}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

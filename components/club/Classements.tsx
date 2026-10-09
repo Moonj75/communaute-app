@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { LISTES, libelleMois, listeDef, nomComplet, pts, tendance, type LigneClassement, type ListeDef } from "@/lib/classements-types";
+import { LISTES, libelleMois, listeDef, nomComplet, pts, resserrer, tendance, type LigneClassement, type ListeDef } from "@/lib/classements-types";
+import { Fragment } from "react";
 
 const ordinal = (n: number) => (n === 1 ? "1er" : `${n}e`);
 
@@ -37,8 +38,13 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
         <tbody>
           {lignes.map((l, k) => {
             const estMoi = Boolean(l.joueur_id && moi.includes(l.joueur_id));
+            const saut = compact && k > 0 && l.rang - lignes[k - 1].rang > 1;
             return (
-              <tr key={k} id={ancre && l === cible ? "ma-ligne" : undefined} className={estMoi ? "moi" : l.eugies ? "eug" : undefined}>
+              <Fragment key={k}>
+              {saut ? (
+                <tr className="cl-saut" aria-hidden="true"><td colSpan={8}>⋯</td></tr>
+              ) : null}
+              <tr id={ancre && l === cible ? "ma-ligne" : undefined} className={estMoi ? "moi" : l.eugies ? "eug" : undefined}>
                 <td className="r num rg">{l.rang}</td>
                 <td><Evo e={l.evolution} /></td>
                 <td className="nm">
@@ -64,6 +70,7 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
                 <td className="r num">{pts(l.points)}</td>
                 {def.id === "FBFTS" && !compact ? <td className="r num small muted hide-s">{l.a_defendre ? pts(l.a_defendre) : ""}</td> : null}
               </tr>
+              </Fragment>
             );
           })}
         </tbody>
@@ -105,10 +112,10 @@ export function PlacesClub({ clubs }: { clubs: LigneClassement[] }) {
         {nat ? <span className="cp-m">FBFTS · {libelleMois(nat.mois, true)}</span> : null}
       </article>
       <article className="cp">
-        <span className="cp-l">🌍 Classement mondial des équipes</span>
+        <span className="cp-l">🌍 Classement international des équipes</span>
         <span className="cp-v num">{equipes[0] ? <>{equipes[0].rang}<sup>{sup(equipes[0].rang)}</sup></> : "—"}</span>
         <span className="cp-qui v-club">{equipes[0] ? `${equipes[0].nom} · ${equipes[0].prenom || "Team A"}` : "SC Lions d'Eugies"}</span>
-        <span className="cp-s">{equipes[0] ? `équipe mondiale · ${pts(equipes[0].points)} pts` : "En attente du classement"}</span>
+        <span className="cp-s">{equipes[0] ? `équipe · international · ${pts(equipes[0].points)} pts` : "En attente du classement"}</span>
         {equipes.length > 1 ? (
           <span className="cp-m">
             {equipes.slice(1).map((e) => `${e.prenom} ${ordinal(e.rang)}`).join(" · ")} · FISTF {libelleMois(equipes[0].mois, true)}
@@ -122,7 +129,7 @@ export function PlacesClub({ clubs }: { clubs: LigneClassement[] }) {
 type Joueur = { id: string; nom: string; lignes: LigneClassement[] };
 
 /** One line per club player with his national and world places. */
-export function NosJoueurs({ lignes, moi = [], lien = true }: { lignes: LigneClassement[]; moi?: string[]; lien?: boolean }) {
+export function NosJoueurs({ lignes, moi = [], lien = true, max = lien ? 12 : 0 }: { lignes: LigneClassement[]; moi?: string[]; lien?: boolean; max?: number }) {
   const parNom = new Map<string, Joueur>();
   for (const l of lignes.filter((x) => x.eugies && x.prenom !== null && x.liste !== "WR-Teams")) {
     const cle = l.joueur_id || `${l.nom}|${l.prenom}`.toLowerCase();
@@ -131,11 +138,19 @@ export function NosJoueurs({ lignes, moi = [], lien = true }: { lignes: LigneCla
     j.lignes.push(l);
     parNom.set(cle, j);
   }
-  const joueurs = [...parNom.values()].sort((a, b) => {
+  const tous = [...parNom.values()].sort((a, b) => {
     const fa = a.lignes.find((l) => l.liste === "FBFTS")?.rang ?? 9999;
     const fb = b.lignes.find((l) => l.liste === "FBFTS")?.rang ?? 9999;
     return fa - fb || Math.min(...a.lignes.map((l) => l.rang)) - Math.min(...b.lignes.map((l) => l.rang));
   });
+  // Summary: the best players of the club (and always me), at most `max` lines.
+  let joueurs = tous;
+  if (max && tous.length > max) {
+    joueurs = tous.slice(0, max);
+    const miens = tous.filter((j) => moi.includes(j.id) && !joueurs.includes(j));
+    if (miens.length) joueurs = [...tous.slice(0, max - miens.length), ...miens];
+  }
+  const caches = tous.length - joueurs.length;
   if (!joueurs.length)
     return <p className="vide">Les classements arrivent : ils sont importés automatiquement au début de chaque mois.</p>;
   return (
@@ -143,8 +158,8 @@ export function NosJoueurs({ lignes, moi = [], lien = true }: { lignes: LigneCla
       <div className="nos-h" aria-hidden="true">
         <span>Joueur</span>
         <span>🇧🇪 National</span>
-        <span>🌍 Mondial Open</span>
-        <span>🌍 Mondial catégorie</span>
+        <span>🌍 International Open</span>
+        <span>🌍 International catégorie</span>
       </div>
       <ol className="nos-l">
         {joueurs.map((j) => {
@@ -161,10 +176,10 @@ export function NosJoueurs({ lignes, moi = [], lien = true }: { lignes: LigneCla
               <span className="nos-c" data-l="🇧🇪 National">
                 <Place l={fb} tag={fb?.categorie} sous={fb?.categorie_suivante && fb.categorie_suivante !== fb.categorie ? `→ ${fb.categorie_suivante}` : null} />
               </span>
-              <span className="nos-c" data-l="🌍 Open">
+              <span className="nos-c" data-l="🌍 International Open">
                 <Place l={open} />
               </span>
-              <span className="nos-c" data-l="🌍 Catégorie">
+              <span className="nos-c" data-l="🌍 International catégorie">
                 <Place l={cats[0]} tag={cats[0] ? listeDef(cats[0].liste).court : null} sous={cats[1] ? `${listeDef(cats[1].liste).court} ${ordinal(cats[1].rang)}` : null} />
               </span>
             </li>
@@ -173,7 +188,7 @@ export function NosJoueurs({ lignes, moi = [], lien = true }: { lignes: LigneCla
       </ol>
       {lien ? (
         <Link className="nos-lien" href="/club/classements">
-          Voir les classements complets →
+          {caches ? `+ ${caches} autre${caches > 1 ? "s" : ""} joueur${caches > 1 ? "s" : ""} · ` : ""}Voir les classements complets →
         </Link>
       ) : null}
     </div>
@@ -185,7 +200,7 @@ export function MesClassements({ extraits, moi }: { extraits: { liste: string; l
   if (!extraits.length)
     return (
       <p className="vide">
-        Pas encore au classement : il suffit de jouer un tournoi officiel ! Les classements belge (FBFTS) et mondial (FISTF) sont mis à jour chaque mois.
+        Pas encore au classement : il suffit de jouer un tournoi officiel ! Les classements national (FBFTS) et international (FISTF) sont mis à jour chaque mois.
       </p>
     );
   return (
@@ -214,7 +229,7 @@ export function MesClassements({ extraits, moi }: { extraits: { liste: string; l
               </span>
             </div>
             <TableClassement lignes={x.lignes} def={def} moi={[moi]} compact />
-            <Link className="small" href={`/club/classements?l=${def.id}#ma-ligne`}>
+            <Link className="small" href={`/club/classements?l=${def.id}#bloc-complet`}>
               Tout le classement →
             </Link>
           </article>
@@ -227,12 +242,15 @@ export function MesClassements({ extraits, moi }: { extraits: { liste: string; l
 export const LISTES_JOUEURS = LISTES.filter((l) => l.type === "joueurs");
 
 /** Full club rankings so the club can see where it stands (our lines highlighted). */
-export function ClassementsClubs({ nat, equipes }: { nat: LigneClassement[]; equipes: LigneClassement[] }) {
+export function ClassementsClubs({ nat: natTout, equipes: eqTout }: { nat: LigneClassement[]; equipes: LigneClassement[] }) {
+  // Only the useful part: the first places, then the zone around our club (12 lines at most).
+  const nat = resserrer(natTout, (l) => l.eugies);
+  const equipes = resserrer(eqTout, (l) => l.eugies);
   if (!nat.length && !equipes.length) return <p className="vide">Les classements des clubs arrivent avec la prochaine mise à jour.</p>;
   const ligne = (l: LigneClassement, k: number, prec?: LigneClassement) => {
     const t = tendance(l.evolution);
     return (
-      <>
+      <Fragment key={k}>
         {prec && l.rang - prec.rang > 1 ? (
           <li key={`s${k}`} className="cc-saut" aria-hidden="true">
             ⋯
@@ -250,7 +268,7 @@ export function ClassementsClubs({ nat, equipes }: { nat: LigneClassement[]; equ
           <span className="cc-p num">{pts(l.points)}</span>
           <span className={`evo ${t?.cls || ""}`}>{t?.txt || ""}</span>
         </li>
-      </>
+      </Fragment>
     );
   };
   return (
@@ -258,18 +276,20 @@ export function ClassementsClubs({ nat, equipes }: { nat: LigneClassement[]; equ
       <section className="cc-b nat">
         <header>
           <span className="cc-k">🇧🇪 Classement national des clubs</span>
-          <span className="cc-m">FBFTS · {nat[0] ? libelleMois(nat[0].mois, true) : ""} · {nat.length} clubs</span>
+          <span className="cc-m">FBFTS · {nat[0] ? libelleMois(nat[0].mois, true) : ""} · {natTout.length} clubs</span>
         </header>
         <div className="cc-cols" aria-hidden="true"><span>Place</span><span>Club</span><span>Points</span><span>±</span></div>
         <ol>{nat.map((l, k) => ligne(l, k, nat[k - 1]))}</ol>
+        <Link className="cc-tout" href="/club/classements?l=FBFTS-Clubs#bloc-complet">Classement complet →</Link>
       </section>
       <section className="cc-b monde">
         <header>
-          <span className="cc-k">🌍 Classement mondial des équipes de club</span>
-          <span className="cc-m">FISTF · {equipes[0] ? libelleMois(equipes[0].mois, true) : ""} · top 10 et autour de nos équipes</span>
+          <span className="cc-k">🌍 Classement international des équipes de club</span>
+          <span className="cc-m">FISTF · {equipes[0] ? libelleMois(equipes[0].mois, true) : ""} · les premiers et autour de nos équipes</span>
         </header>
         <div className="cc-cols" aria-hidden="true"><span>Place</span><span>Équipe</span><span>Points</span><span>±</span></div>
         <ol>{equipes.map((l, k) => ligne(l, k, equipes[k - 1]))}</ol>
+        <Link className="cc-tout" href="/club/classements?l=WR-Teams#bloc-complet">Classement complet →</Link>
       </section>
     </div>
   );
