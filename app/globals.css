@@ -2174,3 +2174,10 @@ main.wrap > .hello { padding-block: 0; }
   .tb-kpi:first-child .tb-ks { display: block; }
   .tb-kl { font-size: 9.5px; letter-spacing: .06em; }
 }
+
+/* Ma fiche : 5 cases (catégorie, cagnotte, national, international Open, international catégorie) */
+.fc-grille.fc-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.t-intcat { --k: #b0306a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .t-intcat { --k: #ff7ab8; } }
+@media (max-width: 899px) { .fc-grille.fc-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fc-grille.fc-5 > :last-child { grid-column: 1 / -1; } }
+.fiche-c { max-width: 920px; }
