@@ -240,7 +240,7 @@ export function MesClassements({ extraits, moi }: { extraits: { liste: string; l
               </span>
             </div>
             <TableClassement lignes={x.lignes} def={def} moi={[moi]} compact />
-            <Link className="small" href={`/club/classements?l=${def.id}#bloc-complet`}>
+            <Link className="small" href={`/club/classements?l=${def.id}#ma-ligne`}>
               Tout le classement →
             </Link>
           </article>
@@ -291,7 +291,7 @@ export function ClassementsClubs({ nat: natTout, equipes: eqTout }: { nat: Ligne
         </header>
         <div className="cc-cols" aria-hidden="true"><span>Place</span><span>Club</span><span>Points</span><span>±</span></div>
         <ol>{nat.map((l, k) => ligne(l, k, nat[k - 1]))}</ol>
-        <Link className="cc-tout" href="/club/classements?l=FBFTS-Clubs#bloc-complet">Classement complet →</Link>
+        <Link className="cc-tout" href="/club/classements?l=FBFTS-Clubs#ma-ligne">Classement complet →</Link>
       </section>
       <section className="cc-b monde">
         <header>
@@ -300,7 +300,7 @@ export function ClassementsClubs({ nat: natTout, equipes: eqTout }: { nat: Ligne
         </header>
         <div className="cc-cols" aria-hidden="true"><span>Place</span><span>Équipe</span><span>Points</span><span>±</span></div>
         <ol>{equipes.map((l, k) => ligne(l, k, equipes[k - 1]))}</ol>
-        <Link className="cc-tout" href="/club/classements?l=WR-Teams#bloc-complet">Classement complet →</Link>
+        <Link className="cc-tout" href="/club/classements?l=WR-Teams#ma-ligne">Classement complet →</Link>
       </section>
     </div>
   );
