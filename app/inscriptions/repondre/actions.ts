@@ -53,6 +53,7 @@ export async function envoyerReponse(_p: RetourReponse | null, fd: FormData): Pr
       depart: parmi(fd.get("depart"), CHOIX.depart),
       retour: parmi(fd.get("retour"), CHOIX.retour),
       vehicule: parmi(fd.get("vehicule"), CHOIX.oui_non) as "Oui" | "Non" | null,
+      referent: parmi(fd.get("referent"), CHOIX.oui_non) as "Oui" | "Non" | null,
       definitif,
     });
     revalidateTag(TAGS.participations);

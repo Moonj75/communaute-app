@@ -80,7 +80,7 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
             prenom={prenom}
             deuxJours={surDeuxJours(ev)}
             loin={estLoin(ev)}
-            init={{ statut: p?.statut || null, jours: p?.jours || null, restrictions: p?.depart || p?.retour ? "Oui" : null, depart: p?.depart || null, retour: p?.retour || null, vehicule: p?.vehicule || null }}
+            init={{ statut: p?.statut || null, jours: p?.jours || null, restrictions: p?.depart || p?.retour ? "Oui" : null, depart: p?.depart || null, retour: p?.retour || null, vehicule: p?.vehicule || null, referent: p?.referent || null }}
             autres={(famille === maFamille ? actifs : []).filter((j) => j.notionId !== joueur.notionId).map((j) => ({ id: j.notionId, prenom: j.nom.split(" ")[0] }))}
             jusquau={jusquau}
             confirmation={ph === "confirmation"}
@@ -96,6 +96,7 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
                 {p.depart ? <li><span>Départ</span><b>{p.depart}</b></li> : null}
                 {p.retour ? <li><span>Retour</span><b>{p.retour}</b></li> : null}
                 {p.vehicule ? <li><span>Véhicule</span><b>{p.vehicule}</b></li> : null}
+                {p.referent ? <li><span>Référent</span><b>{p.referent}</b></li> : null}
                 {p.valideLe ? <li><span>Validée le</span><b>{dateMoyenne(p.valideLe)}</b></li> : null}
               </ul>
             ) : (

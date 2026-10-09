@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { envoyerReponse, type RetourReponse } from "./actions";
 
-type Init = { statut: string | null; jours: string | null; restrictions: string | null; depart: string | null; retour: string | null; vehicule: string | null };
-type Cle = "statut" | "jours" | "restrictions" | "depart" | "retour" | "vehicule";
+type Init = { statut: string | null; jours: string | null; restrictions: string | null; depart: string | null; retour: string | null; vehicule: string | null; referent?: string | null };
+type Cle = "statut" | "jours" | "restrictions" | "depart" | "retour" | "vehicule" | "referent";
 type Option = { v: string; l: string; ic?: string; d?: string };
 type Etape = { cle: Cle; q: string; aide?: string; options: Option[]; grand?: boolean };
 
@@ -46,13 +46,14 @@ export default function Formulaire(p: {
     depart: p.init.depart,
     retour: p.init.retour,
     vehicule: p.init.vehicule,
+    referent: p.init.referent || null,
   });
   // Question being edited (null = the first unanswered one).
   const [ouverte, setOuverte] = useState<Cle | null>(null);
   const [confirmer, setConfirmer] = useState(false);
   const [quitter, setQuitter] = useState(false);
   const router = useRouter();
-  const touche = JSON.stringify(r) !== JSON.stringify({ statut: p.init.statut && p.init.statut !== "En attente" ? p.init.statut : null, jours: p.init.jours, restrictions: p.init.restrictions, depart: p.init.depart, retour: p.init.retour, vehicule: p.init.vehicule });
+  const touche = JSON.stringify(r) !== JSON.stringify({ statut: p.init.statut && p.init.statut !== "En attente" ? p.init.statut : null, jours: p.init.jours, restrictions: p.init.restrictions, depart: p.init.depart, retour: p.init.retour, vehicule: p.init.vehicule, referent: p.init.referent || null });
   const sortir = () => (touche ? setQuitter(true) : router.push("/inscriptions"));
   const courante = useRef<HTMLFieldSetElement>(null);
 
@@ -110,6 +111,16 @@ export default function Formulaire(p: {
         ],
       });
     }
+    // Same question as the Tally form: one player takes charge of the group on the day.
+    l.push({
+      cle: "referent",
+      q: "Peux-tu être référent principal ?",
+      aide: "Le référent coordonne le groupe sur place (rendez-vous, horaires, contact avec le staff).",
+      options: [
+        { v: "Oui", l: "Oui, je veux bien", ic: "🧭" },
+        { v: "Non", l: "Non", ic: "🙂" },
+      ],
+    });
     return l;
   }, [r.statut, r.restrictions, p.deuxJours, p.loin, p.evNom]);
 
