@@ -2375,3 +2375,49 @@ a.hud-visiteur .hud-role { color: var(--gold); }
 /* Sous-titres fixes : une seule ligne, plus petits sur téléphone */
 .scene .sec-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 699px) { .scene .sec-title { font-size: 14px !important; letter-spacing: .08em; padding: 7px 2px 6px; } .scene .sec-title::before { width: 18px; } }
+
+/* ===== Tableau de bord : bande compacte de la compétition choisie, fixe en défilant =====
+   4 cases sur une ligne : compétition (+ boutons), inscrits, réponses, véhicules. */
+.tb-kpis.tb-bande {
+  position: sticky; top: var(--haut-fixe); z-index: 7;
+  grid-template-columns: minmax(0, 2.1fr) repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px; margin: 0 0 6px; padding: 6px 0 8px;
+  background: var(--bg); box-shadow: 0 10px 12px -14px rgba(0,0,0,.5);
+}
+.tb-bande .tb-kpi { padding: 7px 10px; gap: 3px; border-radius: 12px; }
+.tb-bande .tb-kl { font-size: 9.5px; letter-spacing: .08em; }
+.tb-bande .tb-ki { width: 18px; height: 18px; font-size: 10.5px; border-radius: 6px; }
+.tb-bande .tb-kv { font-size: 19px; }
+.tb-bande .tb-kt { height: 4px; }
+.tb-bande .tb-ks { font-size: 10.5px; }
+.tb-ksel .tb-kh { justify-content: space-between; gap: 6px; }
+.tb-ksel .tb-cd { font-size: 10px; padding: 1px 7px; white-space: nowrap; }
+.tb-knom { font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 16px; line-height: 1.1; text-transform: uppercase; color: var(--k); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-kbtn { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.tb-kb { font-size: 11px !important; padding: 4px 9px !important; min-height: 0 !important; line-height: 1.2; border-radius: 8px; text-decoration: none; }
+.tb-kb:first-child { background: var(--k) !important; color: #fff !important; border-color: var(--k) !important; }
+.tb-pc.on { box-shadow: 0 0 0 2px var(--gold), 0 10px 20px -14px rgba(0,0,0,.5) !important; }
+@media (max-width: 699px) {
+  .tb-kpis.tb-bande { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 5px; }
+  .tb-bande .tb-ksel { grid-column: 1 / -1; }
+  .tb-bande .tb-kpi:not(.tb-ksel) .tb-ks { display: none; }
+  .tb-bande .tb-kpi { padding: 5px 7px; }
+  .tb-bande .tb-kv { font-size: 16px; }
+  .tb-knom { font-size: 14px; }
+  .tb-bande .tb-ksel .tb-ks { display: block; }
+}
+@media (max-width: 699px) {
+  .tb-ksel { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 3px; }
+  .tb-ksel .tb-kh { grid-column: 2; grid-row: 1; }
+  .tb-ksel .tb-kh .tb-kl { display: none; }
+  .tb-ksel .tb-knom { grid-column: 1; grid-row: 1; font-size: 13px; align-self: center; }
+  .tb-bande .tb-ksel .tb-ks { display: none; }
+  .tb-ksel .tb-kbtn { grid-column: 1 / -1; margin: 0; }
+  .tb-kb { font-size: 10px !important; padding: 3px 8px !important; }
+  .tb-bande .tb-kpi:not(.tb-ksel) { display: grid; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 6px; row-gap: 3px; padding: 4px 7px; }
+  .tb-bande .tb-kpi:not(.tb-ksel) .tb-kh { grid-column: 1 / -1; }
+  .tb-bande .tb-kpi:not(.tb-ksel) .tb-ki { display: none; }
+  .tb-bande .tb-kpi:not(.tb-ksel) .tb-kt { grid-column: 1 / -1; height: 3px; }
+  .tb-bande .tb-kl { font-size: 8.5px; letter-spacing: .05em; }
+  .tb-bande .tb-kv { font-size: 15px; }
+}
