@@ -30,7 +30,7 @@ export function FormFichier({ moisDefaut }: { moisDefaut: string }) {
         Classement
         <select className="input" name="source" value={source} onChange={(e) => setSource(e.currentTarget.value)}>
           <option value="fbfts">🇧🇪 National FBFTS (fichier .xls)</option>
-          <option value="fistf">🌍 Mondial FISTF (fichier « World Ranking » .xlsx)</option>
+          <option value="fistf">🌍 International FISTF (fichier « World Ranking » .xlsx)</option>
         </select>
       </label>
       <label className="f">
