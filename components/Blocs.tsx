@@ -9,6 +9,8 @@ export type BlocDef = {
   /** Small number or word shown next to the title (e.g. « 3 »). */
   badge?: string | number | null;
   contenu: ReactNode;
+  /** Opens another page instead of showing a part here (e.g. « Classements » → the rankings page). */
+  href?: string;
   /** Kept for compatibility (miniatures no longer exist). */
   apercu?: ReactNode;
 };
@@ -18,7 +20,8 @@ export type BlocDef = {
  * Clicking a title shows that part alone, next to the rail; the rail stays in place while scrolling.
  */
 export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDef[]; initial?: string | null; page?: string; /** Buttons at the right of the fixed title line (e.g. refresh from Notion). */ actions?: ReactNode }) {
-  const valides = blocs.filter(Boolean);
+  const tous = blocs.filter(Boolean);
+  const valides = tous.filter((b) => !b.href);
   const premier = valides[0]?.id;
   const [actif, setActif] = useState<string>(initial && valides.some((b) => b.id === initial) ? initial : premier);
   const [tout, setTout] = useState(false);
@@ -169,9 +172,17 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
     <div className={`blocs volet-ok${tout ? " tout" : ""}`}>
       <div ref={place} className="volet-place" aria-hidden="true" />
       <nav ref={volet} className="volet" id="onglets" aria-label="Parties de la page">
-        {valides.map((b) => {
+        {tous.map((b) => {
           const on = !tout && b.id === actif;
           const badge = b.badge !== undefined && b.badge !== null && b.badge !== "" ? b.badge : null;
+          if (b.href)
+            return (
+              <a key={b.id} href={b.href} title={b.titre} className="vl-i vl-lien">
+                <span className="vl-ic" aria-hidden="true">{b.ic}</span>
+                <span className="vl-t">{b.titre}</span>
+                {badge ? <span className="vl-b">{badge}</span> : null}
+              </a>
+            );
           return (
             <button
               key={b.id}
