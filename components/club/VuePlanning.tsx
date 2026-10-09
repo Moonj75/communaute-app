@@ -80,17 +80,16 @@ export default function VuePlanning({ evs, taches, joueurs, m, e, erreur, rafrai
 
   return (
     <>
-      <section className="hello row-hello">
+      <section className="hello">
         <div>
           <span className="kicker">Staff · Organisation</span>
           <h2>Planning</h2>
           <p>Tâches, rappels et feuille de route des compétitions. Tout est enregistré directement dans Notion.</p>
         </div>
-        {rafraichir}
       </section>
       {erreur ? <div className="notice err">{erreur}</div> : null}
 
-      <Blocs initial={e ? "route" : undefined} blocs={[
+      <Blocs actions={rafraichir} initial={e ? "route" : undefined} blocs={[
         { id: "apercu", titre: "Aperçu", ic: "📌", badge: retard.length ? `${retard.length} en retard` : null, contenu: (<>
       {rappels.length ? (
         <section className="remind">

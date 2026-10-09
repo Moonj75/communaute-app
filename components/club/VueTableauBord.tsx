@@ -103,18 +103,17 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
 
   return (
     <>
-      <section className="hello row-hello">
+      <section className="hello">
         <div>
           <span className="kicker">Staff · Inscriptions</span>
           <h2>Tableau de bord</h2>
           <p>Qui vient, qui hésite, qui n&apos;a pas encore répondu — par compétition.</p>
         </div>
-        {rafraichir}
       </section>
       {erreur ? <div className="notice err">{erreur}</div> : null}
 
 
-      <Blocs initial={e ? "detail" : undefined} blocs={[
+      <Blocs actions={rafraichir} initial={e ? "detail" : undefined} blocs={[
         { id: "prio", titre: "Priorités · 4 mois", ic: "🔥", badge: prio.length || null, contenu: prio.length ? (<>
           {chiffres}
           <section className="panel tb-prio">
