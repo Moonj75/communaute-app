@@ -148,7 +148,21 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
     });
   }, []);
 
-  if (valides.length <= 1) return <div className="scene solo">{actions ? <div className="bl-actions solo">{actions}</div> : null}{valides[0]?.contenu}</div>;
+  // A single part: no side rail, but the same fixed title line « Page › Partie » on top.
+  if (valides.length <= 1)
+    return (
+      <div className="blocs seul">
+        <div className="bl-col">
+          <div ref={barre} className="bl-titre" aria-live="polite">
+            {titreHtml ? <span className="bl-page bl-page-html" dangerouslySetInnerHTML={{ __html: titreHtml }} /> : titrePage ? <span className="bl-page">{titrePage}</span> : null}
+            {titrePage && valides[0] ? <span className="bl-sep" aria-hidden="true">›</span> : null}
+            {valides[0] ? <span className="bl-part"><span aria-hidden="true">{valides[0].ic}</span> {valides[0].titre}{valides[0].badge ? <span className="bl-b">{valides[0].badge}</span> : null}</span> : null}
+            {actions ? <span className="bl-actions">{actions}</span> : null}
+          </div>
+          <div className="scene solo" id="scene" ref={scene}>{valides[0]?.contenu}</div>
+        </div>
+      </div>
+    );
   const courantB = valides.find((b) => b.id === actif) || valides[0];
 
   return (
