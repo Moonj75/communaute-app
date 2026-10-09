@@ -79,7 +79,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   const avecRestr = ouiP.filter((x) => x.r.restrictions.length || x.r.depart || x.r.retour).map((x) => x.j.nom);
   const deuxJours = Boolean(sel?.fin && sel.fin !== sel.date);
   const chiffres = (
-    <section className="tb-kpis tb-bande" aria-label="Chiffres clés de la compétition choisie" aria-live="polite">
+    <section className="tb-kpis tb-bande bande-fixe" aria-label="Chiffres clés de la compétition choisie" aria-live="polite">
       <div className="tb-kpi k-nat tb-ksel">
         <span className="tb-kh"><span className="tb-kl">{sel && sel.date! >= today ? (sel.id === avenir[0]?.id ? "Prochaine compétition" : "Compétition choisie") : "Compétition"}</span>
           {sel?.date ? <span className={`tb-cd ${proximite(sel.date)}`}>{compteARebours(sel.date, today)}</span> : null}</span>

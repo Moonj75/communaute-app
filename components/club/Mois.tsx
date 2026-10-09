@@ -127,7 +127,7 @@ export default function Mois({
 
   return (
     <div className="mois">
-      <div className="mois-h">
+      <div className="mois-h bande-mois">
         <Link className="mois-nav" href={lien({ m: prev, e: selId || undefined })} scroll={false} aria-label="Mois précédent">
           ‹
         </Link>
