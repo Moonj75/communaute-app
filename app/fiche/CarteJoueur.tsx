@@ -1,5 +1,7 @@
 import { initiales } from "@/lib/club-types";
 import Photo from "./Photo";
+import type React from "react";
+import { couleurCategorie } from "@/lib/classements-types";
 
 export type Fiche = {
   notion_id: string;
@@ -56,16 +58,11 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
         </div>
       </header>
 
-      <div className="fc-grille fc-5">
-        <div className="fc-t t-cat">
+      <div className="fc-grille fc-4">
+        <div className="fc-t t-cat" style={couleurCategorie(places?.national?.categorie || f.categorie) ? ({ "--k": couleurCategorie(places?.national?.categorie || f.categorie) } as React.CSSProperties) : undefined}>
           <span className="fl-l">Catégorie</span>
           <b className="fc-v">{places?.national?.categorie || f.categorie || "—"}</b>
           <span className="fc-s">{places?.national?.suivante && places.national.suivante !== places.national.categorie ? `→ ${places.national.suivante} · ` : ""}Série {f.serie || "—"}</span>
-        </div>
-        <div className="fc-t t-euro">
-          <span className="fl-l">Cagnotte</span>
-          <b className="fc-v num">{euro.format(cagnotte)}</b>
-          <span className="fc-s">déplacements</span>
         </div>
         <div className="fc-t t-nat">
           <span className="fl-l">🇧🇪 National</span>
@@ -77,7 +74,7 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
           <b className="fc-v num">{place(places ? places.open : f.classement_international)}</b>
           <span className="fc-s">FISTF · toutes cat.</span>
         </div>
-        <div className="fc-t t-intcat">
+        <div className="fc-t t-intcat" style={places?.categorie && couleurCategorie(places.categorie.nom) ? ({ "--k": couleurCategorie(places.categorie.nom) } as React.CSSProperties) : undefined}>
           <span className="fl-l">🌍 International catégorie</span>
           <b className="fc-v num">{place(places?.categorie?.rang)}</b>
           <span className="fc-s">{places?.categorie ? `FISTF · ${places.categorie.nom}` : "pas de classement de catégorie"}</span>
@@ -107,6 +104,15 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
         ) : (
           <p className="fc-s">Pas encore de titre… le premier arrive ! 💪</p>
         )}
+      </section>
+
+      <section className="fc-cagnotte" aria-label="Cagnotte">
+        <span className="fcg-ic" aria-hidden="true">💰</span>
+        <span className="fcg-txt">
+          <span className="fcg-l">Ma cagnotte</span>
+          <span className="fcg-s">pour les déplacements du club</span>
+        </span>
+        <b className="fcg-v num or-brillant">{euro.format(cagnotte)}</b>
       </section>
     </article>
   );
