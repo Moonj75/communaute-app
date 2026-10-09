@@ -80,6 +80,18 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   const avecVoiture = ouiP.filter((x) => x.r.vehicule === "Oui").map((x) => x.j.nom);
   const avecRestr = ouiP.filter((x) => x.r.restrictions.length || x.r.depart || x.r.retour).map((x) => x.j.nom);
   const deuxJours = Boolean(sel?.fin && sel.fin !== sel.date);
+  const chiffres = (
+    <section className="tb-kpis" aria-label="Chiffres clés">
+        {kpis.map((x) => (
+          <div key={x.l} className={`tb-kpi ${x.k}`}>
+            <span className="tb-kh"><span className="tb-ki" aria-hidden="true">{x.ic}</span><span className="tb-kl">{x.l}</span></span>
+            <span className="tb-kv num">{x.v}</span>
+            <span className="tb-kt"><i style={{ width: `${Math.min(100, x.w)}%` }} /></span>
+            <span className="tb-ks">{x.s}</span>
+          </div>
+        ))}
+      </section>
+  );
 
   return (
     <>
@@ -93,19 +105,10 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
       </section>
       {erreur ? <div className="notice err">{erreur}</div> : null}
 
-      <section className="tb-kpis" aria-label="Chiffres clés">
-        {kpis.map((x) => (
-          <div key={x.l} className={`tb-kpi ${x.k}`}>
-            <span className="tb-kh"><span className="tb-ki" aria-hidden="true">{x.ic}</span><span className="tb-kl">{x.l}</span></span>
-            <span className="tb-kv num">{x.v}</span>
-            <span className="tb-kt"><i style={{ width: `${Math.min(100, x.w)}%` }} /></span>
-            <span className="tb-ks">{x.s}</span>
-          </div>
-        ))}
-      </section>
 
       <Blocs initial={e ? "detail" : undefined} blocs={[
-        { id: "prio", titre: "Priorités · 4 mois", ic: "🔥", badge: prio.length || null, contenu: prio.length ? (
+        { id: "prio", titre: "Priorités · 4 mois", ic: "🔥", badge: prio.length || null, contenu: prio.length ? (<>
+          {chiffres}
           <section className="panel tb-prio">
             <div className="hd"><h2>Inscriptions prioritaires · 4 mois</h2>
               <span className="tb-leg"><span><i className="cd proche" />&lt; 1 mois</span><span><i className="cd moyen" />&lt; 2 mois</span><span><i className="cd loin" />plus tard</span></span>
@@ -134,7 +137,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
               })}
             </div>
           </section>
-        ) : <p className="vide">Aucune compétition dans les 4 prochains mois.</p> },
+        </>) : <>{chiffres}<p className="vide">Aucune compétition dans les 4 prochains mois.</p></> },
         { id: "liste", titre: "Compétitions", ic: "🏁", badge: suivis.length || null, contenu: (
         <section className="panel list">
           <div className="hd"><h2>Compétitions</h2><span className="muted small">{N} joueurs actifs</span></div>
