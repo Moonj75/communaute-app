@@ -2324,3 +2324,54 @@ html, body { overflow-x: clip; max-width: 100%; }
 /* Cagnotte de la fiche : un peu moins large, centrée */
 .fc-cagnotte { max-width: 480px; width: 100%; margin-inline: auto; padding: 12px 16px; }
 .fcg-v { font-size: 30px; }
+
+/* ===== Sous-titres et titres de colonnes fixes, sous la ligne « Page › Partie » =====
+   En défilant, le sous-titre de la partie en cours et les titres de colonnes restent visibles. */
+:root { --haut-fixe: calc(var(--entete-h, 100px) + var(--bande-h, 48px)); }
+.scene .sec-title {
+  position: sticky; top: var(--haut-fixe); z-index: 6;
+  margin: 6px 0 0; padding: 9px 2px 8px;
+  background: var(--bg); box-shadow: 0 8px 10px -12px rgba(0,0,0,.45);
+}
+.scene .panel > .hd {
+  position: sticky; top: var(--haut-fixe); z-index: 6;
+  background: var(--surface); box-shadow: 0 8px 10px -12px rgba(0,0,0,.45);
+}
+.scene .panel::before { z-index: 7; }
+/* Titres de colonnes : juste sous le sous-titre fixe (hauteur calculée : --sous-h) */
+.scene table thead th,
+.scene .cl-t thead th,
+.scene .nos-h,
+.scene .cc-cols { position: sticky; top: calc(var(--haut-fixe) + var(--sous-h, 0px)); z-index: 5; }
+.scene .cc-cols { background: var(--th-bg); }
+/* Un tableau qui défile de lui-même garde ses titres en haut de sa propre zone */
+.scene .scroller thead th, .scene .mx-box thead th { top: 0 !important; }
+.scene .scroller .nos-h, .scene .scroller .cc-cols { top: 0; }
+/* Tableau assez étroit pour l'écran : plus besoin de défilement horizontal, ses titres suivent la page */
+.scene .scroll-x.x-ok:not(.mx-box) { overflow-x: visible; }
+.scene .scroll-x:not(.x-ok) thead th { position: static; }
+.scroll-x.x-ok .cl-t thead th { position: sticky; }
+/* Bandeau du haut en mode visiteur : même cadre que le nom du joueur, cliquable pour se connecter */
+a.hud-visiteur { text-decoration: none; color: inherit; cursor: pointer; transition: filter .15s, transform .15s; }
+a.hud-visiteur:hover { filter: brightness(1.12); transform: translateY(-1px); }
+a.hud-visiteur .hud-role { color: var(--gold); }
+/* Mode visiteur : même allure que l'espace membres */
+.dock-public a.dock-rond { text-decoration: none; }
+.dock-public .dock-rond .dock-t { letter-spacing: 0; text-overflow: clip; }
+@media (max-width: 699px) { .dock-public .dock-rond .dock-t { font-size: 9.5px; } }
+/* Bannière d'accueil visiteur plus compacte (le logo est déjà dans le bandeau) */
+.pub-hero { padding: 16px 22px; gap: 18px; }
+.pub-hero img { width: 72px; height: 72px; }
+.pub-hero h2 { font-size: clamp(26px, 3.6vw, 40px); }
+.pub-hero p { margin-bottom: 10px; }
+@media (max-width: 760px) {
+  .pub-hero { flex-direction: row; text-align: left; padding: 14px 16px; }
+  .pub-hero img { display: none; }
+  .pub-hero .kicker { font-size: 11px; letter-spacing: .1em; }
+  .pub-hero h2 { font-size: 26px; }
+  .pub-hero p { font-size: 14px; }
+  .pub-hero .btn { font-size: 13px; padding: 9px 14px; }
+}
+/* Sous-titres fixes : une seule ligne, plus petits sur téléphone */
+.scene .sec-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 699px) { .scene .sec-title { font-size: 14px !important; letter-spacing: .08em; padding: 7px 2px 6px; } .scene .sec-title::before { width: 18px; } }
