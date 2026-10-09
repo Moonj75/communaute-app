@@ -2181,3 +2181,17 @@ main.wrap > .hello { padding-block: 0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .t-intcat { --k: #ff7ab8; } }
 @media (max-width: 899px) { .fc-grille.fc-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fc-grille.fc-5 > :last-child { grid-column: 1 / -1; } }
 .fiche-c { max-width: 920px; }
+
+/* ===== Bandeau : nom du club et nom du joueur brillants (même reflet que la cagnotte) ===== */
+.brand h1, .brand h1 b, .hud-prenom, .hud-famille {
+  background-size: 250% 100% !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  color: transparent !important; -webkit-text-fill-color: transparent;
+  animation: or-brille 3.6s linear infinite;
+  padding-right: .06em;
+}
+.brand h1 { background-image: linear-gradient(100deg, #ffffff 0%, #ffffff 34%, #fffbe6 44%, #c9ced6 50%, #ffffff 58%, #ffffff 100%); }
+.brand h1 b { display: inline-block; background-image: linear-gradient(100deg, #f5c400 0%, #ffd84a 30%, #fff6b0 44%, #e2a800 52%, #f5c400 70%, #ffd84a 100%); animation-delay: -.6s; }
+.hud-prenom { background-image: linear-gradient(100deg, #f5c400 0%, #ffd84a 30%, #fffbd0 44%, #d99a00 52%, #f5c400 70%, #ffd84a 100%) !important; animation-delay: -1.2s; }
+.hud-famille { background-image: linear-gradient(100deg, #a8f7ff 0%, #d9fdff 30%, #ffffff 44%, #38d6e6 52%, #a8f7ff 70%, #d9fdff 100%) !important; animation-delay: -1.8s; }
+@media (prefers-reduced-motion: reduce) { .brand h1, .brand h1 b, .hud-prenom, .hud-famille { animation: none; background-position: 40% 0; } }
