@@ -2,7 +2,7 @@ import Link from "next/link";
 import Blocs from "@/components/Blocs";
 import type { ClassementClub, Evenement, Resultat, Seance } from "@/lib/club-types";
 import { BlocEntrainements, BlocResultats } from "./VueClub";
-import { ClassementsClubs, NosJoueurs } from "./Classements";
+import { ClassementsClubs } from "./Classements";
 import { libelleMois, pts, type LigneClassement } from "@/lib/classements-types";
 
 const euro = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -118,7 +118,7 @@ export default function VueAccueil(p: {
         blocs={[
           { id: "vue", titre: "Vue générale", ic: "🏁", contenu: score },
           { id: "club", titre: "Le club", ic: "🏆", badge: natAuto ? `${natAuto}e` : now?.national ? `${now.national}e` : null, contenu: <><ClassementsClubs nat={p.clubsComplet?.nat || []} equipes={p.clubsComplet?.equipes || []} /><p className="sec-title">Derniers résultats</p><BlocResultats resultats={p.resultats} evs={p.evs} noms={p.noms} /></> },
-          { id: "classements", titre: "Classements", ic: "📊", badge: nbJoueurs || null, contenu: <NosJoueurs lignes={eug} moi={p.moi} /> },
+          { id: "classements", titre: "Classements", ic: "📊", badge: nbJoueurs || null, href: "/club/classements", contenu: null },
           { id: "entrainements", titre: "Entraînements", ic: "🎯", badge: p.seances.filter((s) => !s.annule).length || null, contenu: <BlocEntrainements seances={p.seances} noms={p.noms} /> },
         ]}
       />

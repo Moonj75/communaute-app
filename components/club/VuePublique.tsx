@@ -3,8 +3,7 @@ import Blocs from "@/components/Blocs";
 import type { ClassementClub, Evenement, InfoPublique, Seance } from "@/lib/club-types";
 import { aujourdhui, compteARebours, estCompetition, estRetenu, moisCourt } from "@/lib/club-types";
 import Mois from "./Mois";
-import { BlocClassements, BlocEntrainements } from "./VueClub";
-import { ClassementsClubs, NosJoueurs, PlacesClub } from "./Classements";
+import { BlocEntrainements } from "./VueClub";
 import type { LigneClassement } from "@/lib/classements-types";
 
 function lien(q: { m?: string; e?: string }) {
@@ -80,19 +79,7 @@ export default function VuePublique({ infos, evs, seances, classements, m, conne
             ),
           },
           { id: "entrainements", titre: "Entraînements", ic: "🎯", contenu: <BlocEntrainements seances={seances} noms={new Map()} /> },
-          {
-            id: "classements",
-            titre: "Classements",
-            ic: "🏆",
-            contenu: (
-              <>
-                {eug.some((e) => e.prenom === null || e.liste === "WR-Teams") ? <PlacesClub clubs={eug.filter((e) => e.prenom === null || e.liste === "WR-Teams")} /> : <BlocClassements classements={classements} />}
-                {clubsComplet ? <ClassementsClubs nat={clubsComplet.nat} equipes={clubsComplet.equipes} /> : null}
-                <p className="sec-title">Nos joueurs classés</p>
-                <NosJoueurs lignes={eug} />
-              </>
-            ),
-          },
+          { id: "classements", titre: "Classements", ic: "🏆", href: "/club/classements", contenu: null },
         ]}
       />
     </>

@@ -4,7 +4,7 @@ import { aujourdhui, compteARebours, estCompetition, estRetenu, moisCourt } from
 import type { LigneClassement } from "@/lib/classements-types";
 import Mois from "./Mois";
 import { BlocClassements, BlocEntrainements, BlocResultats } from "./VueClub";
-import { ClassementsClubs, NosJoueurs, PlacesClub } from "./Classements";
+import { PlacesClub } from "./Classements";
 
 /**
  * « Discovery » space for members who are not active this season: general information only
@@ -103,7 +103,7 @@ export default function VueDecouverte(p: {
             ),
           },
           { id: "entrainements", titre: "Entraînements", ic: "🎯", badge: p.seances.filter((s) => !s.annule).length || null, contenu: <BlocEntrainements seances={p.seances} noms={p.noms} /> },
-          { id: "classements", titre: "Classements", ic: "📊", contenu: <><NosJoueurs lignes={p.eug} moi={p.moi} /><p className="sec-title">Classements des clubs</p><ClassementsClubs nat={p.clubsComplet.nat} equipes={p.clubsComplet.equipes} /></> },
+          { id: "classements", titre: "Classements", ic: "📊", href: "/club/classements", contenu: null },
         ]}
       />
     </>
