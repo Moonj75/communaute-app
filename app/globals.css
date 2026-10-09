@@ -2498,3 +2498,11 @@ a.hud-visiteur .hud-role { color: var(--gold); }
   .cl-t .evo { font-size: 11px; }
   .cl-t .cat-c { font-size: 11px; padding: 2px 6px; }
 }
+
+/* ===== Page à une seule partie (ex. Classements) : même ligne de titre fixe, sans volet ===== */
+.blocs.seul { display: block !important; }
+main.wrap:has(.blocs.seul) > .hello:not(.row-hello) { display: none; }
+main.wrap:has(.blocs.seul) { padding-top: 10px !important; gap: 0 !important; }
+a.rf-btn { text-decoration: none; }
+.rf-e { font-size: 14px; font-style: normal; }
+@media (max-width: 699px) { .cl-bande .cl-filtres { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .cl-bande .cl-filtres .chip { white-space: nowrap; } }
