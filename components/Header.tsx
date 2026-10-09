@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Profil } from "@/lib/profil";
 import BarreBas from "./BarreBas";
+import BarrePublique from "./BarrePublique";
 import MesureEntete from "./MesureEntete";
 import { quitterApercu } from "@/app/admin/apercu";
 
@@ -10,12 +11,15 @@ export default function Header({
   name,
   valeurs = false,
   apercu = null,
+  connecte = false,
 }: {
   subtitle: string;
   profil?: Profil | null;
   name?: string;
   valeurs?: boolean;
   apercu?: { email: string; nom: string } | null;
+  /** Visitor pages: a session exists (the gold button leads to « Mon espace »). */
+  connecte?: boolean;
 }) {
   return (
     <>
@@ -56,13 +60,26 @@ export default function Header({
                 </span>
               ) : null}
             </div>
-          ) : null}
+          ) : (
+            <Link href={connecte ? "/" : "/login"} className="hud hud-visiteur" aria-label={connecte ? "Mon espace" : "Se connecter"}>
+              <span className="hud-coin hg" aria-hidden="true" />
+              <span className="hud-coin hd" aria-hidden="true" />
+              <span className="hud-nom">
+                <span className="hud-prenom">{connecte ? "Mon" : "Espace"}</span>
+                <span className="hud-famille">{connecte ? "espace" : "visiteur"}</span>
+              </span>
+              <span className="hud-role">
+                <i aria-hidden="true" />
+                {connecte ? "Ouvrir →" : "Se connecter →"}
+              </span>
+            </Link>
+          )}
         </div>
       </header>
       </div>
-      {name ? <BarreBas isAdmin={profil?.role === "admin"} nom={name} inactif={profil?.role !== "admin" && profil?.actif === false} /> : null}
+      {name ? <BarreBas isAdmin={profil?.role === "admin"} nom={name} inactif={profil?.role !== "admin" && profil?.actif === false} /> : <BarrePublique connecte={connecte} />}
       <MesureEntete />
-      {!name ? (
+      {!name && valeurs ? (
       <div className="values" aria-label="Nos valeurs">
         <div className="wrap">
           <span>Équipe</span>

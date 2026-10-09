@@ -61,13 +61,21 @@ export default function Blocs({ blocs, initial, page }: { blocs: BlocDef[]; init
 
   // The side rail is fixed on screen: it never moves. Its left edge follows its place in the layout.
   useEffect(() => {
+    // Its top sits right under the title line (lower at first when a message is shown above the page).
+    let raf = 0;
     const caler = () => {
-      if (place.current && volet.current) volet.current.style.left = `${Math.round(place.current.getBoundingClientRect().left)}px`;
+      raf = 0;
+      if (!place.current || !volet.current) return;
+      volet.current.style.left = `${Math.round(place.current.getBoundingClientRect().left)}px`;
+      const b = barre.current?.getBoundingClientRect();
+      if (b) volet.current.style.top = `${Math.round(b.bottom + 8)}px`;
     };
+    const demander = () => { if (!raf) raf = requestAnimationFrame(caler); };
     caler();
-    window.addEventListener("resize", caler);
+    window.addEventListener("resize", demander);
+    window.addEventListener("scroll", demander, { passive: true });
     const t = setTimeout(caler, 300);
-    return () => { window.removeEventListener("resize", caler); clearTimeout(t); };
+    return () => { window.removeEventListener("resize", demander); window.removeEventListener("scroll", demander); clearTimeout(t); };
   }, []);
 
   // Height of the fixed title bar, so fixed table headers sit right under it.
@@ -80,6 +88,44 @@ export default function Blocs({ blocs, initial, page }: { blocs: BlocDef[]; init
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Inside the open part, sub-titles and column headers stay fixed under the title line too.
+  // Each table header is placed right under the sub-title that is fixed above it.
+  useEffect(() => {
+    const sc = scene.current;
+    if (!sc) return;
+    const auDessus = (el: Element): number => {
+      let x: Element | null = el;
+      while (x && x !== sc) {
+        const p: Element | null = x.parentElement;
+        if (p?.classList.contains("panel")) {
+          const hd = p.querySelector(":scope > .hd");
+          if (hd && hd !== x) return (hd as HTMLElement).offsetHeight;
+        }
+        let s = x.previousElementSibling;
+        while (s) {
+          if (s.matches(".sec-title")) return (s as HTMLElement).offsetHeight;
+          s = s.previousElementSibling;
+        }
+        x = p;
+      }
+      return 0;
+    };
+    let raf = 0;
+    const caler = () => {
+      raf = 0;
+      sc.querySelectorAll<HTMLElement>(".scroll-x").forEach((b) => b.classList.toggle("x-ok", b.scrollWidth <= b.clientWidth + 1));
+      sc.querySelectorAll<HTMLElement>("table, .nos-h, .cc-cols").forEach((t) => {
+        t.style.setProperty("--sous-h", `${auDessus(t)}px`);
+      });
+    };
+    const demander = () => { if (!raf) raf = requestAnimationFrame(caler); };
+    caler();
+    const ro = new ResizeObserver(demander);
+    ro.observe(sc);
+    window.addEventListener("resize", demander);
+    return () => { ro.disconnect(); window.removeEventListener("resize", demander); if (raf) cancelAnimationFrame(raf); };
+  }, [actif, tout]);
 
   const ouvrir = useCallback((id: string) => {
     setActif(id);
