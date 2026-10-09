@@ -116,6 +116,10 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
     let raf = 0;
     const caler = () => {
       raf = 0;
+      // A tab band of the open part (e.g. National · Clubs belges · International Open…) stays fixed
+      // under the title line; everything else that is fixed goes right under it.
+      const bf = [...sc.querySelectorAll<HTMLElement>(".bande-fixe")].find((b) => b.offsetParent !== null);
+      sc.style.setProperty("--sous-bande", `${bf ? bf.offsetHeight : 0}px`);
       sc.querySelectorAll<HTMLElement>(".scroll-x").forEach((b) => b.classList.toggle("x-ok", b.scrollWidth <= b.clientWidth + 1));
       sc.querySelectorAll<HTMLElement>("table, .nos-h, .cc-cols").forEach((t) => {
         t.style.setProperty("--sous-h", `${auDessus(t)}px`);
