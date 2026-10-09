@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Blocs from "@/components/Blocs";
-import Installer from "@/components/Installer";
 import type { ClassementClub, Evenement, Resultat, Seance } from "@/lib/club-types";
 import { BlocEntrainements, BlocResultats } from "./VueClub";
 import { ClassementsClubs, NosJoueurs } from "./Classements";
@@ -112,7 +111,6 @@ export default function VueAccueil(p: {
         </h2>
         <p>{p.isAdmin ? "Tout le club est entre tes mains. Prépare la suite." : "Prêt pour la prochaine ? Voici ton tableau de bord."}</p>
       </section>
-      <Installer />
       {!p.lie ? <div className="notice">Ton compte est connecté mais pas encore relié à une fiche du club. Un administrateur doit vérifier ton adresse ({p.email}).</div> : null}
 
       <Blocs
