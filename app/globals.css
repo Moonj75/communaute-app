@@ -2268,7 +2268,7 @@ table.t thead th:last-child { border-top-right-radius: 10px; }
 .bl-sep { color: var(--t-discret, #8a8f98); font-weight: 800; }
 .bl-part { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 20px; text-transform: uppercase; color: var(--t-titre); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bl-b { font-family: var(--font-body, inherit); font-style: normal; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 6px; background: var(--gold); color: var(--night); }
-.volet { top: calc(var(--entete-h, 100px) + 4px) !important; max-height: calc(100dvh - var(--entete-h, 100px) - var(--dock-h, 66px) - 40px) !important; }
+.volet { top: calc(var(--entete-h, 100px) + 4px); max-height: calc(100dvh - var(--entete-h, 100px) - var(--dock-h, 66px) - 40px) !important; }
 @media (max-width: 699px) { .bl-part { font-size: 16px; } .bl-page { font-size: 10px; letter-spacing: .1em; } }
 
 /* ===== Titre de page + volet : en place dès le départ, ne bougent jamais =====
@@ -2277,7 +2277,7 @@ main.wrap:has(.volet-ok) { padding-top: 10px !important; }
 main.wrap:has(.volet-ok) > .hello:not(.row-hello) { display: none; }
 main.wrap:has(.volet-ok) > .row-hello > div:first-child { display: none; }
 main.wrap:has(.volet-ok) > .row-hello { justify-content: flex-end; padding: 0; }
-.volet { top: calc(var(--entete-h, 100px) + 10px) !important; }
+.volet { top: calc(var(--entete-h, 100px) + 10px); }
 .bl-titre { top: var(--entete-h, 100px) !important; margin-top: -10px !important; padding: 10px 2px 10px !important; }
 .bl-page { font-size: 13px; letter-spacing: .1em; }
 .bl-part { font-size: 22px; }
@@ -2305,13 +2305,12 @@ main.wrap:has(.volet-ok) > .foot { padding-left: calc(var(--rail-w) + 12px); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cadre: #201b19; --cadre-trait: #a8861c; } }
 .bl-titre {
   background: var(--cadre) !important;
-  box-shadow: 0 0 0 100vmax var(--cadre), 0 10px 14px -12px rgba(0,0,0,.35) !important;
-  clip-path: inset(0 -100vmax -16px -100vmax);
-  border-bottom: 2px solid var(--cadre-trait);
+  /* bande pleine largeur dessinée par des ombres : elles n'élargissent jamais la page */
+  box-shadow: 0 0 0 100vmax var(--cadre), 0 2px 0 100vmax var(--cadre-trait) !important;
+  clip-path: inset(0 -100vmax -2px -100vmax);
 }
-.bl-titre::after { content: ""; position: absolute; left: -100vmax; right: -100vmax; bottom: -2px; height: 2px; background: var(--cadre-trait); }
 .volet {
-  top: calc(var(--entete-h, 100px) + var(--bande-h, 48px)) !important;
+  top: calc(var(--entete-h, 100px) + var(--bande-h, 48px));
   bottom: calc(var(--dock-h, 66px) + env(safe-area-inset-bottom) + 28px);
   max-height: none !important;
   width: calc(var(--rail-w) + 8px) !important; margin-left: -4px;
@@ -2319,3 +2318,9 @@ main.wrap:has(.volet-ok) > .foot { padding-left: calc(var(--rail-w) + 12px); }
   background: var(--cadre); border-right: 2px solid var(--cadre-trait); border-radius: 0 0 12px 0;
   box-shadow: 6px 0 12px -10px rgba(0,0,0,.35);
 }
+
+/* Sécurité téléphone : rien ne peut élargir la page au-delà de l'écran */
+html, body { overflow-x: clip; max-width: 100%; }
+/* Cagnotte de la fiche : un peu moins large, centrée */
+.fc-cagnotte { max-width: 480px; width: 100%; margin-inline: auto; padding: 12px 16px; }
+.fcg-v { font-size: 30px; }
