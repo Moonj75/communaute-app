@@ -23,7 +23,16 @@ export type Fiche = {
 const euro = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" });
 export const COLS = "notion_id,email,nom,prenom,actif,titulaire,roles,cagnotte,telephone,categorie,serie,synced_at";
 
-export function CarteJoueur({ f, famille, photoUrl }: { f: Fiche; famille: boolean; photoUrl: string | null }) {
+export type PlacesVivantes = {
+  national?: { rang: number; categorie: string | null; suivante: string | null } | null;
+  open?: number | null;
+  categorie?: { rang: number; nom: string } | null;
+};
+
+const place = (n: number | null | undefined) => (n ? <>{n}<sup>{n === 1 ? "er" : "e"}</sup></> : "—");
+
+/** `places` = the player's places read from the latest imported rankings (always up to date). */
+export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famille: boolean; photoUrl: string | null; places?: PlacesVivantes }) {
   const full = [f.prenom, f.nom].filter(Boolean).join(" ");
   const cagnotte = Number(f.cagnotte) || 0;
   const titres = (f.palmares || "").split(/\n+/).map((t) => t.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
@@ -47,11 +56,11 @@ export function CarteJoueur({ f, famille, photoUrl }: { f: Fiche; famille: boole
         </div>
       </header>
 
-      <div className="fc-grille">
+      <div className="fc-grille fc-5">
         <div className="fc-t t-cat">
           <span className="fl-l">Catégorie</span>
-          <b className="fc-v">{f.categorie || "—"}</b>
-          <span className="fc-s">Série {f.serie || "—"}</span>
+          <b className="fc-v">{places?.national?.categorie || f.categorie || "—"}</b>
+          <span className="fc-s">{places?.national?.suivante && places.national.suivante !== places.national.categorie ? `→ ${places.national.suivante} · ` : ""}Série {f.serie || "—"}</span>
         </div>
         <div className="fc-t t-euro">
           <span className="fl-l">Cagnotte</span>
@@ -60,13 +69,18 @@ export function CarteJoueur({ f, famille, photoUrl }: { f: Fiche; famille: boole
         </div>
         <div className="fc-t t-nat">
           <span className="fl-l">🇧🇪 National</span>
-          <b className="fc-v num">{f.classement_belge ? <>{f.classement_belge}<sup>{f.classement_belge === 1 ? "er" : "e"}</sup></> : "—"}</b>
+          <b className="fc-v num">{place(places ? places.national?.rang : f.classement_belge)}</b>
           <span className="fc-s">FBFTS</span>
         </div>
         <div className="fc-t t-int">
-          <span className="fl-l">🌍 International</span>
-          <b className="fc-v num">{f.classement_international ? <>{f.classement_international}<sup>{f.classement_international === 1 ? "er" : "e"}</sup></> : "—"}</b>
-          <span className="fc-s">FISTF · Open</span>
+          <span className="fl-l">🌍 International Open</span>
+          <b className="fc-v num">{place(places ? places.open : f.classement_international)}</b>
+          <span className="fc-s">FISTF · toutes cat.</span>
+        </div>
+        <div className="fc-t t-intcat">
+          <span className="fl-l">🌍 International catégorie</span>
+          <b className="fc-v num">{place(places?.categorie?.rang)}</b>
+          <span className="fc-s">{places?.categorie ? `FISTF · ${places.categorie.nom}` : "pas de classement de catégorie"}</span>
         </div>
       </div>
 

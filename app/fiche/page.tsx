@@ -3,7 +3,8 @@ import Header from "@/components/Header";
 import { displayName, getVue } from "@/lib/profil";
 import Blocs from "@/components/Blocs";
 import Notifs from "@/components/Notifs";
-import { CarteJoueur, COLS, type Fiche } from "./CarteJoueur";
+import { CarteJoueur, COLS, type Fiche, type PlacesVivantes } from "./CarteJoueur";
+import { listeDef } from "@/lib/classements-types";
 import { MesClassements } from "@/components/club/Classements";
 import { lireExtraits } from "@/lib/classements-lire";
 
@@ -32,6 +33,19 @@ export default async function FichePage() {
     (data || []).forEach((d) => d.path && d.signedUrl && urls.set(d.path, d.signedUrl));
   }
   const extraits = await Promise.all(fiches.map((f) => lireExtraits(supabase, f.notion_id, 1)));
+  // Places read from the imported rankings (not from Notion, which can be out of date).
+  const places: PlacesVivantes[] = fiches.map((f, i) => {
+    const miennes = extraits[i].map((x) => x.lignes.find((l) => l.joueur_id === f.notion_id)).filter((l): l is NonNullable<typeof l> => Boolean(l));
+    const fb = miennes.find((l) => l.liste === "FBFTS");
+    const open = miennes.find((l) => l.liste === "WR-Open");
+    const cat = miennes.filter((l) => l.liste.startsWith("WR-") && l.liste !== "WR-Open" && l.liste !== "WR-Teams").sort((a, b) => a.rang - b.rang)[0];
+    return {
+      national: fb ? { rang: fb.rang, categorie: fb.categorie, suivante: fb.categorie_suivante } : null,
+      open: open?.rang ?? null,
+      categorie: cat ? { rang: cat.rang, nom: listeDef(cat.liste).court } : null,
+    };
+  });
+  const aClassements = extraits.some((x) => x.length);
   const total = fiches.reduce((s, f) => s + (Number(f.cagnotte) || 0), 0);
 
   return (
@@ -59,7 +73,7 @@ export default async function FichePage() {
                 titre: [f.prenom, f.nom].filter(Boolean).join(" "),
                 ic: f.titulaire || !famille ? "🦁" : "🐾",
                 badge: f.categorie || null,
-                contenu: <CarteJoueur f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} />,
+                contenu: <CarteJoueur f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} places={aClassements ? places[i] : undefined} />,
               },
               {
                 id: `cl-${f.notion_id.slice(0, 8)}`,
