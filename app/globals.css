@@ -2421,3 +2421,7 @@ a.hud-visiteur .hud-role { color: var(--gold); }
   .tb-bande .tb-kl { font-size: 8.5px; letter-spacing: .05em; }
   .tb-bande .tb-kv { font-size: 15px; }
 }
+/* Bannière « Installe l'appli » : sous le bandeau du haut, sur toutes les pages */
+.install-wrap { padding-top: 12px; }
+.install-wrap + main.wrap { padding-top: 14px !important; }
+@media (max-width: 699px) { .install { gap: 10px; padding: 10px 12px; } .install img { width: 36px; height: 36px; } .install-txt b { font-size: 14px; } .install-txt .small { font-size: 12px; } }
