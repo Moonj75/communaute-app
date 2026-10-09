@@ -2195,3 +2195,35 @@ main.wrap > .hello { padding-block: 0; }
 .hud-prenom { background-image: linear-gradient(100deg, #f5c400 0%, #ffd84a 30%, #fffbd0 44%, #d99a00 52%, #f5c400 70%, #ffd84a 100%) !important; animation-delay: -1.2s; }
 .hud-famille { background-image: linear-gradient(100deg, #a8f7ff 0%, #d9fdff 30%, #ffffff 44%, #38d6e6 52%, #a8f7ff 70%, #d9fdff 100%) !important; animation-delay: -1.8s; }
 @media (prefers-reduced-motion: reduce) { .brand h1, .brand h1 b, .hud-prenom, .hud-famille { animation: none; background-position: 40% 0; } }
+
+/* Ma fiche : 4 classements au même format, palmarès, puis la cagnotte à part */
+.fc-grille.fc-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 899px) { .fc-grille.fc-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fc-cagnotte {
+  margin-top: 8px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 14px 18px; border-radius: 18px;
+  background: radial-gradient(120% 140% at 0% 0%, rgba(255,226,122,.45), transparent 55%), linear-gradient(135deg, #fff9e3, #fff1c2 60%, #ffe6a0);
+  box-shadow: 0 0 0 1px rgba(201,154,30,.45), 0 12px 24px -16px rgba(138,100,0,.55);
+}
+.fcg-ic { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 22px; background: #fff; box-shadow: 0 0 0 2px rgba(201,154,30,.5); }
+.fcg-txt { display: flex; flex-direction: column; min-width: 0; }
+.fcg-l { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #8a6400; }
+.fcg-s { font-size: 12.5px; color: #7a5a1e; }
+.fcg-v { font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 34px; line-height: 1; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fc-cagnotte { background: radial-gradient(120% 140% at 0% 0%, rgba(255,226,122,.18), transparent 55%), linear-gradient(135deg, #2b2410, #3a2f12); } :root:not([data-theme="light"]) .fcg-l, :root:not([data-theme="light"]) .fcg-s { color: #f5d46a; } :root:not([data-theme="light"]) .fcg-ic { background: #2b2410; } }
+
+/* Une couleur par catégorie (A, B, C, D, Open, Vétérans, Femmes, U20, U16, U12) */
+.pl-tag[style*="--cc"] { background: var(--cc) !important; color: #fff !important; }
+.nos-j.moi .pl-tag[style*="--cc"] { background: var(--fluo-ink) !important; color: var(--fluo) !important; box-shadow: inset 0 -3px 0 var(--cc); }
+.cat-c[style*="--cc"] { display: inline-block; padding: 1px 7px; border-radius: 6px; background: var(--cc); color: #fff; }
+
+/* Nos joueurs / notre club surlignés en fluo cyan dans tous les classements (moi = fluo jaune) */
+:root { --fluo-club: #7ff9ff; --fluo-club-ink: #003a44; --fluo-club-bord: #00a9c0; }
+.cl-t tr.eug td { background: var(--fluo-club) !important; color: var(--fluo-club-ink); font-weight: 700; }
+.cl-t tr.eug td:first-child { box-shadow: inset 5px 0 0 var(--fluo-club-bord) !important; }
+.cl-t tr.eug .evo:not(.up):not(.down), .cl-t tr.eug .muted, .cl-t tr.eug small { color: var(--fluo-club-ink); }
+.cl-t tr.eug:hover td { background: #a6fbff !important; }
+.cc-l.nous { background: var(--fluo-club) !important; box-shadow: inset 5px 0 0 var(--fluo-club-bord) !important; color: var(--fluo-club-ink); }
+.cc-l.nous .cc-n b, .cc-l.nous .cc-p, .cc-l.nous small { color: var(--fluo-club-ink) !important; }
+.cl-legende .lg.eug { background: var(--fluo-club) !important; box-shadow: inset 3px 0 0 var(--fluo-club-bord) !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --fluo-club: #00d5e8; --fluo-club-ink: #00262d; } }
