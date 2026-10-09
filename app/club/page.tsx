@@ -21,7 +21,7 @@ export default async function Club({ searchParams }: { searchParams: Promise<{ m
   ]);
   return (
     <>
-      <Header subtitle="Le club · saison 2026–2027" />
+      <Header subtitle="Le club · saison 2026–2027" connecte={Boolean(u.user)} />
       <main className="wrap">
         <VuePublique infos={infos.data || []} evs={cal.data || []} seances={se.data || []} classements={cl.data || []} m={sp.m} connecte={Boolean(u.user)} eug={eug} clubsComplet={clubsComplet} />
       </main>
