@@ -1992,3 +1992,67 @@ main.wrap > .hello { padding-block: 0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .vg-tuiles .vg-t.vg-cnat { --k: #ffad5c; } :root:not([data-theme="light"]) .vg-tuiles .vg-t.vg-cmon { --k: #c39bff; } :root:not([data-theme="light"]) .vg-tuiles .vg-t.vg-temps { --k: #5fd0db; } }
 @media (max-width: 1100px) { .vg-tuiles { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
 @media (max-width: 760px) { .vg-tuiles { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } .vg-tuiles .vg-t:last-child { grid-column: 1 / -1 !important; } }
+
+/* ===== Navigation interne : volet latéral fin, titres à la verticale ===== */
+:root { --rail-w: 34px; }
+.blocs.volet-ok { display: grid !important; grid-template-columns: var(--rail-w) minmax(0, 1fr); gap: 12px; align-items: start; }
+.volet {
+  position: sticky; top: calc(var(--entete-h, 100px) + 10px); z-index: 6;
+  display: flex; flex-direction: column; gap: 4px; padding: 4px 0;
+  max-height: calc(100dvh - var(--entete-h, 100px) - var(--dock-h, 66px) - 50px); overflow-y: auto; scrollbar-width: none;
+}
+.volet::-webkit-scrollbar { display: none; }
+.vl-i {
+  --k: var(--t-second);
+  display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto;
+  width: var(--rail-w); padding: 8px 0; border: 0; cursor: pointer; border-radius: 10px;
+  background: var(--surface); color: var(--t-second); box-shadow: inset 0 0 0 1px var(--ligne-sep);
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.vl-ic { font-size: 15px; line-height: 1; }
+.vl-t {
+  writing-mode: vertical-rl; font-family: var(--font-display); font-weight: 800; font-style: italic;
+  text-transform: uppercase; letter-spacing: .06em; font-size: 12px; line-height: 1;
+  max-block-size: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vl-b { font-size: 10px; font-weight: 800; padding: 2px 4px; border-radius: 6px; background: var(--sunk); color: var(--t-titre); line-height: 1.1; max-width: calc(var(--rail-w) - 4px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vl-i.on { background: var(--night); color: #fff; box-shadow: inset 3px 0 0 var(--accent), 0 6px 14px -10px rgba(0,0,0,.6); }
+.vl-i.on .vl-b { background: var(--gold); color: var(--night); }
+@media (hover: hover) { .vl-i:not(.on):hover { background: var(--sunk); color: var(--t-titre); } }
+.vl-i:focus-visible { outline: 3px solid var(--gold); outline-offset: 1px; }
+.vl-tout { background: transparent; box-shadow: inset 0 0 0 1px var(--line); margin-top: 4px; }
+.vl-tout .vl-t { font-size: 10.5px; }
+@media (max-width: 699px) {
+  :root { --rail-w: 30px; }
+  .blocs.volet-ok { gap: 8px; }
+  .vl-t { font-size: 11px; max-block-size: 120px; }
+  .vl-i { padding: 7px 0; gap: 5px; }
+  .vl-ic { font-size: 13px; }
+}
+
+/* Vue générale : mêmes cases que « Ma fiche » */
+.vg-grille { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.vg-grille .fc-t { text-decoration: none; color: var(--fg); gap: 3px; transition: transform .15s, box-shadow .15s; }
+@media (hover: hover) { .vg-grille .fc-t:hover { transform: translateY(-2px); box-shadow: inset 0 3px 0 var(--k), 0 0 0 1px var(--ligne-sep), 0 10px 20px -14px var(--k); } }
+.fc-qui { font-size: 12.5px; font-weight: 700; color: var(--v-personne, #8a6400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc-qui.v-club { color: var(--v-club, #23305e); }
+.t-cnat { --k: #b35a00; } .t-temps { --k: #0b6f7a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .t-cnat { --k: #ffad5c; } :root:not([data-theme="light"]) .t-temps { --k: #5fd0db; } }
+.fc-large { grid-column: 1 / -1; display: grid !important; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 4px 14px !important; }
+.fc-v-txt { font-size: 20px !important; text-transform: capitalize; }
+@media (max-width: 699px) {
+  .vg-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fc-large { grid-template-columns: 1fr; }
+}
+
+/* Ma fiche : petite photo d'identité en haut à gauche */
+.fc-tete { align-items: flex-start !important; gap: 12px !important; padding: 10px 12px !important; }
+.fc-tete .photo { gap: 2px !important; align-items: center; }
+.fc-tete .photo-box { position: relative; width: 46px !important; height: 58px !important; border-radius: 6px !important; box-shadow: 0 0 0 2px rgba(255,255,255,.85); overflow: hidden; }
+.fc-tete .photo-box::after { content: "📷"; position: absolute; right: -1px; bottom: -1px; font-size: 10px; line-height: 1; padding: 2px; border-radius: 5px 0 0 0; background: rgba(0,0,0,.6); }
+.fc-tete .photo-ini { font-size: 17px !important; }
+.fc-tete .photo-act .btn { display: none !important; }
+.fc-tete .photo-act .linkbtn { font-size: 10px !important; padding: 0; }
+.fc-tete .photo-ok, .fc-tete .photo-err { font-size: 10px; max-width: 90px; margin: 0; }
+.fc-nom { font-size: clamp(20px, 2.6vw, 26px) !important; }
+@media (max-width: 699px) { .fc-tete .photo-box { width: 42px !important; height: 52px !important; } }
