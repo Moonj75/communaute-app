@@ -48,13 +48,15 @@ export default function Blocs({ blocs, initial, page }: { blocs: BlocDef[]; init
         setTout(false);
       }
     };
-    if (!initial) lire();
+    lire(); // a part named in the address (#bloc-…) wins over the page's default
     window.addEventListener("hashchange", lire);
     return () => window.removeEventListener("hashchange", lire);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
+    const h = window.location.hash.replace(/^#bloc-/, "");
+    if (h && valides.some((b) => b.id === h)) return;
     if (initial && valides.some((b) => b.id === initial)) setActif(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
