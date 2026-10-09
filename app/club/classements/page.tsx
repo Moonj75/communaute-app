@@ -7,7 +7,7 @@ import { LISTES, SOURCES, libelleMois, listeDef } from "@/lib/classements-types"
 import { displayName, getVue } from "@/lib/profil";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Classements · SC Lions d'Eugies", description: "Classements national (FBFTS) et mondial (FISTF) avec les joueurs du club en évidence." };
+export const metadata = { title: "Classements · SC Lions d'Eugies", description: "Classements national (FBFTS) et international (FISTF) avec les joueurs du club en évidence." };
 
 const FILTRES = [
   { id: "", txt: "Tout le classement" },
