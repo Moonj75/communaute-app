@@ -27,71 +27,73 @@ export function CarteJoueur({ f, famille, photoUrl }: { f: Fiche; famille: boole
   const full = [f.prenom, f.nom].filter(Boolean).join(" ");
   const cagnotte = Number(f.cagnotte) || 0;
   const titres = (f.palmares || "").split(/\n+/).map((t) => t.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
+  const autres = titres.length > 4 ? titres.slice(4) : [];
   return (
-    <article className="fiche">
-      <section className="panel id-card">
+    <article className="fiche-c">
+      <header className="fc-tete">
         <Photo notionId={f.notion_id} url={photoUrl} path={f.photo_path || null} initiales={initiales(full)} nom={full} />
-        <div className="id-txt">
-          <h2 className="display">{full}</h2>
-          <div className="id-pills">
-            {famille ? <span className={`pill ${f.titulaire ? "adm" : ""}`}>{f.titulaire ? "Titulaire du compte" : "Membre de la famille"}</span> : null}
-            <span className={`pill ${f.actif ? "on" : ""}`}>{f.actif ? "Actif" : "Inactif"}</span>
+        <div className="fc-id">
+          <h2 className="fc-nom">
+            <span className="perso">{f.prenom}</span> {f.nom}
+          </h2>
+          <div className="fc-pills">
+            <span className={`pill ${f.actif ? "on" : ""}`}>{f.actif ? "Actif" : "Non actif"}</span>
+            {famille ? <span className={`pill ${f.titulaire ? "adm" : ""}`}>{f.titulaire ? "Titulaire du compte" : "Famille"}</span> : null}
+            {(f.roles || []).map((r) => (
+              <span key={r} className="role-chip">{r}</span>
+            ))}
           </div>
-          {(f.roles || []).length ? (
-            <div className="id-roles">
-              {(f.roles || []).map((r) => (
-                <span key={r} className="role-chip">{r}</span>
-              ))}
-            </div>
-          ) : null}
-          <p className="id-tel">
-            <span className="fl-l">Téléphone</span>
-            <b>{f.telephone || "—"}</b>
-          </p>
+          <span className="fc-tel">📞 {f.telephone || "—"}</span>
         </div>
-      </section>
+      </header>
 
-      <div className="fiche-side">
-        <section className="panel bloc-cat">
+      <div className="fc-grille">
+        <div className="fc-t t-cat">
           <span className="fl-l">Catégorie</span>
-          <span className="cat-big">{f.categorie || "À définir"}</span>
-          <span className="cat-serie">
-            <span className="fl-l">Série</span> <b>{f.serie || "—"}</b>
-          </span>
-        </section>
-
-        <section className="panel cagnotte">
+          <b className="fc-v">{f.categorie || "—"}</b>
+          <span className="fc-s">Série {f.serie || "—"}</span>
+        </div>
+        <div className="fc-t t-euro">
           <span className="fl-l">Cagnotte</span>
-          <span className="big num">{euro.format(cagnotte)}</span>
-          <span className="muted small">Montant disponible pour les déplacements.</span>
-        </section>
+          <b className="fc-v num">{euro.format(cagnotte)}</b>
+          <span className="fc-s">déplacements</span>
+        </div>
+        <div className="fc-t t-nat">
+          <span className="fl-l">🇧🇪 Belge</span>
+          <b className="fc-v num">{f.classement_belge ? <>{f.classement_belge}<sup>{f.classement_belge === 1 ? "er" : "e"}</sup></> : "—"}</b>
+          <span className="fc-s">FBFTS</span>
+        </div>
+        <div className="fc-t t-int">
+          <span className="fl-l">🌍 Mondial</span>
+          <b className="fc-v num">{f.classement_international ? <>{f.classement_international}<sup>{f.classement_international === 1 ? "er" : "e"}</sup></> : "—"}</b>
+          <span className="fc-s">FISTF</span>
+        </div>
       </div>
 
-      <section className="panel palma">
-        <div className="classements">
-          <div className="clt">
-            <span className="fl-l">🇧🇪 Classement belge</span>
-            <span className="clt-v num">{f.classement_belge ? <><small>#</small>{f.classement_belge}</> : "—"}</span>
-          </div>
-          <div className="clt">
-            <span className="fl-l">🌍 Classement international</span>
-            <span className="clt-v num">{f.classement_international ? <><small>#</small>{f.classement_international}</> : "—"}</span>
-          </div>
-        </div>
-        <div className="palmares">
-          <span className="fl-l">🏆 Palmarès</span>
-          {titres.length ? (
+      <section className="fc-palma">
+        <span className="fl-l">🏆 Palmarès</span>
+        {titres.length ? (
+          <>
             <ul>
-              {titres.map((t, i) => (
+              {titres.slice(0, 4).map((t, i) => (
                 <li key={i}>{t}</li>
               ))}
             </ul>
-          ) : (
-            <p className="muted small">Pas encore de titre enregistré… le premier arrive ! 💪</p>
-          )}
-        </div>
+            {autres.length ? (
+              <details>
+                <summary>+ {autres.length} autre{autres.length > 1 ? "s" : ""}</summary>
+                <ul>
+                  {autres.map((t, i) => (
+                    <li key={i}>{t}</li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+          </>
+        ) : (
+          <p className="fc-s">Pas encore de titre… le premier arrive ! 💪</p>
+        )}
       </section>
     </article>
   );
 }
-

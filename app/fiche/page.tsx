@@ -31,7 +31,7 @@ export default async function FichePage() {
     const { data } = await supabase.storage.from("photos").createSignedUrls(paths, 60 * 60);
     (data || []).forEach((d) => d.path && d.signedUrl && urls.set(d.path, d.signedUrl));
   }
-  const extraits = await Promise.all(fiches.map((f) => lireExtraits(supabase, f.notion_id)));
+  const extraits = await Promise.all(fiches.map((f) => lireExtraits(supabase, f.notion_id, 1)));
   const total = fiches.reduce((s, f) => s + (Number(f.cagnotte) || 0), 0);
 
   return (
