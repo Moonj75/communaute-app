@@ -11,7 +11,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { erreur } = await searchParams;
   return (
     <>
-      <Header subtitle="Espace membres" />
+      <Header subtitle="Espace membres" valeurs />
       <div className="login">
         <section className="login-hero">
           <span className="kicker">LEAW · Subbuteo Beyond Borders · Saison 2026 – 2027</span>
