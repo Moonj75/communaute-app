@@ -2454,3 +2454,7 @@ a.hud-visiteur .hud-role { color: var(--gold); }
 }
 .rf-btn.fait { border-color: #2e9e5b; box-shadow: 0 0 0 2px color-mix(in srgb, #2e9e5b 45%, transparent), 0 4px 10px -6px rgba(0,0,0,.6); }
 @media (max-width: 699px) { .rf-msg.ok { display: none; } }
+/* Référents : 4 cases de faits (véhicules, référents, restrictions, jours) */
+.tb-facts { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+@media (max-width: 699px) { .tb-facts { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+.ce-ref { font-style: normal; margin-left: 4px; font-size: .9em; }
