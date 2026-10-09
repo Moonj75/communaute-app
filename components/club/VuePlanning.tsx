@@ -129,9 +129,10 @@ export default function VuePlanning({ evs, taches, joueurs, m, e, erreur, rafrai
             )}
             {!taches.length ? <p className="muted bd">Aucune tâche pour l&apos;instant.</p> : null}
           </div>
-          <div className="bd add">
+          <details className="bd add add-pli">
+            <summary>＋ Nouvelle tâche</summary>
             <NouvelleTache evenements={comps.map((x) => ({ id: x.id, nom: `${x.nom} — ${dateCourte(x.date)}` }))} evDefaut={sel?.id} />
-          </div>
+          </details>
         </section>
         ) },
 

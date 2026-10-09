@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Evenement, FicheLogistique as FicheLogistiqueT, JoueurLite, Participation } from "@/lib/club-types";
-import { Anneau, couleurObjectif, Donut, Rythme } from "./Graphes";
+import { Anneau, couleurObjectif, Rythme } from "./Graphes";
 import FicheLogistique from "./FicheLogistique";
 import {
   ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, lienReponse, moisCourt, DECISION_OUI,
@@ -110,10 +110,6 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
               <div className="track"><i style={{ width: `${Math.min(100, objectif ? pct(c.o.length, objectif) : pct(N - c.att.length, N))}%` }} /></div>
             </div>
             <div className="dist">
-              <div className="donut-c">
-                <Donut total={Math.max(N, 1)} segs={[{ label: "Oui", v: c.o.length, col: "var(--yes)" }, { label: "Peut-être", v: c.p.length, col: "#e8890c" }, { label: "Non", v: c.n.length, col: "var(--no)" }, { label: "En attente", v: c.att.length, col: "var(--faint)", pointille: true }]} />
-                <span className="ctr"><b className="num">{pct(N - c.att.length, N)}%</b><span>ont répondu</span></span>
-              </div>
               <div className="gts">
                 {[
                   { k: "o", l: "Oui", v: c.o.length },
@@ -130,12 +126,6 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                 ))}
               </div>
             </div>
-            {points.length ? (
-              <div className="rythme-box">
-                <div className="legend"><b>Rythme des réponses</b><span><i style={{ background: "var(--fg)" }} />Réponses</span><span><i style={{ background: "var(--yes)" }} />Oui</span>{objectif ? <span><i style={{ background: "var(--accent)" }} />Objectif ({objectif})</span> : null}</div>
-                <Rythme points={points} debut={points.map((x) => x.t).sort()[0]} fin={sel.date! < today ? sel.date! : today} objectif={objectif} max={N} />
-              </div>
-            ) : null}
             <div className="bd">
               <Jalons e={sel} compact />
               <div className="ev-actions">
@@ -145,15 +135,27 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                 <a className="btn" href={sel.url} target="_blank" rel="noopener">Page Notion ↗</a>
               </div>
 
+            </div>
+          </section>
+
+        </>) : <p className="vide">Choisis une compétition.</p> },
+
+        { id: "qui", titre: "Qui vient", ic: "👥", badge: c ? `${c.o.length}/${N}` : null, contenu: sel && c ? (
+          <section className="panel"><div className="bd">
               <div className="three">
                 <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}</span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className="chip o"><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}</span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
                 <div className="box b-p"><span className="bh">En attente ({c.att.length})</span><div className="chips">{c.att.length ? c.att.map((j) => <Link key={j.notionId} className="chip chip-lien" href={lienReponse(sel, j.notionId)} title={`Répondre pour ${j.nom}`}><i>{initiales(j.nom)}</i>{j.nom} ✎</Link>) : <span className="muted small">Tout le monde a répondu 🎉</span>}</div></div>
                 <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <span key={j.notionId} className={`chip ${c.p.includes(j) ? "m" : "n"}`}><i>{initiales(j.nom)}</i>{j.nom}</span>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
               </div>
 
+          </div></section>
+        ) : <p className="vide">Choisis une compétition.</p> },
+
+        { id: "inscrits", titre: "Logistique des inscrits", ic: "🚗", badge: rows.length || null, contenu: sel && c ? (
+          <section className="panel"><div className="bd">
               {rows.length ? (
                 <>
-                  <p className="mini-t">Logistique des inscrits</p>
+                  
                   <div className="scroll-x">
                     <table className="t">
                       <thead><tr><th>Joueur</th><th>Réponse</th><th>Jours</th><th>Véhicule</th><th>Départ</th><th>Retour</th><th>Restrictions</th></tr></thead>
@@ -174,17 +176,28 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                   </div>
                 </>
               ) : null}
-            </div>
-          </section>
+            {!rows.length ? <p className="vide">Personne d&apos;inscrit pour l&apos;instant.</p> : null}
+          </div></section>
+        ) : <p className="vide">Choisis une compétition.</p> },
 
-        </>) : <p className="vide">Choisis une compétition.</p> },
+        { id: "rythme", titre: "Rythme des réponses", ic: "📈", contenu: sel && c ? (
+          <section className="panel">
+            {points.length ? (
+              <div className="rythme-box">
+                <div className="legend"><b>Rythme des réponses</b><span><i style={{ background: "var(--fg)" }} />Réponses</span><span><i style={{ background: "var(--yes)" }} />Oui</span>{objectif ? <span><i style={{ background: "var(--accent)" }} />Objectif ({objectif})</span> : null}</div>
+                <Rythme points={points} debut={points.map((x) => x.t).sort()[0]} fin={sel.date! < today ? sel.date! : today} objectif={objectif} max={N} />
+              </div>
+            ) : null}
+            {!points.length ? <p className="vide">Pas encore de réponse.</p> : null}
+          </section>
+        ) : <p className="vide">Choisis une compétition.</p> },
 
         { id: "logistique", titre: "Logistique", ic: "🧳", badge: fiche ? (fiche.statut === "Prête" ? "✓" : "…") : null, contenu: sel ? <FicheLogistique f={fiche} ev={sel} noms={noms} staff /> : <p className="vide">Choisis une compétition.</p> },
 
         { id: "matrice", titre: "Par joueur", ic: "🧮", contenu: cols.length ? (
         <section className="panel">
           <div className="hd"><h2>Inscriptions par joueur</h2><span className="muted small">Les {cols.length} prochaines compétitions</span></div>
-          <div className="bd scroll-x">
+          <div className="bd scroll-x mx-box">
             <table className="matrix">
               <thead>
                 <tr>

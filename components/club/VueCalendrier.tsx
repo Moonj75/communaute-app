@@ -5,6 +5,7 @@ import {
   aujourdhui, compteARebours, dateMoyenne, estCompetition, estRetenu, indexReponses, inscriptionsOuvertes, lienReponse, modifiable, moisCourt, phase, DECISION_OUI,
 } from "@/lib/club-types";
 import Mois from "./Mois";
+import CarteEvenement, { decisionBadge } from "./CarteEvenement";
 import Blocs from "@/components/Blocs";
 import Jalons from "./Jalons";
 import StatutChip from "./StatutChip";
@@ -20,6 +21,8 @@ export type CalendrierProps = {
   m?: string;
   e?: string;
   erreur?: string | null;
+  /** All club players (to show who comes). */
+  joueurs?: JoueurLite[];
 };
 
 function lien(q: { m?: string; e?: string }) {
@@ -29,21 +32,15 @@ function lien(q: { m?: string; e?: string }) {
   return `/calendrier?${p.toString()}`;
 }
 
-export function decisionBadge(d: string | null) {
-  if (!d) return <span className="dec dec-p">À décider</span>;
-  if (d === DECISION_OUI) return <span className="dec dec-o">On y va</span>;
-  if (d.includes("❌")) return <span className="dec dec-n">On n&apos;y va pas</span>;
-  return <span className="dec dec-p">{d.replace(/^[^A-Za-zÀ-ÿ]+/, "")}</span>;
-}
+export { decisionBadge };
 
-export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiches, noms }: CalendrierProps) {
+export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiches, noms, joueurs }: CalendrierProps) {
   const today = aujourdhui();
   const visibles = evs.filter((x) => x.date && !x.jourSpecial && estRetenu(x));
   const avenir = visibles.filter((x) => (x.fin || x.date)! >= today);
   const sel = evs.find((x) => x.id === e) || avenir.find(estCompetition) || avenir[0] || null;
   const ym = m && /^\d{4}-\d{2}$/.test(m) ? m : (sel?.date || today).slice(0, 7);
   const idx = indexReponses(parts, evs, famille);
-  const deux = sel?.fin && sel.fin !== sel.date;
 
   return (
     <>
@@ -54,45 +51,20 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiche
       </section>
       {erreur ? <div className="notice err">{erreur}</div> : null}
 
-      <Blocs initial={e && sel ? "evenement" : undefined} blocs={[
-        { id: "mois", titre: "Le mois", ic: "📅", contenu: (
-        <section className="panel">
+      <Blocs initial={e && sel ? "mois" : undefined} blocs={[
+        { id: "mois", titre: "Calendrier", ic: "📅", badge: sel ? compteARebours(sel.date, today) : null, contenu: (
+        <div className="cal-duo">
+          <section className="panel">
           <div className="bd">
             <Mois ym={ym} evs={evs} selId={sel?.id} lien={lien} />
           </div>
         </section>
-        ) },
-        { id: "evenement", titre: "Évènement choisi", ic: "🏁", badge: sel ? compteARebours(sel.date, today) : null, contenu: (<>
+          <div className="cal-ev">
 
         {sel ? (
-          <section className="panel ev-card" aria-live="polite">
-            <div className="ev-top">
-              <div className="ev-date">
-                <span className="m">{sel.date ? moisCourt(sel.date) : ""}</span>
-                <span className="d num">
-                  {sel.date ? Number(sel.date.slice(8)) : "?"}
-                  {deux ? `–${Number(sel.fin!.slice(8))}` : ""}
-                </span>
-                <span className="y">{sel.date?.slice(0, 4)}</span>
-              </div>
-              <div className="ev-id">
-                <span className="cdown">{compteARebours(sel.date, today)}</span>
-                <h3>{sel.nom}</h3>
-                <span className="ev-meta">
-                  {sel.lieu ? <>📍 {sel.lieu}</> : null}
-                  {sel.deplacement ? <> · 🚐 {sel.deplacement}</> : null}
-                </span>
-                <span className="ev-tags">
-                  {decisionBadge(sel.decision)}
-                  {sel.type ? <span className="tagx">{sel.type}</span> : null}
-                  {sel.priorite.map((p) => (
-                    <span key={p} className="tagx gold">{p}</span>
-                  ))}
-                </span>
-              </div>
-            </div>
+          <CarteEvenement ev={sel} parts={parts} evs={evs} today={today} lienFiche="#bloc-logistique" joueurs={joueurs?.length ? joueurs : [...(noms || new Map()).entries()].map(([notionId, nom]) => ({ notionId, nom, email: null, actif: true }))} enfants={
             <div className="bd">
-              {estCompetition(sel) ? <Jalons e={sel} /> : null}
+              {estCompetition(sel) ? <Jalons e={sel} compact /> : null}
               {famille.length ? (
                 <div className="fam">
                   <p className="mini-t">{famille.length > 1 ? "Réponses de la famille" : "Ma réponse"}</p>
@@ -132,16 +104,17 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiche
                           : "Les inscriptions ne sont pas encore ouvertes."}
                   </span>
                 )}
-                {sel.limite && sel.limite >= today ? (
-                  <span className="lim">🔒 Réponse avant le <b>{dateMoyenne(sel.limite)}</b></span>
-                ) : null}
+
               </div>
             </div>
-          </section>
+          } />
         ) : (
           <section className="panel"><div className="bd muted">Aucun évènement à venir pour l&apos;instant.</div></section>
         )}
-        </>) },
+        </div>
+        </div>
+        ) },
+
 
         { id: "logistique", titre: "Fiche logistique", ic: "🧳", badge: sel && fiches?.get(sel.id) ? "✓" : null, contenu: sel ? <FicheLogistique f={fiches?.get(sel.id)} ev={sel} noms={noms} /> : <p className="vide">Choisis un évènement dans le calendrier.</p> },
         { id: "liste", titre: "Prochains évènements", ic: "🗓️", badge: avenir.length || null, contenu: (
