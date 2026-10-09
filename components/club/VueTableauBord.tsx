@@ -60,10 +60,11 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   const kp = c;
   const butP = objectif;
   const voituresP = kp ? kp.o.filter((j) => kp.m.get(j.notionId)?.vehicule === "Oui").length : 0;
+  const referentsP = kp ? kp.o.filter((j) => kp.m.get(j.notionId)?.referent === "Oui").length : 0;
   const kpis = [
     { k: "k-open", ic: "✅", l: "Inscrits", v: kp ? `${kp.o.length}${butP ? ` / ${butP}` : ""}` : "—", s: kp ? (butP ? `${pct(kp.o.length, butP)} % de l'objectif` : `sur ${N} actifs`) : "", w: kp ? pct(kp.o.length, butP || N) : 0 },
     { k: "k-temps", ic: "💬", l: "Ont répondu", v: kp ? `${pct(N - kp.att.length, N)} %` : "—", s: kp ? `${kp.att.length} en attente` : "", w: kp ? pct(N - kp.att.length, N) : 0 },
-    { k: "k-temps2", ic: "🚗", l: "Véhicules", v: String(voituresP), s: kp ? `${kp.o.length} inscrit${kp.o.length > 1 ? "s" : ""}` : "", w: kp && kp.o.length ? pct(voituresP * 4, kp.o.length) : 0 },
+    { k: "k-temps2", ic: "🚗", l: "Véhicules · Référents", v: `${voituresP} · ${referentsP}`, s: kp ? `🚗 ${voituresP} voiture${voituresP > 1 ? "s" : ""} · 🧭 ${referentsP} référent${referentsP > 1 ? "s" : ""}` : "", w: kp && kp.o.length ? pct(voituresP * 4, kp.o.length) : 0 },
   ];
   // Priorities: competitions of the next 4 months.
   const dans4 = ajouterJours(today, 122);
@@ -74,6 +75,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   const departs = repartir("depart", ["Vendredi matin", "Vendredi après-midi", "Vendredi soir"]);
   const retours = repartir("retour", ["Dimanche soir", "Lundi matin", "Lundi soir"]);
   const avecVoiture = ouiP.filter((x) => x.r.vehicule === "Oui").map((x) => x.j.nom);
+  const avecReferent = ouiP.filter((x) => x.r.referent === "Oui").map((x) => x.j.nom);
   const avecRestr = ouiP.filter((x) => x.r.restrictions.length || x.r.depart || x.r.retour).map((x) => x.j.nom);
   const deuxJours = Boolean(sel?.fin && sel.fin !== sel.date);
   const chiffres = (
@@ -210,6 +212,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
               <div className="tb-facts">
                 {[
                   { ic: "🚗", l: "Véhicules", gens: avecVoiture, vide: "Aucun véhicule proposé" },
+                  { ic: "🧭", l: "Référents", gens: avecReferent, vide: "Aucun volontaire" },
                   { ic: "⚠️", l: "Restrictions", gens: avecRestr, vide: "Aucune restriction" },
                   { ic: "📆", l: deuxJours ? "Les deux jours" : "Sur 1 jour", gens: deuxJours ? ouiP.filter((x) => x.r.jours === "Les deux jours").map((x) => x.j.nom) : ouiP.map((x) => x.j.nom), vide: "Personne" },
                 ].map((f) => (
@@ -266,7 +269,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                   ) : null}
                   <div className="scroll-x">
                     <table className="t">
-                      <thead><tr><th>Joueur</th><th>Réponse</th><th>Jours</th><th>Véhicule</th><th>Départ</th><th>Retour</th><th>Restrictions</th></tr></thead>
+                      <thead><tr><th>Joueur</th><th>Réponse</th><th>Jours</th><th>Véhicule</th><th>Référent</th><th>Départ</th><th>Retour</th><th>Restrictions</th></tr></thead>
                       <tbody>
                         {rows.map(({ j, r }) => (
                           <tr key={j.notionId}>
@@ -274,6 +277,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                             <td><span className={`st st-${r.statut === "Oui" ? "o" : "m"}`}>{r.statut}</span></td>
                             <td>{r.jours || "—"}</td>
                             <td>{r.vehicule === "Oui" ? "🚗 Oui" : r.vehicule || "—"}</td>
+                            <td>{r.referent === "Oui" ? "🧭 Oui" : r.referent || "—"}</td>
                             <td>{r.depart || "—"}</td>
                             <td>{r.retour || "—"}</td>
                             <td className="small">{r.restrictions.join(", ") || "—"}</td>

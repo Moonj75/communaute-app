@@ -66,10 +66,12 @@ export default function CarteEvenement({
   const tri = (a: string, b: string) => a.localeCompare(b, "fr");
   const oui: string[] = [], peut: string[] = [];
   let non = 0, voitures = 0;
+  const referents: string[] = [];
   rep.forEach((p, id) => {
     if (p.statut === "Oui") {
       oui.push(nom(id));
       if (p.vehicule === "Oui") voitures++;
+      if (p.referent === "Oui") referents.push(nom(id));
     } else if (p.statut === "Peut-être") peut.push(nom(id));
     else if (p.statut === "Non") non++;
   });
@@ -123,6 +125,7 @@ export default function CarteEvenement({
         <span className="ce-logi">
           <span className="ce-k" title="Joueurs inscrits">👥 <b className="num">{oui.length}</b></span>
           <span className="ce-k" title="Véhicules proposés">🚗 <b className="num">{voitures}</b></span>
+          <span className="ce-k" title={referents.length ? `Référents volontaires : ${referents.join(", ")}` : "Aucun référent volontaire"}>🧭 <b className="num">{referents.length}</b></span>
         </span>
       </div>
 
@@ -153,7 +156,7 @@ export default function CarteEvenement({
         <span className="ce-qt">Participent ({oui.length})</span>
         <div className="ce-chips">
           {oui.length ? oui.map((n) => (
-            <span key={n} className="ce-chip o"><Avatar nom={n} />{n}</span>
+            <span key={n} className="ce-chip o"><Avatar nom={n} />{n}{referents.includes(n) ? <i className="ce-ref" title="Référent volontaire">🧭</i> : null}</span>
           )) : <span className="muted small">Personne pour l&apos;instant. Sois le premier !</span>}
         </div>
       </div>
