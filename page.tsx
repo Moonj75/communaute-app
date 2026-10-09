@@ -1,110 +1,82 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
-import { displayName, getVue, estInactif } from "@/lib/profil";
-import { essayer, lireCalendrier, lireParticipations } from "@/lib/club";
-import { chargerJoueurs } from "@/lib/donnees";
-import { compteARebours, dateCourte, dateMoyenne, estLoin, indexReponses, modifiable, moisCourt, phase, surDeuxJours } from "@/lib/club-types";
-import Formulaire from "./Formulaire";
+import { displayName, getVue } from "@/lib/profil";
+import Blocs from "@/components/Blocs";
+import Notifs from "@/components/Notifs";
+import { CarteJoueur, COLS, type Fiche } from "./CarteJoueur";
+import { MesClassements } from "@/components/club/Classements";
+import { lireExtraits } from "@/lib/classements-lire";
 
 export const dynamic = "force-dynamic";
 
-export default async function Repondre({ searchParams }: { searchParams: Promise<{ e?: string; j?: string }> }) {
+const euro = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" });
+
+export default async function FichePage() {
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) redirect("/login");
-  // Members not active this season only see the discovery space (home page).
-  if (estInactif(profil)) redirect("/");
-  const sp = await searchParams;
-  const admin = profil?.role === "admin" && !apercu;
-  const [cal, parts, maFamille] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email)]);
-  // Staff can open the form for any player (link « Répondre pour… » from the dashboard).
-  const famille = admin && sp.j && !maFamille.some((j) => j.notionId === sp.j) ? await chargerJoueurs(supabase, null) : maFamille;
-  const actifs = famille.filter((j) => j.actif || (admin && j.notionId === sp.j));
-  const ev = (cal.data || []).find((x) => x.id === sp.e);
-  const joueur = actifs.find((j) => j.notionId === sp.j) || (actifs.length === 1 ? actifs[0] : null);
+  const email = (user.email || "").toLowerCase();
+  const lire = (cols: string) =>
+    supabase.from("joueurs").select(cols).eq("email", email).order("titulaire", { ascending: false }).order("prenom");
+  // Newer columns may not exist yet if a SQL step was not run: fall back gracefully.
+  let res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares");
+  if (res.error) res = await lire(COLS + ",photo_path");
+  if (res.error) res = await lire(COLS);
+  const fiches = ((res.data || []) as unknown) as Fiche[];
+  const famille = fiches.length > 1;
+  const synced = fiches.map((f) => f.synced_at).filter(Boolean).sort().pop();
 
-  const entete = <Header subtitle="Répondre à une compétition" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />;
-  if (!ev)
-    return (<>{entete}<main className="wrap"><div className="notice err">Évènement introuvable.</div><Link href="/inscriptions">← Mes inscriptions</Link></main></>);
-
-  // Family account and no player chosen yet: pick who answers.
-  if (!joueur)
-    return (
-      <>
-        {entete}
-        <main className="wrap">
-          <section className="hello"><span className="kicker">{ev.nom}</span><h2>Qui répond ?</h2><p>Choisis la personne de la famille.</p></section>
-          <div className="qui">
-            {actifs.map((j) => (
-              <Link key={j.notionId} className="card" href={`/inscriptions/repondre?e=${ev.id}&j=${j.notionId}`}>
-                <span className="ic">🦁</span><h3>{j.nom.split(" ")[0]}</h3><span className="go">Répondre →</span>
-              </Link>
-            ))}
-          </div>
-        </main>
-      </>
-    );
-
-  const p = indexReponses(parts.data || [], cal.data || [], famille).get(ev.id)?.get(joueur.notionId);
-  const prenom = joueur.nom.split(" ")[0];
-  const ph = phase(ev);
-  const ouvert = modifiable(ev, p) || admin;
-  const jusquau = ph === "confirmation" ? (ev.validation ? `jusqu'au ${dateCourte(ev.validation)}` : null) : ev.limite ? `jusqu'au ${dateCourte(ev.limite)}` : null;
+  const paths = fiches.map((f) => f.photo_path).filter((p): p is string => Boolean(p));
+  const urls = new Map<string, string>();
+  if (paths.length) {
+    const { data } = await supabase.storage.from("photos").createSignedUrls(paths, 60 * 60);
+    (data || []).forEach((d) => d.path && d.signedUrl && urls.set(d.path, d.signedUrl));
+  }
+  const extraits = await Promise.all(fiches.map((f) => lireExtraits(supabase, f.notion_id)));
+  const total = fiches.reduce((s, f) => s + (Number(f.cagnotte) || 0), 0);
 
   return (
     <>
-      {entete}
-      <main className="wrap rep-wrap">
-        <section className="rep-top">
-          <div className="ev-date">
-            <span className="m">{ev.date ? moisCourt(ev.date) : ""}</span>
-            <span className="d num">{ev.date ? Number(ev.date.slice(8)) : "?"}</span>
-            <span className="y">{ev.date?.slice(0, 4)}</span>
-          </div>
-          <div>
-            <span className="cdown">{compteARebours(ev.date)}</span>
-            <h2>{admin && !maFamille.some((j) => j.notionId === joueur.notionId) ? "Réponse de " : "Bonjour "}<span className="perso">{prenom}</span>{admin && !maFamille.some((j) => j.notionId === joueur.notionId) ? "" : " !"}</h2>
-            <p>
-              <b className="v-ev">{ev.nom}</b>
-              {ev.lieu ? <> · <span className="v-lieu">{ev.lieu}</span></> : null}
-              {ev.limite ? <> · réponse avant le <span className="v-date">{dateMoyenne(ev.limite)}</span></> : null}
-            </p>
-            {p?.statut && p.statut !== "En attente" && !p.valide ? <p className="small">Tu as déjà répondu « {p.statut} » : tu peux la modifier ou la valider définitivement ci-dessous.</p> : null}
-          </div>
+      <Header subtitle={famille ? "Ma famille au club" : "Ma fiche joueur"} profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
+      <main className="wrap">
+        <section className="hello">
+          <span className="kicker">{famille ? "Compte famille" : "Joueur"}</span>
+          <h2>{famille ? "Ma famille" : "Ma fiche"}</h2>
+          <p>
+            {famille
+              ? `${fiches.length} personnes rattachées à ${user.email} · cagnotte totale ${euro.format(total)}.`
+              : "Ta carte de joueur du club. Ajoute ta photo !"}
+          </p>
         </section>
-        {ouvert ? (
-          <Formulaire
-            evId={ev.id}
-            evNom={ev.nom}
-            joueurId={joueur.notionId}
-            prenom={prenom}
-            deuxJours={surDeuxJours(ev)}
-            loin={estLoin(ev)}
-            init={{ statut: p?.statut || null, jours: p?.jours || null, restrictions: p?.depart || p?.retour ? "Oui" : null, depart: p?.depart || null, retour: p?.retour || null, vehicule: p?.vehicule || null }}
-            autres={(famille === maFamille ? actifs : []).filter((j) => j.notionId !== joueur.notionId).map((j) => ({ id: j.notionId, prenom: j.nom.split(" ")[0] }))}
-            jusquau={jusquau}
-            confirmation={ph === "confirmation"}
-          />
-        ) : (
-          <section className="verrou">
-            <span className="verrou-ic" aria-hidden="true">🔒</span>
-            <h3>{p?.valide ? "Réponse validée définitivement" : ph === "avant" ? "Les réponses ne sont pas encore ouvertes" : "Les réponses sont closes"}</h3>
-            {p?.statut && p.statut !== "En attente" ? (
-              <ul className="recap">
-                <li><span>Réponse</span><b>{p.statut}</b></li>
-                {p.jours ? <li><span>Jours</span><b>{p.jours}</b></li> : null}
-                {p.depart ? <li><span>Départ</span><b>{p.depart}</b></li> : null}
-                {p.retour ? <li><span>Retour</span><b>{p.retour}</b></li> : null}
-                {p.vehicule ? <li><span>Véhicule</span><b>{p.vehicule}</b></li> : null}
-                {p.valideLe ? <li><span>Validée le</span><b>{dateMoyenne(p.valideLe)}</b></li> : null}
-              </ul>
-            ) : (
-              <p className="muted">{ph === "avant" && ev.ouverture ? `Ouverture le ${dateMoyenne(ev.ouverture)}.` : "Aucune réponse enregistrée."}</p>
-            )}
-            <p className="small muted">Un changement à faire ? Contacte le staff du club.</p>
-            <Link className="btn" href="/inscriptions">← Mes inscriptions</Link>
-          </section>
-        )}
+
+        {fiches.length === 0 ? (
+          <div className="notice">Ta fiche n&apos;est pas encore disponible. Un administrateur doit synchroniser la liste des joueurs.</div>
+        ) : null}
+        <Blocs
+          blocs={[
+            ...fiches.flatMap((f, i) => [
+              {
+                id: f.notion_id.slice(0, 8),
+                titre: [f.prenom, f.nom].filter(Boolean).join(" "),
+                ic: f.titulaire || !famille ? "🦁" : "🐾",
+                badge: f.categorie || null,
+                contenu: <CarteJoueur f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} />,
+              },
+              {
+                id: `cl-${f.notion_id.slice(0, 8)}`,
+                titre: famille ? `Classements · ${f.prenom || f.nom}` : "Mes classements",
+                ic: "📊",
+                badge: extraits[i].length ? `#${Math.min(...extraits[i].map((x) => x.lignes.find((l) => l.joueur_id === f.notion_id)?.rang || 9999))}` : null,
+                contenu: <MesClassements extraits={extraits[i]} moi={f.notion_id} />,
+              },
+            ]),
+            { id: "notifications", titre: "Notifications", ic: "🔔", contenu: <Notifs /> },
+          ]}
+        />
+
+        <p className="foot">
+          Une information est fausse ? Préviens un administrateur du club : elle sera corrigée dans la liste officielle.
+          {synced ? ` Mise à jour le ${new Date(synced).toLocaleDateString("fr-BE", { timeZone: "Europe/Brussels" })}.` : ""}
+        </p>
       </main>
     </>
   );
