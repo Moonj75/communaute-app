@@ -7,7 +7,36 @@ import { useEffect } from "react";
  * the row is brought to the MIDDLE of the visible table — between the fixed headers at the top
  * and the dock at the bottom — then briefly lit up. Also done when a page opens with such an address.
  */
+/** The row sits in a table that scrolls by itself (wider than the screen): scroll the page to the
+ *  table, then the table's own frame so the row lands in the middle of what the frame shows. */
+function centrerDansCadre(el: HTMLElement, box: HTMLElement, doux: boolean) {
+  const cs = getComputedStyle(document.documentElement);
+  const px = (v: string) => parseFloat(cs.getPropertyValue(v)) || 0;
+  let haut = px("--entete-h") + px("--bande-h");
+  document.querySelectorAll<HTMLElement>(".bande-fixe, .bl-titre").forEach((b) => {
+    const t = parseFloat(getComputedStyle(b).top);
+    if (b.offsetHeight && Number.isFinite(t)) haut = Math.max(haut, t + b.offsetHeight);
+  });
+  const hd = box.closest(".panel")?.querySelector<HTMLElement>(":scope > .hd");
+  if (hd) haut += hd.offsetHeight;
+  window.scrollBy({ top: box.getBoundingClientRect().top - haut - 6, behavior: doux ? "smooth" : "auto" });
+  const thH = box.querySelector<HTMLElement>("thead")?.offsetHeight || 0;
+  const pos = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+  const vu = box.clientHeight - thH;
+  box.scrollTo({ top: Math.max(0, pos - thH - vu / 2 + el.offsetHeight / 2), left: 0, behavior: doux ? "smooth" : "auto" });
+}
+
 function centrer(el: HTMLElement, doux = true, flash = true) {
+  const box = el.closest<HTMLElement>(".scroll-x");
+  if (box && box.scrollHeight > box.clientHeight + 2) {
+    centrerDansCadre(el, box, doux);
+    if (flash) {
+      el.classList.remove("ligne-flash");
+      void el.offsetWidth;
+      el.classList.add("ligne-flash");
+    }
+    return;
+  }
   const cs = getComputedStyle(document.documentElement);
   const px = (v: string) => parseFloat(cs.getPropertyValue(v)) || 0;
   // Lowest fixed thing above the content (title line, tab band, column headers).
