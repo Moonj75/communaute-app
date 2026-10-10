@@ -2967,3 +2967,82 @@ table.t td { max-width: none !important; }
 .fc-tete .photo-ini { font-size: 26px !important; }
 .fc-tete .photo-box::after { font-size: 13px; padding: 3px 4px; }
 @media (max-width: 699px) { .fc-tete .photo-box { width: 66px !important; height: 82px !important; } .fc-tete .photo-ini { font-size: 22px !important; } }
+
+/* ===== Le club : choix National / International + classement du club et de nos joueurs côte à côte ===== */
+.duo { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.duo-choix { display: inline-flex; align-items: center; gap: 4px; padding: 4px; border-radius: 99px; background: var(--surface); box-shadow: 0 0 0 1px color-mix(in srgb, var(--cadre-or) 45%, transparent), 0 6px 14px -10px rgba(0,0,0,.4); }
+.duo-choix button { border: 0; cursor: pointer; padding: 7px 16px; border-radius: 99px; background: transparent; color: var(--t-second); font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.duo-choix button.on { color: #fff; background: var(--n-national); box-shadow: 0 6px 12px -8px var(--n-national); }
+.duo.monde .duo-choix button.on { background: var(--n-open); box-shadow: 0 6px 12px -8px var(--n-open); }
+.duo-mois { font-size: 11px; color: var(--t-second); padding: 0 8px 0 4px; white-space: nowrap; }
+.duo-cols { display: flex; gap: 14px; align-items: flex-start; justify-content: center; flex-wrap: nowrap; max-width: 100%; }
+.duo-cols .cc-b { flex: 0 1 auto; min-width: 0; border-radius: 14px; overflow: hidden; }
+.duo-cols .cc-cols, .duo-cols .cc-l { grid-template-columns: 40px minmax(0, max-content) 56px 36px !important; }
+.duo-cols .cc-n b { max-width: 14em; }
+.duo-j .cc-l.moi { background: var(--fluo); }
+.duo-j .cat-c { font-size: 10.5px; padding: 1px 6px; }
+@media (max-width: 699px) {
+  .duo-cols { gap: 6px; }
+  .duo-cols .cc-cols, .duo-cols .cc-l { grid-template-columns: 26px minmax(0, max-content) 34px 26px !important; column-gap: 4px !important; padding-left: 5px !important; padding-right: 5px !important; font-size: 10.5px; }
+  .duo-cols .cc-r { font-size: 12px !important; }
+  .duo-cols .cc-n b { max-width: 6.6em; font-size: 10.5px; }
+  .duo-cols .cc-n small { display: none; }
+  .duo-cols .cc-cols { font-size: 8px !important; letter-spacing: .02em !important; }
+  .duo-cols .evo { font-size: 9px; }
+  .duo-cols .cc-b header { padding: 6px 8px !important; }
+  .duo-cols .cc-k { font-size: 9px !important; }
+  .duo-cols .cat-c { font-size: 8.5px !important; padding: 1px 3px !important; }
+  .duo-cols .cc-tout { font-size: 11px !important; padding: 6px 8px; }
+  .duo-choix button { font-size: 12px; padding: 6px 12px; }
+}
+/* Duo : listes courtes, pas d'en-tête collant ; lignes alignées ; aucune marge de liste */
+.duo .cc-cols { position: static !important; top: auto !important; }
+.duo ol { margin: 0; padding: 0; list-style: none; }
+.duo .cc-l, .duo .cc-cols { display: grid !important; }
+.duo-cols .cc-cols, .duo-cols .cc-l { grid-template-columns: 40px minmax(7em, max-content) 56px 36px !important; column-gap: 8px !important; }
+@media (max-width: 699px) {
+  .duo-cols { gap: 5px; width: 100%; }
+  .duo-cols .cc-b { flex: 1 1 0; }
+  .duo-cols .cc-cols, .duo-cols .cc-l { grid-template-columns: 24px minmax(0, 1fr) 30px !important; column-gap: 3px !important; padding-left: 4px !important; padding-right: 4px !important; }
+  .duo-cols .evo, .duo-cols .cc-cols span:nth-child(4) { display: none !important; }
+  .duo-cols .cc-n b { max-width: none; font-size: 10.5px; }
+  .duo-pre { display: none; }
+  .duo-cols .cc-p { font-size: 10.5px; text-align: right; }
+  .duo-cols .cc-r sup { font-size: 7px; }
+  .duo-cols .cc-k { letter-spacing: .03em !important; }
+  .duo-choix { width: 100%; justify-content: center; }
+  .duo-choix button { font-size: 11.5px; padding: 6px 10px; }
+  .duo-mois { display: none; }
+}
+/* Logo du club à la place du nom « Eugies » dans les classements */
+.logo-club { display: inline-block; width: 22px; height: 22px; vertical-align: middle; border-radius: 50%; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); flex: 0 0 auto; }
+td.c-club .logo-club { width: 24px; height: 24px; }
+.cc-n .logo-club { width: 18px; height: 18px; margin-right: 2px; align-self: center; }
+.cc-l.nous .cc-n b::after { content: none !important; }
+table.t.serre .logo-club { width: 1.6em; height: 1.6em; }
+
+/* ===== Staff › Comptes de connexion ===== */
+.ad-t thead th { text-align: center !important; }
+.ad-t td { text-align: center; vertical-align: middle; }
+.ad-t td:first-child, .ad-t td:nth-child(2), .ad-t td:nth-child(3), .ad-t thead th:first-child, .ad-t thead th:nth-child(2), .ad-t thead th:nth-child(3) { text-align: left !important; }
+.ad-role { display: inline-flex; gap: 6px; align-items: center; }
+.ad-role select { min-height: 32px !important; height: 32px; width: auto !important; padding: 0 26px 0 10px; font-size: 13px; }
+.ad-ok, .ad-oeil {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 0;
+  font-size: 16px; font-weight: 900; line-height: 1; transition: transform .12s, filter .12s;
+}
+.ad-ok { background: #1f9d55; color: #fff; box-shadow: 0 4px 10px -5px #1f9d55; }
+.ad-oeil { background: var(--surface); box-shadow: inset 0 0 0 1px var(--ligne-sep); font-size: 17px; }
+.ad-ok:hover, .ad-oeil:hover { transform: scale(1.1); filter: brightness(1.08); }
+/* Invitation : une case, les choix au survol (ou au toucher) */
+.inv { position: relative; display: inline-block; outline: none; }
+.inv-etat { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 99px; cursor: pointer; white-space: nowrap; font-size: 12.5px; font-weight: 700; background: var(--surface); box-shadow: inset 0 0 0 1px var(--ligne-sep); }
+.inv-etat.ok { color: #1f9d55; } .inv-etat.err { color: var(--no); }
+.inv-fl { font-size: 10px; opacity: .6; }
+.inv-menu { position: absolute; z-index: 30; top: calc(100% + 4px); left: 50%; transform: translateX(-50%); display: none; flex-direction: column; gap: 4px; padding: 6px; border-radius: 12px; background: var(--surface); box-shadow: 0 14px 30px -12px rgba(0,0,0,.45), 0 0 0 1px var(--ligne-sep); }
+.inv:hover .inv-menu, .inv:focus-within .inv-menu { display: flex; }
+.inv-b { border: 0; background: transparent; cursor: pointer; white-space: nowrap; text-align: left; padding: 7px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--t-titre); }
+.inv-b:hover { background: var(--sunk); }
+.ad-statut { border: 0; background: none; padding: 0; cursor: pointer; }
+.ad-statut .pill { transition: transform .12s; } .ad-statut:hover .pill { transform: scale(1.06); }
+.ad-role select { max-width: 150px; }
