@@ -8,7 +8,7 @@ const SITE = "https://lions-eugies.vercel.app";
 export default function InviteCell({
   email,
   prenom,
-  actif,
+  actif: _actif,
   connecte,
   inviteLe,
 }: {
@@ -37,26 +37,24 @@ export default function InviteCell({
     }
   }
 
+  const etat = state.ok ? "✓ Envoyé" : inviteLe ? `Invité le ${new Date(inviteLe).toLocaleDateString("fr-BE", { timeZone: "Europe/Brussels", day: "2-digit", month: "2-digit" })}` : connecte ? "Connecté" : "Pas invité";
+  // A compact cell: the status only; the choices appear when the mouse is over it (or on a tap).
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 190 }}>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+    <div className="inv" tabIndex={0}>
+      <span className={`inv-etat${state.ok ? " ok" : ""}${state.error ? " err" : ""}`} title={state.error || undefined}>
+        {state.error ? "⚠️ Erreur" : etat} <span className="inv-fl" aria-hidden="true">▾</span>
+      </span>
+      <div className="inv-menu" role="menu">
         <form action={action}>
           <input type="hidden" name="email" value={email} />
-          <button className="btn" type="submit" disabled={pending} style={{ minHeight: 36, padding: "0 10px", fontSize: 13 }}>
-            {pending ? "Envoi…" : inviteLe || connecte ? "✉️ Renvoyer" : "✉️ Inviter"}
+          <button className="inv-b" type="submit" disabled={pending} role="menuitem">
+            {pending ? "Envoi…" : inviteLe || connecte ? "✉️ Renvoyer l'e-mail" : "✉️ Inviter par e-mail"}
           </button>
         </form>
-        <button className="btn" type="button" onClick={copy} style={{ minHeight: 36, padding: "0 10px", fontSize: 13 }} title="Copier un message à coller dans WhatsApp ou SMS">
-          {copied ? "✓ Copié" : "📋 WhatsApp"}
+        <button className="inv-b" type="button" onClick={copy} role="menuitem" title="Copier un message à coller dans WhatsApp ou SMS">
+          {copied ? "✓ Copié" : "📋 Message WhatsApp"}
         </button>
       </div>
-      {state.ok ? <span style={{ fontSize: 12, color: "var(--yes)", fontWeight: 700 }}>{state.ok}</span> : null}
-      {state.error ? <span style={{ fontSize: 12, color: "var(--no)", fontWeight: 700 }}>{state.error}</span> : null}
-      {!state.ok && inviteLe ? (
-        <span className="muted" style={{ fontSize: 12 }}>
-          Invité le {new Date(inviteLe).toLocaleDateString("fr-BE", { timeZone: "Europe/Brussels" })}
-        </span>
-      ) : null}
     </div>
   );
 }

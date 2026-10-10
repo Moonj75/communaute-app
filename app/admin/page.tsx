@@ -117,17 +117,17 @@ export default async function AdminPage() {
             </span>
           </div>
           <div className="bd scroll-x">
-            <table className="t">
+            <table className="t ad-t">
               <thead>
-                <tr>
+                <tr className="ad-th">
                   <th>Nom</th>
                   <th>E-mail</th>
-                  <th>Personnes · rôles · cagnotte</th>
+                  <th>Personnes · rôles</th>
                   <th>Accès</th>
                   <th>Statut</th>
                   <th>Connexion</th>
                   <th>Invitation</th>
-                  <th>Aperçu</th>
+                  <th title="Voir l'application comme ce membre">Aperçu</th>
                   <th></th>
                 </tr>
               </thead>
@@ -148,34 +148,32 @@ export default async function AdminPage() {
                       ))}
                     </td>
                     <td>
-                      <form action={updateMembre} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <form action={updateMembre} className="ad-role">
                         <input type="hidden" name="email" value={m.email} />
-                        <select className="input" name="role" defaultValue={m.role} style={{ minHeight: 38, width: "auto" }}>
+                        <select className="input" name="role" defaultValue={m.role}>
                           <option value="joueur">Joueur</option>
                           <option value="admin">Administrateur</option>
                         </select>
-                        <button className="btn" type="submit" style={{ minHeight: 38 }}>
-                          OK
-                        </button>
+                        <button className="ad-ok" type="submit" title="Valider le rôle" aria-label="Valider le rôle">✓</button>
                       </form>
                     </td>
                     <td>
                       <form action={updateMembre}>
                         <input type="hidden" name="email" value={m.email} />
                         <input type="hidden" name="actif" value={m.actif ? "false" : "true"} />
-                        <button className="btn" type="submit" style={{ minHeight: 34, padding: "0 10px" }} title={m.actif ? "Désactiver" : "Réactiver"}>
+                        <button className="ad-statut" type="submit" title={m.actif ? "Cliquer pour désactiver" : "Cliquer pour réactiver"}>
                           <span className={`pill ${m.actif ? "on" : ""}`}>{m.actif ? "Actif" : "Inactif"}</span>
                         </button>
                       </form>
                     </td>
-                    <td>{connected.has(m.email) ? <span className="pill on">✓ déjà connecté</span> : <span className="pill">jamais</span>}</td>
+                    <td className="ad-c">{connected.has(m.email) ? <span className="pill on">✓ connecté</span> : <span className="pill">jamais</span>}</td>
                     <td>
                       <InviteCell email={m.email} prenom={m.prenom} actif={m.actif} connecte={connected.has(m.email)} inviteLe={m.invite_le} />
                     </td>
                     <td>
                       <form action={commencerApercu}>
                         <input type="hidden" name="email" value={m.email} />
-                        <button className="btn" type="submit" title="Voir l'application comme ce membre">👁️ Voir comme</button>
+                        <button className="ad-oeil" type="submit" title="Voir l'application comme ce membre" aria-label="Voir l'application comme ce membre">👁️</button>
                       </form>
                     </td>
                     <td>
