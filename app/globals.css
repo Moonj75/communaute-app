@@ -2576,3 +2576,85 @@ tr.ligne-flash > td { animation: ligne-fond 1.8s ease 1 !important; }
 @media (max-width: 699px) { .scene .scroll-x:not(.x-ok) table td:first-child, .scene .scroll-x:not(.x-ok) table th:first-child { max-width: 40vw; min-width: 96px; white-space: normal; } }
 /* Le cadre qui défile n'a pas de marge intérieure : titres et colonne nominative collent pile au bord */
 .scene .scroll-x:not(.x-ok) { padding: 0 !important; }
+
+/* ===== Tableaux ergonomiques : chaque colonne a la largeur de son contenu ===== */
+/* Titres de colonnes et contenus courts sur une seule ligne (nombres, places, badges, dates) */
+table.t th { white-space: nowrap; }
+table.t td.r, table.t td.num, table.t td.rg, table.t td.c-evo, table.t td .pill, table.t td .cat-c, table.t td .st { white-space: nowrap; }
+/* Texte libre : jamais une colonne écrasée lettre par lettre */
+table.t td { min-width: 4.5em; vertical-align: middle; }
+table.t td.r, table.t td.rg, table.t td.c-evo { min-width: 0; }
+
+/* Classements : place · joueur · ± … ; place et nom sur une ligne, à largeur fixe */
+.cl-t th.c-rg, .cl-t td.rg { width: 46px; min-width: 46px; max-width: 46px; text-align: right; padding-right: 8px !important; }
+.cl-t th.c-evo, .cl-t td.c-evo { width: 52px; text-align: left; }
+.cl-t td.nm { white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.cl-t td.nm .moi-tag { margin-left: 6px; }
+@media (max-width: 699px) {
+  .cl-t th.c-rg, .cl-t td.rg { width: 38px; min-width: 38px; max-width: 38px; padding-right: 4px !important; }
+  .cl-t td.nm { max-width: 46vw; }
+  .cl-t th.c-evo, .cl-t td.c-evo { width: 44px; }
+}
+/* Classement plus large que l'écran : la place ET le nom restent fixes à gauche */
+.scene .scroll-x:not(.x-ok) .cl-t td.rg, .scene .scroll-x:not(.x-ok) .cl-t th.c-rg { position: sticky; left: 0; z-index: 3; box-shadow: none; }
+.scene .scroll-x:not(.x-ok) .cl-t td.nm, .scene .scroll-x:not(.x-ok) .cl-t th.c-nm {
+  position: sticky; left: 46px; z-index: 3; background: var(--surface); box-shadow: 6px 0 8px -8px rgba(0,0,0,.45);
+}
+.scene .scroll-x:not(.x-ok) .cl-t thead th.c-nm { z-index: 4; background: var(--th-bg) !important; }
+.scene .scroll-x:not(.x-ok) .cl-t tbody tr:nth-child(even) td.nm { background: var(--zebra, #f1ebe0); }
+.scene .scroll-x:not(.x-ok) .cl-t tbody tr.eug td.nm, .scene .scroll-x:not(.x-ok) .cl-t tbody tr.eug td.rg { background: var(--fluo-club, #7ff9ff); }
+@media (max-width: 699px) { .scene .scroll-x:not(.x-ok) .cl-t td.nm, .scene .scroll-x:not(.x-ok) .cl-t th.c-nm { left: 38px; } }
+/* Correctifs : la place garde sa petite largeur, les colonnes fixes passent au-dessus des badges */
+.scene .scroll-x:not(.x-ok) .cl-t td.rg, .scene .scroll-x:not(.x-ok) .cl-t th.c-rg { min-width: 46px !important; max-width: 46px !important; z-index: 6; background: var(--surface); }
+.scene .scroll-x:not(.x-ok) .cl-t tbody tr:nth-child(even) td.rg { background: var(--zebra, #f1ebe0); }
+.scene .scroll-x:not(.x-ok) .cl-t thead th.c-rg { z-index: 7; background: var(--th-bg) !important; }
+.scene .scroll-x:not(.x-ok) .cl-t td.nm { z-index: 6; min-width: 0 !important; }
+.scene .scroll-x:not(.x-ok) .cl-t thead th.c-nm { z-index: 7; }
+.cl-t .cat-c, .cl-t .evo { position: relative; z-index: 0; }
+@media (max-width: 699px) { .scene .scroll-x:not(.x-ok) .cl-t td.rg, .scene .scroll-x:not(.x-ok) .cl-t th.c-rg { min-width: 38px !important; max-width: 38px !important; } }
+.scene .scroll-x:not(.x-ok) .cl-t tr.moi td.nm, .scene .scroll-x:not(.x-ok) .cl-t tr.moi td.rg { background: var(--fluo); }
+
+/* ===== Largeur des colonnes = la valeur la plus longue de la colonne (ni serré, ni trop large) ===== */
+table.t th, table.t td { padding-left: 12px; padding-right: 12px; }
+/* Tableaux en général : le tableau prend la largeur de son contenu */
+table.t:not(.cl-t):not(.matrix) { width: auto; max-width: 100%; }
+/* Classements : chaque colonne à la taille de son contenu ; seule la colonne Club prend la place qui reste */
+.cl-t th, .cl-t td { width: 1%; white-space: nowrap; }
+.cl-t th.c-club, .cl-t td.c-club { width: auto; }
+.cl-t:not(:has(.c-club)) { width: auto; min-width: min(100%, 420px); }
+.cl-t td.nm { max-width: none; }
+@media (max-width: 699px) { .cl-t td.nm { max-width: 52vw; } table.t th, table.t td { padding-left: 8px; padding-right: 8px; } }
+
+/* ===== Fond d'écran : le lion LEAW en filigrane, très pâle, visible seulement dans les zones vides ===== */
+body::before {
+  content: ""; position: fixed; z-index: 0; pointer-events: none;
+  left: 50%; top: calc(50% + var(--entete-h, 100px) / 2);
+  width: min(78vmin, 620px); aspect-ratio: 1; transform: translate(-50%, -50%);
+  background: url("/crest.png") center / contain no-repeat;
+  opacity: .07; filter: saturate(.7);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body::before { opacity: .09; } }
+/* Tout le contenu passe au-dessus du filigrane */
+body > *:not(script) { position: relative; z-index: 1; }
+.entete { z-index: 40 !important; }
+
+/* ===== Bouton « Aller à ma ligne » : juste au-dessus du classement, fixe avec le titre du tableau ===== */
+.cl-hd { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: nowrap !important; }
+.cl-hd-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cl-hd-t h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-aller {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 99px; text-decoration: none; white-space: nowrap; cursor: pointer;
+  background: var(--fluo, #f2ff3d); color: var(--fluo-ink, #1a1a00);
+  font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 15px; letter-spacing: .03em; text-transform: uppercase;
+  box-shadow: 0 0 0 2px #1a1a00, 0 6px 14px -8px rgba(0,0,0,.6);
+  transition: transform .15s, filter .15s;
+}
+.cl-aller:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.cl-aller:active { transform: translateY(1px); }
+@media (max-width: 699px) {
+  .cl-aller { padding: 7px 11px; font-size: 12px; gap: 5px; }
+  .cl-hd-t .muted.small { font-size: 10.5px !important; }
+}
+/* Le cadre d'un tableau qui défile garde ses colonnes fixes « chez lui » : elles ne passent jamais devant le titre du tableau */
+.scene .scroll-x:not(.x-ok) { isolation: isolate; }
