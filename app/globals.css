@@ -2658,3 +2658,69 @@ body > *:not(script) { position: relative; z-index: 1; }
 }
 /* Le cadre d'un tableau qui défile garde ses colonnes fixes « chez lui » : elles ne passent jamais devant le titre du tableau */
 .scene .scroll-x:not(.x-ok) { isolation: isolate; }
+
+/* ===== Ordi : barres de défilement remplacées par des flèches ===== */
+html.fleches { scrollbar-width: none; }
+html.fleches::-webkit-scrollbar { display: none; }
+html.fleches .scroll-x, html.fleches .scroller, html.fleches .mx-box, html.fleches .volet, html.fleches .cl-filtres { scrollbar-width: none; }
+html.fleches .scroll-x::-webkit-scrollbar, html.fleches .scroller::-webkit-scrollbar, html.fleches .mx-box::-webkit-scrollbar { display: none; }
+.fl-b {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--gold, #f5d300); background: var(--night, #0b0a0a); color: var(--gold, #f5d300);
+  font-size: 14px; line-height: 1; box-shadow: 0 8px 18px -8px rgba(0,0,0,.7); transition: transform .12s, opacity .15s, background .15s;
+}
+.fl-b:hover:not(:disabled) { transform: scale(1.08); background: #2a2320; }
+.fl-b:active:not(:disabled) { transform: scale(.94); }
+.fl-b:disabled { opacity: .25; cursor: default; }
+.fl-page { position: fixed; z-index: 45; right: 18px; bottom: calc(var(--dock-h) + 18px); display: flex; flex-direction: column; gap: 8px; }
+.fl-page[aria-hidden="true"] { display: none; }
+.fl-cadre {
+  position: fixed; z-index: 46; transform: translate(-100%, -100%); display: flex; gap: 6px; padding: 5px;
+  border-radius: 99px; background: color-mix(in srgb, var(--surface, #fff) 80%, transparent);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 6px 16px -8px rgba(0,0,0,.5), 0 0 0 1px var(--ligne-sep, #ddd);
+}
+.fl-cadre .fl-b { width: 32px; height: 32px; font-size: 12px; }
+
+/* ===== Ordi : un vrai bas de page, pleine largeur, le contenu s'arrête à sa limite ===== */
+@media (min-width: 761px) {
+  :root { --dock-h: 60px; }
+  body { padding-bottom: calc(var(--dock-h) + 20px) !important; }
+  .dock {
+    left: 0 !important; right: 0; bottom: 0 !important; transform: none !important; width: 100% !important;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: linear-gradient(180deg, #221d1c, #0b0a0a);
+    border-top: 2px solid var(--gold, #f5d300);
+    box-shadow: 0 -10px 24px -14px rgba(0,0,0,.6);
+  }
+  .dock-in {
+    max-width: 920px; margin: 0 auto; height: var(--dock-h); padding: 6px 12px;
+    background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .volet { bottom: calc(var(--dock-h) + 12px) !important; }
+  .feuille { bottom: calc(var(--dock-h) + 12px) !important; }
+}
+/* Tableau qui défile de côté : chaque colonne prend sa largeur naturelle (texte sur une ligne),
+   seul un texte très long (plus de ~26 lettres larges) passe à la ligne */
+.scroll-x table.t:not(.cl-t) { max-width: none; }
+.scroll-x table.t td { max-width: 26em; }
+.scroll-x table.t td:first-child { white-space: nowrap; }
+@media (max-width: 699px) { .scroll-x table.t td:first-child { white-space: normal; } }
+
+/* ===== Tous les tableaux compacts et centrés : chaque colonne = sa valeur la plus longue, aucune colonne étirée ===== */
+table.t, .cl-t { width: auto !important; margin-left: auto; margin-right: auto; }
+.cl-t th, .cl-t td, .cl-t th.c-club, .cl-t td.c-club { width: auto; }
+.cl-t:not(:has(.c-club)) { min-width: 0; }
+/* Largeur naturelle : le tableau ne se tasse jamais ; s'il est plus large que l'écran, il défile (colonne nominative fixe) */
+table.t, .cl-t { width: max-content !important; max-width: none !important; }
+
+/* ===== Ordi grand écran : vrai menu latéral épinglé (titres à l'horizontale, toujours visible) ===== */
+.blocs.volet-ep { --rail-w: 196px; }
+.volet.v2.epingle { align-items: stretch; width: calc(var(--rail-w) + 8px) !important; box-shadow: 4px 0 12px -10px rgba(0,0,0,.35); }
+.volet.v2.epingle .vl-pli { width: 100%; justify-content: flex-start; padding: 0 10px; }
+.volet.v2.epingle .vl-pli-t { display: inline; }
+.volet.v2.epingle .vl-i { width: 100%; flex-direction: row; justify-content: flex-start; gap: 10px; padding: 9px 10px; min-height: 0; }
+.volet.v2.epingle .vl-c, .volet.v2.epingle .vl-bulle { display: none; }
+.volet.v2.epingle .vl-t { display: block; writing-mode: horizontal-tb; max-block-size: none; flex: 1; min-width: 0; font-size: 14.5px; text-align: left; overflow: hidden; text-overflow: ellipsis; }
+.volet.v2.epingle .vl-b { max-width: none; }
+.blocs.volet-ep { gap: 18px; }
