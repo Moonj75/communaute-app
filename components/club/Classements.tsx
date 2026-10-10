@@ -28,10 +28,10 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
       <table className={`t cl-t${compact ? " compact" : ""}`}>
         <thead>
           <tr>
-            <th className="r">#</th>
-            <th>±</th>
-            <th>{def.type === "joueurs" ? "Joueur" : "Club"}</th>
-            {def.type === "joueurs" ? <th className="hide-s">Club</th> : null}
+            <th className="r c-rg">#</th>
+            <th className="c-nm">{def.type === "joueurs" ? "Joueur" : "Club"}</th>
+            <th className="c-evo">±</th>
+            {def.type === "joueurs" ? <th className="hide-s c-club">Club</th> : null}
             {def.type === "equipes" ? <th>Équipe</th> : null}
             {def.id === "FBFTS" ? <th>Cat.</th> : def.source === "fistf" ? <th className="hide-s">Pays</th> : null}
             <th className="r">Points</th>
@@ -49,7 +49,6 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
               ) : null}
               <tr id={ancre && l === cible ? "ma-ligne" : undefined} className={estMoi ? "moi" : l.eugies && !tousNous ? "eug" : undefined}>
                 <td className="r num rg" style={couleurRang(l, def) ? ({ "--cc": couleurRang(l, def) } as React.CSSProperties) : undefined}>{l.rang}</td>
-                <td><Evo e={l.evolution} /></td>
                 <td className="nm">
                   {def.type === "joueurs" ? (
                     <>
@@ -60,7 +59,8 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
                     <b>{l.nom}</b>
                   )}
                 </td>
-                {def.type === "joueurs" ? <td className="small hide-s">{clubCourt(l)}</td> : null}
+                <td className="c-evo"><Evo e={l.evolution} /></td>
+                {def.type === "joueurs" ? <td className="small hide-s c-club">{clubCourt(l)}</td> : null}
                 {def.type === "equipes" ? <td className="small">{l.prenom}</td> : null}
                 {def.id === "FBFTS" ? (
                   <td className="small">
