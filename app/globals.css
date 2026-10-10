@@ -2865,3 +2865,105 @@ table.t thead th:first-child { border-top-left-radius: 11px; }
 table.t thead th:last-child { border-top-right-radius: 11px; }
 table.t tbody tr:last-child td:first-child { border-bottom-left-radius: 11px; }
 table.t tbody tr:last-child td:last-child { border-bottom-right-radius: 11px; }
+
+/* ===== Flèches de défilement (maintenir = de plus en plus vite) ; aucune barre de défilement ===== */
+.scroller, .mx-box, .scroll-x { scrollbar-width: none !important; }
+.scroller::-webkit-scrollbar, .mx-box::-webkit-scrollbar { display: none; }
+.fl-v { position: fixed; z-index: 44; width: 34px; height: 34px; font-size: 12px; transform: translate(-100%, 0); opacity: .92; touch-action: none; user-select: none; -webkit-user-select: none; }
+.fl-cote, .fl-page .fl-b { touch-action: none; user-select: none; -webkit-user-select: none; }
+.fl-cadre { display: none !important; }
+
+/* ===== Inventaire largeur : chaque bloc à liste / tableau se resserre sur son contenu et se centre ===== */
+.scene .panel:has(table.t), .scene .panel.list, .scene .panel.tasks, .scene .cc, .scene .nos-l, .scene .res, .scene .panel:has(> .scroller) {
+  width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto;
+}
+.scene .panel:has(table.t) > .bd, .scene .panel.list > .bd { padding-left: 14px; padding-right: 14px; }
+/* lignes de listes : colonnes à la taille du contenu (plus de grands vides au milieu) */
+.row { grid-template-columns: 54px auto auto !important; }
+.res li { grid-template-columns: 54px auto auto !important; }
+.cc-cols, .cc-l { grid-template-columns: 58px auto 90px 48px !important; }
+@media (max-width: 699px) { .cc-cols, .cc-l { grid-template-columns: 44px minmax(0, 1fr) 70px 36px !important; } }
+.nos-h, .nos-j { grid-template-columns: auto repeat(3, auto) !important; column-gap: 18px; }
+@media (max-width: 699px) { .nos-j { grid-template-columns: repeat(3, auto) !important; } }
+/* listes dans un cadre défilant : hauteur = le contenu (au maximum l'écran disponible) */
+.scroller { max-height: min(var(--ecran-dispo, 60vh), 560px) !important; }
+
+/* ===== Règle : jamais rien sur deux lignes dans un tableau ou une liste ===== */
+table.t th, table.t td, table.t td *, .cl-t td.nm, .row-main b, .row-main small, .nos-j > *, .cc-l > *, .res li > * { white-space: nowrap !important; }
+table.t td { max-width: none !important; }
+.scroll-x table.t td:first-child, .scene .scroll-x:not(.x-ok) table td:first-child { white-space: nowrap !important; max-width: none !important; }
+.row-main, .row-main b, .row-main small { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 699px) {
+  .nos-j { grid-template-columns: auto repeat(3, auto) !important; font-size: 12px; gap: 4px 10px !important; padding: 8px 10px !important; }
+  .nos-j > * { grid-column: auto !important; grid-row: auto !important; }
+}
+@media (max-width: 699px) {
+  .nos-h { display: grid !important; grid-template-columns: auto repeat(3, auto) !important; font-size: 10px; gap: 4px 10px; padding: 6px 10px !important; }
+  .nos-nom { font-size: 13px !important; }
+  .nos-c { flex-direction: row !important; }
+  .nos-c::before { display: none !important; }
+}
+/* Nos joueurs classés : colonnes alignées entre l'en-tête et les lignes, largeur juste */
+.nos-h, .nos-j { grid-template-columns: 13em 7.5em 8.5em 9em !important; }
+.nos-nom { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 699px) { .nos-h, .nos-j { grid-template-columns: 10.5em 5.6em 5.6em 5.6em !important; font-size: 11.5px; } }
+/* Nos joueurs classés : tout sur une ligne (place · catégorie · évolution), en-tête aligné */
+.nos { display: flex; flex-direction: column; align-items: center; }
+.nos-h, .nos-l { width: fit-content !important; max-width: 100%; margin-left: auto; margin-right: auto; }
+.nos-h { white-space: nowrap; }
+.nos-h > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nos-c .pl { display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 5px; white-space: nowrap; }
+.nos-c .pl-n { font-size: 20px; line-height: 1; }
+.nos-c .pl-tag { font-size: 10.5px; padding: 1px 6px; }
+.nos-c .evo { font-size: 10.5px; padding: 1px 4px; }
+.nos-c .pl-sous { font-size: 10px; }
+.nos-j { padding-top: 6px !important; padding-bottom: 6px !important; min-height: 0 !important; }
+.nos-h, .nos-j { grid-template-columns: 12.5em 9.5em 7.5em 10.5em !important; padding-left: 12px !important; padding-right: 12px !important; }
+@media (max-width: 699px) {
+  .nos-h, .nos-j { grid-template-columns: 7.6em 6.4em 3.8em 6.2em !important; column-gap: 6px !important; font-size: 11px; padding-left: 6px !important; padding-right: 6px !important; }
+  .nos-c .evo, .nos-c .pl-sous { display: none !important; }
+  .nos-c .pl-n { font-size: 15px; }
+  .nos-c .pl-tag { font-size: 9.5px; padding: 1px 4px; }
+  .nos-nom b { font-size: 11.5px; }
+  .nos-nom .moi-tag { display: none; }
+}
+/* Colonnes en pixels : l'en-tête et les lignes s'alignent exactement */
+.nos-c .pl { flex-wrap: nowrap !important; }
+.nos-h, .nos-j { grid-template-columns: 200px 130px 100px 160px !important; column-gap: 12px !important; }
+.nos-h { font-size: 11px !important; }
+@media (max-width: 699px) {
+  .nos-h, .nos-j { grid-template-columns: 80px 58px 40px 72px !important; column-gap: 6px !important; }
+  .nos-h { font-size: 9px !important; letter-spacing: .02em !important; }
+  .nos-c .pl-tag { font-size: 8.5px !important; padding: 1px 3px !important; }
+  .nos-c .pl { gap: 3px; }
+}
+/* Classements des clubs : équipe et pays sur la même ligne que le club */
+.cc-n { flex-direction: row !important; align-items: baseline; gap: 6px; overflow: hidden; }
+.cc-n small { white-space: nowrap; flex: 0 0 auto; }
+@media (max-width: 699px) { .cc-n small { font-size: 10px; } }
+@media (max-width: 699px) {
+  .cc-cols, .cc-l { grid-template-columns: 34px minmax(0, 1fr) 44px 34px !important; column-gap: 6px !important; padding-left: 8px !important; padding-right: 8px !important; }
+  .cc-l { font-size: 12.5px; min-height: 0 !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+  .cc-r { font-size: 16px !important; }
+  .cc-cols { font-size: 9.5px !important; }
+  .cc-n b { flex: 0 1 auto; min-width: 0; }
+  .cc-n small { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .cc-b header { padding: 10px 12px !important; }
+  .cc-k { font-size: 10.5px !important; letter-spacing: .06em !important; }
+  .cc-m { font-size: 10.5px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .nos-lien, .cc-tout { font-size: 13px !important; }
+}
+
+/* Classement national : la colonne catégorie a la largeur du badge */
+.cl-t th.c-cat, .cl-t td.c-cat { width: 1% !important; padding-left: 4px !important; padding-right: 4px !important; text-align: center; white-space: nowrap; }
+.cl-t td.c-cat .cat-c { display: inline-block; min-width: 0; padding: 1px 6px !important; font-size: 11px; line-height: 1.5; }
+.cl-t td.c-cat .cat-suiv { display: inline-block; margin-left: 3px; font-size: 9.5px; font-weight: 800; color: var(--t-second); }
+/* passage de catégorie : petite pastille posée sur le coin du badge (ne prend pas de largeur) */
+.cl-t td.c-cat { position: relative; }
+.cl-t td.c-cat .cat-suiv { position: absolute; top: 1px; right: -2px; margin: 0; padding: 0 3px; border-radius: 6px; font-size: 8.5px; line-height: 1.4; background: var(--night, #0b0a0a); color: var(--gold, #f5d300); }
+/* Ma fiche : bloc photo un peu plus grand */
+.fc-tete { padding: 14px 16px !important; gap: 16px !important; align-items: center !important; }
+.fc-tete .photo-box { width: 78px !important; height: 98px !important; border-radius: 10px !important; box-shadow: 0 0 0 2px var(--gold, #f5d300), 0 8px 18px -10px rgba(0,0,0,.6); }
+.fc-tete .photo-ini { font-size: 26px !important; }
+.fc-tete .photo-box::after { font-size: 13px; padding: 3px 4px; }
+@media (max-width: 699px) { .fc-tete .photo-box { width: 66px !important; height: 82px !important; } .fc-tete .photo-ini { font-size: 22px !important; } }
