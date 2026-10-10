@@ -10,6 +10,12 @@ function Evo({ e }: { e: string | null }) {
   return t ? <span className={`evo ${t.cls}`}>{t.txt}</span> : <span className="evo" />;
 }
 
+/** Small club crest, shown instead of our club's name in the rankings. */
+export function LogoClub() {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img className="logo-club" src="/crest.png" alt="SC Lions d'Eugies" title="SC Lions d'Eugies" width={22} height={22} />;
+}
+
 function clubCourt(l: LigneClassement) {
   if (!l.club) return "—";
   return l.liste === "FBFTS" ? l.club.toUpperCase() : l.club;
@@ -60,7 +66,7 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
                   )}
                 </td>
                 <td className="c-evo"><Evo e={l.evolution} /></td>
-                {def.type === "joueurs" ? <td className="small hide-s c-club">{clubCourt(l)}</td> : null}
+                {def.type === "joueurs" ? <td className="small hide-s c-club">{l.eugies ? <LogoClub /> : clubCourt(l)}</td> : null}
                 {def.type === "equipes" ? <td className="small">{l.prenom}</td> : null}
                 {def.id === "FBFTS" ? (
                   <td className="small c-cat">
@@ -273,6 +279,7 @@ export function ClassementsClubs({ nat: natTout, equipes: eqTout }: { nat: Ligne
             <sup>{sup(l.rang)}</sup>
           </span>
           <span className="cc-n">
+            {l.eugies ? <LogoClub /> : null}
             <b>{l.nom}</b>
             {l.liste === "WR-Teams" ? <small>{[l.prenom, l.pays].filter(Boolean).join(" · ")}</small> : null}
           </span>
