@@ -8,7 +8,7 @@ import Icone from "./Icone";
 /* Same floating dock as the members' space, for visitors (no login):
    the parts of the public club page, the rankings, and a gold button to log in. */
 const ITEMS = [
-  { href: "/club#bloc-club", bloc: "club", label: "Le club", ic: "accueil", c: "or" },
+  { href: "/club#bloc-club", bloc: "club", label: "Le club", ic: "accueil", c: "rouge" },
   { href: "/club#bloc-calendrier", bloc: "calendrier", label: "Calendrier", ic: "calendrier", c: "canard" },
   { href: "/club#bloc-entrainements", bloc: "entrainements", label: "Entraîn.", ic: "cible", c: "orange" },
   { href: "/club/classements", bloc: null, label: "Classements", ic: "podium", c: "indigo" },

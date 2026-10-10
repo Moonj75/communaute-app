@@ -8,7 +8,7 @@ import Icone from "./Icone";
 type Item = { href: string; label: string; ic: string; opt?: boolean; desc?: string; c?: string };
 
 const JOUEUR: Item[] = [
-  { href: "/", label: "Accueil", ic: "accueil", c: "or" },
+  { href: "/", label: "Accueil", ic: "accueil", c: "rouge" },
   { href: "/calendrier", label: "Calendrier", ic: "calendrier", c: "canard" },
   { href: "/inscriptions", label: "Inscriptions", ic: "drapeau", c: "orange" },
   { href: "/club/classements", label: "Classements", ic: "podium", opt: true, desc: "Belges et mondiaux", c: "indigo" },

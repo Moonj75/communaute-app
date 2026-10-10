@@ -149,7 +149,7 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
       // A tab band of the open part (e.g. National · Clubs belges · International Open…) stays fixed
       // under the title line; everything else that is fixed goes right under it.
       const bf = [...sc.querySelectorAll<HTMLElement>(".bande-fixe")].find((b) => b.offsetParent !== null);
-      sc.style.setProperty("--sous-bande", `${bf ? bf.offsetHeight : 0}px`);
+      sc.style.setProperty("--sous-bande", `${bf ? bf.offsetHeight + (bf.classList.contains("duo-choix") ? 8 : 0) : 0}px`);
       // A table wider than the screen first gets a smaller font (down to 10 px) so that, as far as possible,
       // everything is visible without scrolling sideways; only then does it scroll (name column fixed).
       sc.querySelectorAll<HTMLElement>(".scroll-x").forEach((b) => {
