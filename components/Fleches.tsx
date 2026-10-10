@@ -1,153 +1,133 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as PE } from "react";
 
 /**
- * Computer only (mouse): the scroll bars are hidden and replaced by arrows.
- * - the page: ▲ / ▼ at the bottom right, just above the footer;
- * - a table that scrolls by itself: ◀ ▲ ▼ ▶ in its bottom-right corner while the mouse is over it.
- * Each click moves by most of a screen (or of the table's frame). Mouse wheel and keyboard still work.
+ * Arrows instead of scroll bars, on every device.
+ * - Any framed list or table that scrolls by itself gets ▲ ▼ (up/down) and ◀ ▶ (sideways) on its edges.
+ * - On a computer, the page itself gets ▲ ▼ at the bottom right.
+ * A short tap moves a little; holding the arrow scrolls, faster and faster the longer it is held.
  */
-type Etat = { haut: boolean; bas: boolean };
-type Cadre = { el: HTMLElement; x: number; y: number; g: boolean; d: boolean; h: boolean; b: boolean };
+type Sens = { x: number; y: number };
 
+function useMaintien() {
+  const raf = useRef(0);
+  const debut = useRef(0);
+  const arreter = () => { if (raf.current) cancelAnimationFrame(raf.current); raf.current = 0; };
+  const demarrer = (cible: () => HTMLElement | Window, s: Sens, pas: () => number) => (e: PE<HTMLButtonElement>) => {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    arreter();
+    debut.current = performance.now();
+    let v = 3; // px per frame, grows while held
+    const boucle = () => {
+      const t = performance.now() - debut.current;
+      if (t > 220) {
+        v = Math.min(70, v * 1.045 + 0.35);
+        cible().scrollBy({ left: s.x * v, top: s.y * v });
+      }
+      raf.current = requestAnimationFrame(boucle);
+    };
+    raf.current = requestAnimationFrame(boucle);
+    const fin = () => {
+      const court = performance.now() - debut.current <= 220;
+      arreter();
+      if (court) cible().scrollBy({ left: s.x * pas(), top: s.y * pas(), behavior: "smooth" });
+      window.removeEventListener("pointerup", fin);
+      window.removeEventListener("pointercancel", fin);
+    };
+    window.addEventListener("pointerup", fin);
+    window.addEventListener("pointercancel", fin);
+  };
+  useEffect(() => arreter, []);
+  return demarrer;
+}
+
+type Cadre = { el: HTMLElement; r: { l: number; r: number; t: number; b: number }; g: boolean; d: boolean; h: boolean; bas: boolean };
 const SEL = ".scroll-x, .scroller, .mx-box";
 
-type Cote = { el: HTMLElement; y: number; xg: number; xd: number; g: boolean; d: boolean };
-
-/** Every device: a table wider than the screen gets ◀ ▶ on its edges (at the middle of its visible part). */
-function FlechesLaterales() {
-  const [cotes, setCotes] = useState<Cote[]>([]);
+function FlechesCadres() {
+  const [cadres, setCadres] = useState<Cadre[]>([]);
+  const maintien = useMaintien();
   useEffect(() => {
     let raf = 0;
     const maj = () => {
       raf = 0;
       const dock = document.querySelector<HTMLElement>(".dock")?.getBoundingClientRect().top ?? window.innerHeight;
-      const l: Cote[] = [];
-      document.querySelectorAll<HTMLElement>(".scroll-x:not(.x-ok)").forEach((el) => {
-        if (el.scrollWidth <= el.clientWidth + 2 || el.offsetParent === null) return;
-        const r = el.getBoundingClientRect();
-        const haut = Math.max(r.top + 40, 120), bas = Math.min(r.bottom, dock) - 10;
-        if (bas - haut < 50) return;
-        l.push({ el, y: (haut + bas) / 2, xg: r.left, xd: r.right, g: el.scrollLeft > 2, d: el.scrollLeft + el.clientWidth < el.scrollWidth - 2 });
+      const ent = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--entete-h")) || 90;
+      const l: Cadre[] = [];
+      document.querySelectorAll<HTMLElement>(SEL).forEach((el) => {
+        if (el.offsetParent === null || el.parentElement?.closest(SEL)) return;
+        const hx = el.scrollWidth > el.clientWidth + 2, hy = el.scrollHeight > el.clientHeight + 2 && getComputedStyle(el).overflowY !== "visible";
+        if (!hx && !hy) return;
+        const R = el.getBoundingClientRect();
+        const t = Math.max(R.top, ent + 50), b = Math.min(R.bottom, dock - 6);
+        if (b - t < 70) return;
+        l.push({
+          el, r: { l: R.left, r: R.right, t, b },
+          g: hx && el.scrollLeft > 2, d: hx && el.scrollLeft + el.clientWidth < el.scrollWidth - 2,
+          h: hy && el.scrollTop > 2, bas: hy && el.scrollTop + el.clientHeight < el.scrollHeight - 2,
+        });
       });
-      setCotes(l);
+      setCadres(l);
     };
     const dem = () => { if (!raf) raf = requestAnimationFrame(maj); };
     maj();
     window.addEventListener("scroll", dem, { passive: true });
     window.addEventListener("resize", dem);
     document.addEventListener("scroll", dem, { capture: true, passive: true });
-    const t = window.setInterval(maj, 1000);
+    const t = window.setInterval(maj, 900);
     return () => { window.removeEventListener("scroll", dem); window.removeEventListener("resize", dem); document.removeEventListener("scroll", dem, { capture: true }); clearInterval(t); };
   }, []);
-  const aller = (el: HTMLElement, sens: number) => el.scrollBy({ left: sens * Math.round(el.clientWidth * 0.7), behavior: "smooth" });
   return (
     <>
-      {cotes.map((c, i) => (
-        <Fragment key={i}>
-          {c.g ? <button type="button" className="fl-b fl-cote" style={{ left: c.xg + 4, top: c.y }} onClick={() => aller(c.el, -1)} aria-label="Voir les colonnes de gauche">◀</button> : null}
-          {c.d ? <button type="button" className="fl-b fl-cote" style={{ left: c.xd - 4, top: c.y, transform: "translate(-100%, -50%)" }} onClick={() => aller(c.el, 1)} aria-label="Voir les colonnes de droite">▶</button> : null}
-        </Fragment>
-      ))}
+      {cadres.map((c, i) => {
+        const el = c.el;
+        const mi = (c.r.t + c.r.b) / 2;
+        const pasX = () => Math.round(el.clientWidth * 0.6), pasY = () => Math.round(el.clientHeight * 0.6);
+        return (
+          <div key={i} className="fl-groupe">
+            {c.g ? <button type="button" className="fl-b fl-cote" style={{ left: c.r.l + 4, top: mi }} onPointerDown={maintien(() => el, { x: -1, y: 0 }, pasX)} aria-label="Vers la gauche">◀</button> : null}
+            {c.d ? <button type="button" className="fl-b fl-cote" style={{ left: c.r.r - 4, top: mi, transform: "translate(-100%, -50%)" }} onPointerDown={maintien(() => el, { x: 1, y: 0 }, pasX)} aria-label="Vers la droite">▶</button> : null}
+            {c.h ? <button type="button" className="fl-b fl-v" style={{ left: c.r.r - 8, top: c.r.t + 8 }} onPointerDown={maintien(() => el, { x: 0, y: -1 }, pasY)} aria-label="Remonter dans la liste">▲</button> : null}
+            {c.bas ? <button type="button" className="fl-b fl-v" style={{ left: c.r.r - 8, top: c.r.b - 8, transform: "translate(-100%, -100%)" }} onPointerDown={maintien(() => el, { x: 0, y: 1 }, pasY)} aria-label="Descendre dans la liste">▼</button> : null}
+          </div>
+        );
+      })}
     </>
+  );
+}
+
+function FlechesPage() {
+  const [actif, setActif] = useState(false);
+  const [p, setP] = useState({ h: false, b: false });
+  const maintien = useMaintien();
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: fine) and (min-width: 761px)");
+    const m = () => { setActif(mq.matches); document.documentElement.classList.toggle("fleches", mq.matches); };
+    m();
+    mq.addEventListener("change", m);
+    const maj = () => setP({ h: window.scrollY > 8, b: window.scrollY + window.innerHeight < document.documentElement.scrollHeight - 8 });
+    maj();
+    window.addEventListener("scroll", maj, { passive: true });
+    const t = window.setInterval(maj, 1000);
+    return () => { mq.removeEventListener("change", m); window.removeEventListener("scroll", maj); clearInterval(t); };
+  }, []);
+  if (!actif || (!p.h && !p.b)) return null;
+  const pas = () => Math.round(window.innerHeight * 0.6);
+  return (
+    <div className="fl-page">
+      <button type="button" className="fl-b" disabled={!p.h} onPointerDown={maintien(() => window, { x: 0, y: -1 }, pas)} aria-label="Remonter">▲</button>
+      <button type="button" className="fl-b" disabled={!p.b} onPointerDown={maintien(() => window, { x: 0, y: 1 }, pas)} aria-label="Descendre">▼</button>
+    </div>
   );
 }
 
 export default function Fleches() {
   return (
     <>
-      <FlechesLaterales />
-      <FlechesOrdi />
-    </>
-  );
-}
-
-function FlechesOrdi() {
-  const [actif, setActif] = useState(false);
-  const [page, setPage] = useState<Etat>({ haut: false, bas: false });
-  const [cadre, setCadre] = useState<Cadre | null>(null);
-  const cible = useRef<HTMLElement | null>(null);
-  const minuteur = useRef<number | null>(null);
-
-  // Only with a mouse on a wide screen (phones keep their usual finger scrolling).
-  useEffect(() => {
-    const mq = window.matchMedia("(pointer: fine) and (min-width: 761px)");
-    const maj = () => {
-      setActif(mq.matches);
-      document.documentElement.classList.toggle("fleches", mq.matches);
-    };
-    maj();
-    mq.addEventListener("change", maj);
-    return () => mq.removeEventListener("change", maj);
-  }, []);
-
-  const placer = useCallback(() => {
-    const d = document.documentElement;
-    setPage({ haut: window.scrollY > 8, bas: window.scrollY + window.innerHeight < d.scrollHeight - 8 });
-    const el = cible.current;
-    if (!el || !el.isConnected) return setCadre(null);
-    const r = el.getBoundingClientRect();
-    const dock = document.querySelector<HTMLElement>(".dock")?.getBoundingClientRect().top ?? window.innerHeight;
-    const bas = Math.min(r.bottom, dock) - 8;
-    if (bas - r.top < 60) return setCadre(null);
-    setCadre({
-      el, x: Math.min(r.right, window.innerWidth) - 8, y: bas,
-      g: el.scrollLeft > 2, d: el.scrollLeft + el.clientWidth < el.scrollWidth - 2,
-      h: el.scrollTop > 2, b: el.scrollTop + el.clientHeight < el.scrollHeight - 2,
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!actif) return;
-    const survol = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      if (t.closest?.(".fl-cadre")) { if (minuteur.current) clearTimeout(minuteur.current); return; }
-      const box = t.closest?.(SEL) as HTMLElement | null;
-      const defile = box && (box.scrollWidth > box.clientWidth + 2 || box.scrollHeight > box.clientHeight + 2);
-      if (defile) {
-        if (minuteur.current) clearTimeout(minuteur.current);
-        if (cible.current !== box) { cible.current = box; placer(); }
-      } else if (cible.current) {
-        if (minuteur.current) clearTimeout(minuteur.current);
-        minuteur.current = window.setTimeout(() => { cible.current = null; setCadre(null); }, 500);
-      }
-    };
-    const bouge = () => requestAnimationFrame(placer);
-    document.addEventListener("mouseover", survol);
-    window.addEventListener("scroll", bouge, { passive: true });
-    window.addEventListener("resize", bouge);
-    document.addEventListener("scroll", bouge, { capture: true, passive: true });
-    placer();
-    const t = window.setInterval(placer, 1200); // the page may grow (data, opened parts)
-    return () => {
-      document.removeEventListener("mouseover", survol);
-      window.removeEventListener("scroll", bouge);
-      window.removeEventListener("resize", bouge);
-      document.removeEventListener("scroll", bouge, { capture: true });
-      clearInterval(t);
-    };
-  }, [actif, placer]);
-
-  if (!actif) return null;
-  const pas = () => Math.round(window.innerHeight * 0.75);
-  const dans = (dx: number, dy: number) => {
-    const el = cadre?.el;
-    if (!el) return;
-    el.scrollBy({ left: dx * Math.round(el.clientWidth * 0.7), top: dy * Math.round(el.clientHeight * 0.75), behavior: "smooth" });
-  };
-  return (
-    <>
-      <div className="fl-page" aria-hidden={!page.haut && !page.bas}>
-        <button type="button" className="fl-b" disabled={!page.haut} onClick={() => window.scrollBy({ top: -pas(), behavior: "smooth" })} aria-label="Remonter" title="Remonter">▲</button>
-        <button type="button" className="fl-b" disabled={!page.bas} onClick={() => window.scrollBy({ top: pas(), behavior: "smooth" })} aria-label="Descendre" title="Descendre">▼</button>
-      </div>
-      {cadre && (cadre.h || cadre.b) ? (
-        <div className="fl-cadre" style={{ left: cadre.x, top: cadre.y }}>
-          {cadre.h || cadre.b ? <button type="button" className="fl-b" disabled={!cadre.h} onClick={() => dans(0, -1)} aria-label="Vers le haut">▲</button> : null}
-          {cadre.h || cadre.b ? <button type="button" className="fl-b" disabled={!cadre.b} onClick={() => dans(0, 1)} aria-label="Vers le bas">▼</button> : null}
-        </div>
-      ) : null}
+      <FlechesCadres />
+      <FlechesPage />
     </>
   );
 }

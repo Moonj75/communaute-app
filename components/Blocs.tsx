@@ -172,11 +172,6 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
         if (!tient()) {
           t.classList.add("serre");
           ajuster();
-          // Still too wide with the smallest font: the name goes on two lines (name, then first name).
-          if (!tient() && t.querySelector("td.nm, td:first-child b")) {
-            t.classList.add("nm2");
-            ajuster();
-          }
         }
         b.classList.remove("x-mesure");
       });
