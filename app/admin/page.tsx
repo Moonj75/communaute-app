@@ -43,10 +43,6 @@ export default async function AdminPage() {
     <>
       <Header subtitle="Administration · membres" profil={profil} name={displayName(profil, user.email)} />
       <main className="wrap">
-        <a href="/" className="muted" style={{ textDecoration: "none", fontWeight: 700 }}>
-          ← Retour à l&apos;accueil
-        </a>
-
         <section className="hello"><span className="kicker">Staff</span><h2>Joueurs</h2><p>Liste Notion, comptes de connexion, invitations et aperçu joueur.</p></section>
         <Blocs blocs={[
         { id: "apercu", titre: "Voir comme un joueur", ic: "👁️", contenu: (
