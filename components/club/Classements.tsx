@@ -33,7 +33,7 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
             <th className="c-evo">±</th>
             {def.type === "joueurs" ? <th className="hide-s c-club">Club</th> : null}
             {def.type === "equipes" ? <th>Équipe</th> : null}
-            {def.id === "FBFTS" ? <th>Cat.</th> : def.source === "fistf" ? <th className="hide-s">Pays</th> : null}
+            {def.id === "FBFTS" ? <th className="c-cat">Cat.</th> : def.source === "fistf" ? <th className="hide-s">Pays</th> : null}
             <th className="r">Points</th>
             {def.id === "FBFTS" && !compact ? <th className="r hide-s">À défendre</th> : null}
           </tr>
@@ -63,9 +63,9 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
                 {def.type === "joueurs" ? <td className="small hide-s c-club">{clubCourt(l)}</td> : null}
                 {def.type === "equipes" ? <td className="small">{l.prenom}</td> : null}
                 {def.id === "FBFTS" ? (
-                  <td className="small">
-                    <b className="cat-c" style={couleurCategorie(l.categorie) ? ({ "--cc": couleurCategorie(l.categorie) } as React.CSSProperties) : undefined}>{l.categorie || "—"}</b>
-                    {l.categorie_suivante && l.categorie_suivante !== l.categorie ? <span className="muted"> → {l.categorie_suivante}</span> : null}
+                  <td className="small c-cat">
+                    <b className="cat-c" title={l.categorie || undefined} style={couleurCategorie(l.categorie) ? ({ "--cc": couleurCategorie(l.categorie) } as React.CSSProperties) : undefined}>{l.categorie && l.categorie.length > 4 ? `${l.categorie.slice(0, 3)}.` : l.categorie || "—"}</b>
+                    {l.categorie_suivante && l.categorie_suivante !== l.categorie ? <span className="cat-suiv" title={`Passe en ${l.categorie_suivante}`}>→{l.categorie_suivante}</span> : null}
                   </td>
                 ) : def.source === "fistf" ? (
                   <td className="small hide-s">{l.pays}</td>
@@ -169,8 +169,8 @@ export function NosJoueurs({ lignes, moi = [], lien = true, max = lien ? 12 : 0 
       <div className="nos-h" aria-hidden="true">
         <span>Joueur</span>
         <span>🇧🇪 National</span>
-        <span>🌍 International Open</span>
-        <span>🌍 International catégorie</span>
+        <span>🌍 Int. Open</span>
+        <span>🌍 Int. catégorie</span>
       </div>
       <ol className="nos-l">
         {joueurs.map((j) => {
