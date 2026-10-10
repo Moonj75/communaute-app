@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 
 export type BlocDef = {
   id: string;
@@ -11,6 +12,10 @@ export type BlocDef = {
   contenu: ReactNode;
   /** Opens another page instead of showing a part here (e.g. « Classements » → the rankings page). */
   href?: string;
+  /** Short word under the icon while the side rail is folded (e.g. « U20 »), when icons look alike. */
+  court?: string;
+  /** Marks a link entry as the current page (rail of the Classements page). */
+  actuel?: boolean;
   /** Kept for compatibility (miniatures no longer exist). */
   apercu?: ReactNode;
 };
@@ -31,6 +36,9 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
   const [titreHtml, setTitreHtml] = useState<string | null>(null);
   const place = useRef<HTMLDivElement>(null);
   const volet = useRef<HTMLElement>(null);
+  // The side rail is folded (icons only); a tap on « ☰ » unfolds it with the titles written across.
+  const [deplie, setDeplie] = useState(false);
+  const [appui, setAppui] = useState<string | null>(null);
 
   // Page name for the fixed title: given, or read from the page heading.
   useEffect(() => {
@@ -136,7 +144,24 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
     return () => { ro.disconnect(); window.removeEventListener("resize", demander); if (raf) cancelAnimationFrame(raf); };
   }, [actif, tout]);
 
+  useEffect(() => {
+    if (!deplie) return;
+    const dehors = (e: PointerEvent) => { if (volet.current && !volet.current.contains(e.target as Node)) setDeplie(false); };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setDeplie(false);
+    document.addEventListener("pointerdown", dehors);
+    window.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", dehors); window.removeEventListener("keydown", esc); };
+  }, [deplie]);
+
+  // Finger on an entry (phone): its title shows in large, across, for a moment.
+  const montrer = (id: string, e: ReactPointerEvent) => {
+    if (e.pointerType === "mouse" || deplie) return;
+    setAppui(id);
+    window.setTimeout(() => setAppui((x) => (x === id ? null : x)), 1100);
+  };
+
   const ouvrir = useCallback((id: string) => {
+    setDeplie(false);
     setActif(id);
     setTout(false);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#bloc-${id}`);
@@ -152,7 +177,7 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
   }, []);
 
   // A single part: no side rail, but the same fixed title line « Page › Partie » on top.
-  if (valides.length <= 1)
+  if (tous.length <= 1)
     return (
       <div className="blocs seul">
         <div className="bl-col">
@@ -171,38 +196,52 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
   return (
     <div className={`blocs volet-ok${tout ? " tout" : ""}`}>
       <div ref={place} className="volet-place" aria-hidden="true" />
-      <nav ref={volet} className="volet" id="onglets" aria-label="Parties de la page">
+      <nav ref={volet} className={`volet v2${deplie ? " deplie" : ""}`} id="onglets" aria-label="Parties de la page">
+        <button type="button" className="vl-pli" onClick={() => setDeplie((d) => !d)} aria-expanded={deplie} title={deplie ? "Replier" : "Déplier le menu"}>
+          <span aria-hidden="true">{deplie ? "«" : "☰"}</span>
+          <span className="vl-pli-t">{deplie ? "Replier" : ""}</span>
+        </button>
         {tous.map((b) => {
-          const on = !tout && b.id === actif;
+          const on = b.href ? Boolean(b.actuel) : !tout && b.id === actif;
           const badge = b.badge !== undefined && b.badge !== null && b.badge !== "" ? b.badge : null;
+          const dedans = (
+            <>
+              <span className="vl-ic" aria-hidden="true">{b.ic}</span>
+              {b.court ? <span className="vl-c" aria-hidden="true">{b.court}</span> : null}
+              <span className="vl-t">{b.titre}</span>
+              {badge && String(badge).length <= 3 ? <span className="vl-b">{badge}</span> : null}
+              <span className="vl-bulle" aria-hidden="true">{b.titre}{badge && String(badge).length > 3 ? ` · ${badge}` : ""}</span>
+            </>
+          );
+          const cls = `vl-i${on ? " on" : ""}${appui === b.id ? " appui" : ""}`;
           if (b.href)
             return (
-              <a key={b.id} href={b.href} title={b.titre} className="vl-i vl-lien">
-                <span className="vl-ic" aria-hidden="true">{b.ic}</span>
-                <span className="vl-t">{b.titre}</span>
-                {badge ? <span className="vl-b">{badge}</span> : null}
-              </a>
+              <Link key={b.id} href={b.href} title={b.titre} aria-label={b.titre} className={`${cls} vl-lien`} aria-current={on ? "page" : undefined} onPointerDown={(e) => montrer(b.id, e)} onClick={() => setDeplie(false)}>
+                {dedans}
+              </Link>
             );
           return (
             <button
               key={b.id}
               type="button"
               data-bloc={b.id}
-              title={b.titre}
-              className={`vl-i${on ? " on" : ""}`}
+              aria-label={b.titre}
+              className={cls}
               aria-current={on ? "true" : undefined}
+              onPointerDown={(e) => montrer(b.id, e)}
               onClick={() => ouvrir(b.id)}
             >
-              <span className="vl-ic" aria-hidden="true">{b.ic}</span>
-              <span className="vl-t">{b.titre}</span>
-              {badge ? <span className="vl-b">{badge}</span> : null}
+              {dedans}
             </button>
           );
         })}
-        <button type="button" className={`vl-i vl-tout${tout ? " on" : ""}`} onClick={() => setTout((t) => !t)} aria-pressed={tout} title={tout ? "Un à la fois" : "Tout afficher"}>
-          <span className="vl-ic" aria-hidden="true">{tout ? "◱" : "▦"}</span>
-          <span className="vl-t">{tout ? "Un à la fois" : "Tout"}</span>
-        </button>
+        {valides.length > 1 ? (
+          <button type="button" className={`vl-i vl-tout${tout ? " on" : ""}${appui === "_tout" ? " appui" : ""}`} onPointerDown={(e) => montrer("_tout", e)} onClick={() => { setTout((t) => !t); setDeplie(false); }} aria-pressed={tout} aria-label={tout ? "Un à la fois" : "Tout afficher"}>
+            <span className="vl-ic" aria-hidden="true">{tout ? "◱" : "▦"}</span>
+            <span className="vl-t">{tout ? "Un à la fois" : "Tout afficher"}</span>
+            <span className="vl-bulle" aria-hidden="true">{tout ? "Un à la fois" : "Tout afficher"}</span>
+          </button>
+        ) : null}
       </nav>
 
       <div className="bl-col">
