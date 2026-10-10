@@ -51,19 +51,22 @@ export default async function Classements({ searchParams }: { searchParams: Prom
             {f.txt}
           </Link>
         ))}
-        {lignes.some((l) => l.eugies) && !filtre ? (
-          <a className="chip go" href="#ma-ligne">
-            ↓ Aller à {moi.length && lignes.some((l) => l.joueur_id && moi.includes(l.joueur_id)) ? "ma ligne" : "notre premier joueur"}
-          </a>
-        ) : null}
       </div>
       </div>
       <section className="panel">
-        <div className="hd">
-          <h2>{def.titre}</h2>
-          <span className="muted small">
-            {lignes[0] ? libelleMois(lignes[0].mois, true) : ""} · {nb.get(def.id) || 0} classés · <a href={SOURCES[def.source].page} target="_blank" rel="noopener">source ↗</a>
-          </span>
+        <div className="hd cl-hd">
+          <div className="cl-hd-t">
+            <h2>{def.titre}</h2>
+            <span className="muted small">
+              {lignes[0] ? libelleMois(lignes[0].mois, true) : ""} · {nb.get(def.id) || 0} classés · <a href={SOURCES[def.source].page} target="_blank" rel="noopener">source ↗</a>
+            </span>
+          </div>
+          {/* Fixed with the table's title: one tap brings our line to the middle of the table. */}
+          {lignes.some((l) => l.eugies) && !filtre ? (
+            <a className="cl-aller" href="#ma-ligne">
+              <span aria-hidden="true">🎯</span> {moi.length && lignes.some((l) => l.joueur_id && moi.includes(l.joueur_id)) ? "Aller à ma ligne" : "Aller à notre premier joueur"}
+            </a>
+          ) : null}
         </div>
         <div className="bd">
           {lignes.length ? <TableClassement lignes={lignes} def={def} moi={moi} /> : <p className="vide">Ce classement n&apos;a pas encore été importé.</p>}
