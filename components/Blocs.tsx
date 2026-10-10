@@ -150,6 +150,36 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
       // under the title line; everything else that is fixed goes right under it.
       const bf = [...sc.querySelectorAll<HTMLElement>(".bande-fixe")].find((b) => b.offsetParent !== null);
       sc.style.setProperty("--sous-bande", `${bf ? bf.offsetHeight : 0}px`);
+      // A table wider than the screen first gets a smaller font (down to 10 px) so that, as far as possible,
+      // everything is visible without scrolling sideways; only then does it scroll (name column fixed).
+      sc.querySelectorAll<HTMLElement>(".scroll-x").forEach((b) => {
+        const t = b.querySelector<HTMLElement>("table");
+        if (!t || b.offsetParent === null) return;
+        t.style.fontSize = "";
+        t.classList.remove("serre", "nm2");
+        b.classList.add("x-mesure");
+        const base = parseFloat(getComputedStyle(t).fontSize) || 14;
+        const tient = () => b.scrollWidth <= b.clientWidth + 1;
+        const ajuster = () => {
+          let bas = 10, haut = base, ok = bas;
+          for (let i = 0; i < 6; i++) {
+            const m = (bas + haut) / 2;
+            t.style.fontSize = `${m.toFixed(2)}px`;
+            if (tient()) { ok = m; bas = m; } else haut = m;
+          }
+          t.style.fontSize = `${ok.toFixed(2)}px`;
+        };
+        if (!tient()) {
+          t.classList.add("serre");
+          ajuster();
+          // Still too wide with the smallest font: the name goes on two lines (name, then first name).
+          if (!tient() && t.querySelector("td.nm, td:first-child b")) {
+            t.classList.add("nm2");
+            ajuster();
+          }
+        }
+        b.classList.remove("x-mesure");
+      });
       sc.querySelectorAll<HTMLElement>(".scroll-x").forEach((b) => b.classList.toggle("x-ok", b.scrollWidth <= b.clientWidth + 1));
       sc.querySelectorAll<HTMLElement>("table, .nos-h, .cc-cols").forEach((t) => {
         t.style.setProperty("--sous-h", `${auDessus(t)}px`);

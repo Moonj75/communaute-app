@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Computer only (mouse): the scroll bars are hidden and replaced by arrows.
@@ -13,7 +13,57 @@ type Cadre = { el: HTMLElement; x: number; y: number; g: boolean; d: boolean; h:
 
 const SEL = ".scroll-x, .scroller, .mx-box";
 
+type Cote = { el: HTMLElement; y: number; xg: number; xd: number; g: boolean; d: boolean };
+
+/** Every device: a table wider than the screen gets ◀ ▶ on its edges (at the middle of its visible part). */
+function FlechesLaterales() {
+  const [cotes, setCotes] = useState<Cote[]>([]);
+  useEffect(() => {
+    let raf = 0;
+    const maj = () => {
+      raf = 0;
+      const dock = document.querySelector<HTMLElement>(".dock")?.getBoundingClientRect().top ?? window.innerHeight;
+      const l: Cote[] = [];
+      document.querySelectorAll<HTMLElement>(".scroll-x:not(.x-ok)").forEach((el) => {
+        if (el.scrollWidth <= el.clientWidth + 2 || el.offsetParent === null) return;
+        const r = el.getBoundingClientRect();
+        const haut = Math.max(r.top + 40, 120), bas = Math.min(r.bottom, dock) - 10;
+        if (bas - haut < 50) return;
+        l.push({ el, y: (haut + bas) / 2, xg: r.left, xd: r.right, g: el.scrollLeft > 2, d: el.scrollLeft + el.clientWidth < el.scrollWidth - 2 });
+      });
+      setCotes(l);
+    };
+    const dem = () => { if (!raf) raf = requestAnimationFrame(maj); };
+    maj();
+    window.addEventListener("scroll", dem, { passive: true });
+    window.addEventListener("resize", dem);
+    document.addEventListener("scroll", dem, { capture: true, passive: true });
+    const t = window.setInterval(maj, 1000);
+    return () => { window.removeEventListener("scroll", dem); window.removeEventListener("resize", dem); document.removeEventListener("scroll", dem, { capture: true }); clearInterval(t); };
+  }, []);
+  const aller = (el: HTMLElement, sens: number) => el.scrollBy({ left: sens * Math.round(el.clientWidth * 0.7), behavior: "smooth" });
+  return (
+    <>
+      {cotes.map((c, i) => (
+        <Fragment key={i}>
+          {c.g ? <button type="button" className="fl-b fl-cote" style={{ left: c.xg + 4, top: c.y }} onClick={() => aller(c.el, -1)} aria-label="Voir les colonnes de gauche">◀</button> : null}
+          {c.d ? <button type="button" className="fl-b fl-cote" style={{ left: c.xd - 4, top: c.y, transform: "translate(-100%, -50%)" }} onClick={() => aller(c.el, 1)} aria-label="Voir les colonnes de droite">▶</button> : null}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 export default function Fleches() {
+  return (
+    <>
+      <FlechesLaterales />
+      <FlechesOrdi />
+    </>
+  );
+}
+
+function FlechesOrdi() {
   const [actif, setActif] = useState(false);
   const [page, setPage] = useState<Etat>({ haut: false, bas: false });
   const [cadre, setCadre] = useState<Cadre | null>(null);
@@ -92,12 +142,10 @@ export default function Fleches() {
         <button type="button" className="fl-b" disabled={!page.haut} onClick={() => window.scrollBy({ top: -pas(), behavior: "smooth" })} aria-label="Remonter" title="Remonter">▲</button>
         <button type="button" className="fl-b" disabled={!page.bas} onClick={() => window.scrollBy({ top: pas(), behavior: "smooth" })} aria-label="Descendre" title="Descendre">▼</button>
       </div>
-      {cadre && (cadre.g || cadre.d || cadre.h || cadre.b) ? (
+      {cadre && (cadre.h || cadre.b) ? (
         <div className="fl-cadre" style={{ left: cadre.x, top: cadre.y }}>
-          {cadre.g || cadre.d ? <button type="button" className="fl-b" disabled={!cadre.g} onClick={() => dans(-1, 0)} aria-label="Vers la gauche">◀</button> : null}
           {cadre.h || cadre.b ? <button type="button" className="fl-b" disabled={!cadre.h} onClick={() => dans(0, -1)} aria-label="Vers le haut">▲</button> : null}
           {cadre.h || cadre.b ? <button type="button" className="fl-b" disabled={!cadre.b} onClick={() => dans(0, 1)} aria-label="Vers le bas">▼</button> : null}
-          {cadre.g || cadre.d ? <button type="button" className="fl-b" disabled={!cadre.d} onClick={() => dans(1, 0)} aria-label="Vers la droite">▶</button> : null}
         </div>
       ) : null}
     </>
