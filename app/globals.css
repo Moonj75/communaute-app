@@ -2514,3 +2514,65 @@ tr.ligne-flash > td { animation: ligne-flash 1.8s ease 1; }
 .ligne-flash:not(tr) { animation: ligne-flash 1.8s ease 1; }
 @keyframes ligne-fond { 0%, 100% { } 15%, 55% { background-color: color-mix(in srgb, var(--gold, #f5d300) 70%, #fff); } }
 tr.ligne-flash > td { animation: ligne-fond 1.8s ease 1 !important; }
+
+/* ===== Volet latéral v2 : replié par défaut (icônes), déplié au clic (titres à l'horizontale),
+   et au survol ou à l'appui d'un onglet, son titre s'affiche en grand à l'horizontale ===== */
+.volet.v2 { overflow: visible !important; align-items: center; z-index: 25; transition: width .2s ease, box-shadow .2s ease; }
+.volet.v2 .vl-i {
+  position: relative; width: calc(var(--rail-w) - 2px); min-height: calc(var(--rail-w) - 2px);
+  padding: 5px 0; gap: 3px; justify-content: center; text-decoration: none;
+}
+.volet.v2 .vl-ic { font-size: 16px; }
+.volet.v2 .vl-t { display: none; }
+.volet.v2 .vl-c { font-size: 8.5px; font-weight: 800; letter-spacing: .02em; line-height: 1; text-transform: uppercase; max-width: calc(var(--rail-w) - 4px); overflow: hidden; white-space: nowrap; text-overflow: clip; }
+.volet.v2 .vl-b { font-size: 9px; padding: 1px 3px; }
+.vl-pli {
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto;
+  width: calc(var(--rail-w) - 2px); height: 28px; border: 0; border-radius: 9px; cursor: pointer;
+  background: var(--night, #0b0a0a); color: var(--gold, #f5d300); font-size: 15px; font-weight: 800;
+  box-shadow: 0 4px 10px -6px rgba(0,0,0,.6);
+}
+.vl-pli-t { display: none; font-family: var(--font-display); font-style: italic; text-transform: uppercase; font-size: 12px; letter-spacing: .06em; }
+/* Bulle : le titre en grand, à l'horizontale, à droite de l'onglet */
+.vl-bulle {
+  position: absolute; left: calc(100% + 10px); top: 50%; transform: translate(-6px, -50%); opacity: 0; pointer-events: none;
+  white-space: nowrap; padding: 8px 14px; border-radius: 10px; z-index: 40;
+  background: var(--night, #0b0a0a); color: #fff; border-left: 3px solid var(--gold, #f5d300);
+  font-family: var(--font-display); font-weight: 800; font-style: italic; text-transform: uppercase; font-size: 17px; letter-spacing: .04em;
+  box-shadow: 0 10px 24px -10px rgba(0,0,0,.7); transition: opacity .12s, transform .12s;
+}
+@media (hover: hover) { .volet.v2:not(.deplie) .vl-i:hover .vl-bulle { opacity: 1; transform: translate(0, -50%); } }
+.volet.v2:not(.deplie) .vl-i.appui .vl-bulle, .volet.v2:not(.deplie) .vl-i:focus-visible .vl-bulle { opacity: 1; transform: translate(0, -50%); }
+/* Déplié : le volet s'élargit par-dessus la page, les titres se lisent à l'horizontale */
+.volet.v2.deplie { width: 230px !important; align-items: stretch; box-shadow: 10px 0 30px -10px rgba(0,0,0,.45); border-radius: 0 0 14px 0; }
+.volet.v2.deplie .vl-pli { width: 100%; justify-content: flex-start; padding: 0 10px; }
+.volet.v2.deplie .vl-pli-t { display: inline; }
+.volet.v2.deplie .vl-i { width: 100%; flex-direction: row; justify-content: flex-start; gap: 10px; padding: 9px 10px; min-height: 0; }
+.volet.v2.deplie .vl-c, .volet.v2.deplie .vl-bulle { display: none; }
+.volet.v2.deplie .vl-t {
+  display: block; writing-mode: horizontal-tb; max-block-size: none; flex: 1; min-width: 0;
+  font-size: 15px; text-align: left; overflow: hidden; text-overflow: ellipsis;
+}
+.volet.v2.deplie .vl-b { max-width: none; }
+
+/* ===== Règle générale des tableaux : on sait toujours à quoi correspond ce qui défile =====
+   - tableau qui tient dans l'écran : ses titres de colonnes restent fixes sous les bandes (déjà en place) ;
+   - tableau plus large que l'écran : il défile dans sa propre zone, ses titres restent en haut de cette zone
+     ET sa première colonne (le joueur, l'évènement…) reste fixe à gauche. */
+.scene .scroll-x:not(.x-ok) { max-height: max(320px, var(--ecran-dispo, 60vh)); overflow: auto; overscroll-behavior: contain; }
+.scene .scroll-x:not(.x-ok) thead th { position: sticky !important; top: 0 !important; z-index: 3; }
+.scene .scroll-x:not(.x-ok) table th:first-child,
+.scene .scroll-x:not(.x-ok) table td:first-child {
+  position: sticky; left: 0; z-index: 2;
+  background: var(--surface); box-shadow: 6px 0 8px -8px rgba(0,0,0,.45);
+}
+.scene .scroll-x:not(.x-ok) table tbody tr:nth-child(even) td:first-child { background: var(--zebra, #f1ebe0); }
+.scene .scroll-x:not(.x-ok) table tbody tr.eug td:first-child { background: var(--fluo-club, #7ff9ff); }
+.scene .scroll-x:not(.x-ok) thead th:first-child { z-index: 4; background: var(--th-bg) !important; }
+/* Classements trop larges : le nom du joueur colle aussi, juste après la place */
+.scene .scroll-x:not(.x-ok) .cl-t td.nm { position: sticky; left: 0; z-index: 2; background: inherit; }
+.scene .scroll-x:not(.x-ok) { max-height: max(260px, calc(100dvh - var(--haut-fixe) - var(--sous-bande, 0px) - var(--dock-h, 66px) - 110px)); scroll-margin-top: calc(var(--haut-fixe) + 60px); }
+/* Colonne nominative fixe : jamais plus de 40 % de l'écran sur téléphone (le nom passe à la ligne) */
+@media (max-width: 699px) { .scene .scroll-x:not(.x-ok) table td:first-child, .scene .scroll-x:not(.x-ok) table th:first-child { max-width: 40vw; min-width: 96px; white-space: normal; } }
+/* Le cadre qui défile n'a pas de marge intérieure : titres et colonne nominative collent pile au bord */
+.scene .scroll-x:not(.x-ok) { padding: 0 !important; }
