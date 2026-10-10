@@ -2635,7 +2635,7 @@ body::before {
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body::before { opacity: .09; } }
 /* Tout le contenu passe au-dessus du filigrane */
-body > *:not(script) { position: relative; z-index: 1; }
+body > :is(main, .install-wrap, .values, .login, div.wrap) { position: relative; z-index: 1; }
 .entete { z-index: 40 !important; }
 
 /* ===== Bouton « Aller à ma ligne » : juste au-dessus du classement, fixe avec le titre du tableau ===== */
@@ -2724,3 +2724,144 @@ table.t, .cl-t { width: max-content !important; max-width: none !important; }
 .volet.v2.epingle .vl-t { display: block; writing-mode: horizontal-tb; max-block-size: none; flex: 1; min-width: 0; font-size: 14.5px; text-align: left; overflow: hidden; text-overflow: ellipsis; }
 .volet.v2.epingle .vl-b { max-width: none; }
 .blocs.volet-ep { gap: 18px; }
+
+/* ===== Ordi grand écran (menu épinglé) : le menu colle au bord gauche de l'écran,
+   tout le reste s'aligne à gauche et occupe la largeur de l'écran ===== */
+@media (min-width: 1100px) {
+  :root { --side: 236px; }
+  body:has(.blocs.volet-ep) .wrap { max-width: none; }
+  body:has(.blocs.volet-ep) .top .wrap { padding-left: 28px; padding-right: 36px; }
+  body:has(.blocs.volet-ep) .install-wrap { padding-left: calc(var(--side) + 32px); padding-right: 44px; }
+  body:has(.blocs.volet-ep) main.wrap { padding-left: calc(var(--side) + 32px) !important; padding-right: 44px !important; }
+  .blocs.volet-ep { --rail-w: var(--side); grid-template-columns: minmax(0, 1fr) !important; }
+  .blocs.volet-ep > .volet-place { display: none; }
+  .blocs.volet-ep > .bl-col { grid-column: 1; max-width: 1560px; }
+  .volet.v2.epingle {
+    left: 0 !important; top: var(--entete-h, 100px) !important; bottom: var(--dock-h, 60px) !important;
+    width: var(--side) !important; margin: 0 !important; border-radius: 0 !important;
+    padding: 16px 14px !important; gap: 6px;
+    background: var(--cadre); border-right: 3px solid var(--cadre-trait); box-shadow: 6px 0 18px -14px rgba(0,0,0,.45);
+  }
+  .volet.v2.epingle .vl-i { padding: 11px 12px; border-radius: 12px; }
+  .volet.v2.epingle .vl-ic { font-size: 18px; }
+  .volet.v2.epingle .vl-t { font-size: 15.5px; }
+  .volet.v2.epingle .vl-pli { height: 34px; margin-bottom: 6px; }
+  /* Titre fixe « Page › Partie » : aligné avec le contenu */
+  body:has(.blocs.volet-ep) .bl-page { font-size: 14px; }
+  body:has(.blocs.volet-ep) .bl-part { font-size: 24px; }
+}
+@media (min-width: 1100px) {
+  body:has(.blocs.volet-ep) .bl-page.bl-page-html { font-size: 24px; }
+  /* Le bas de page se centre sur la zone de contenu (à droite du menu) */
+  body:has(.blocs.volet-ep) .dock { padding-left: var(--side); }
+}
+@media (min-width: 1100px) { body:has(.blocs.volet-ep)::before { left: calc(50% + var(--side) / 2); } }
+
+/* ===== Règle générale : un tableau trop large réduit d'abord sa police (jusqu'à 10 px) pour tout montrer sans défiler =====
+   Tout dans le tableau suit cette taille (marges, badges, places, titres de colonnes). */
+.scroll-x.x-mesure { overflow-x: auto !important; }
+table.t.serre th, table.t.serre td { padding: .55em .5em !important; }
+table.t.serre thead th { font-size: .8em !important; letter-spacing: .04em !important; }
+table.t.serre td.nm, table.t.serre td.nm b { font-size: 1em; }
+table.t.serre td.rg { font-size: 1.15em; width: 2.6em !important; min-width: 2.6em !important; max-width: 2.6em !important; }
+table.t.serre .cat-c, table.t.serre .pill, table.t.serre .st { font-size: .82em !important; padding: .15em .45em !important; }
+table.t.serre .evo { font-size: .85em !important; }
+table.t.serre .moi-tag { font-size: .7em; }
+table.t.serre td.c-evo, table.t.serre th.c-evo { width: auto !important; }
+.cl-t td.nm { max-width: none !important; }
+/* place + nom fixes : la colonne du nom se cale sur la largeur réelle de la place */
+.scene .scroll-x:not(.x-ok) .cl-t.serre td.nm, .scene .scroll-x:not(.x-ok) .cl-t.serre th.c-nm { left: 2.6em; }
+table.t.serre td.rg { font-size: 1.1em !important; width: 2.4em !important; min-width: 2.4em !important; max-width: 2.4em !important; }
+table.t.serre th.c-rg { width: 3.3em !important; min-width: 3.3em !important; max-width: 3.3em !important; }
+.scene .scroll-x:not(.x-ok) .cl-t.serre td.nm { left: 2.64em; }
+.scene .scroll-x:not(.x-ok) .cl-t.serre th.c-nm { left: 3.3em; }
+table.t.serre td { min-width: 0 !important; }
+/* Nom sur deux lignes en dernier recours : NOM en gras, prénom dessous en plus petit */
+table.t.nm2 td.nm { white-space: normal !important; line-height: 1.15; }
+table.t.nm2 td.nm b { display: block; }
+table.t.nm2 td.nm .moi-tag { display: inline-block; margin: 2px 0 0; }
+table.t.nm2 td:first-child { white-space: normal !important; }
+
+/* ===== Blocs transparents : l'espace libre autour d'un tableau ou d'un contenu laisse voir le fond d'écran ===== */
+.scene .panel { background: color-mix(in srgb, var(--surface) 30%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ligne-sep) 70%, transparent); }
+.scene .panel > .hd { background: var(--surface); }
+.scene .panel > .bd { background: transparent; }
+/* les lignes des tableaux restent bien lisibles (fond plein) */
+table.t tbody td { background: var(--surface); }
+table.t tbody tr:nth-child(even):not(.eug):not(.moi) td { background: var(--zebra); }
+.cl-t tr.eug td { background: var(--fluo-club, #7ff9ff); }
+.cl-t tr.moi td { background: var(--fluo); }
+/* Dernier recours avant le défilement : les textes passent à la ligne mot par mot (titres de colonnes compris) */
+table.t.nm2 td:not(.r):not(.rg):not(.num), table.t.nm2 th { white-space: normal !important; }
+table.t.nm2 td .st, table.t.nm2 td .cat-c { white-space: nowrap; }
+table.t.nm2, .cl-t.nm2 { width: auto !important; max-width: 100% !important; }
+/* Dernier recours : seul le nom passe sur 2 lignes (NOM / prénom), les autres colonnes restent sur une ligne */
+table.t.nm2 td:not(.nm):not(:first-child), table.t.nm2 th { white-space: nowrap !important; }
+table.t.nm2 td.nm b { white-space: nowrap; }
+/* Flèches latérales d'un tableau trop large (téléphone et ordi) ; plus de barre de défilement nulle part */
+.fl-cote { position: fixed; z-index: 44; transform: translate(0, -50%); width: 34px; height: 34px; font-size: 13px; opacity: .92; }
+.scroll-x { scrollbar-width: none; }
+.scroll-x::-webkit-scrollbar { display: none; }
+
+/* ===== Volet : l'espace libre sous les onglets est décoré (dégradé du club + lion + devise) ===== */
+.volet.v2 {
+  background:
+    radial-gradient(120% 60% at 50% 100%, color-mix(in srgb, var(--accent, #e3190e) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--cadre) 0%, color-mix(in srgb, var(--cadre) 70%, var(--gold, #f5d300) 30%) 100%) !important;
+}
+.volet.v2::after {
+  content: ""; margin-top: auto; flex: 0 0 auto; align-self: center; pointer-events: none;
+  width: min(100%, 150px); aspect-ratio: 1; background: url("/crest.png") center / contain no-repeat;
+  opacity: .9; filter: drop-shadow(0 6px 14px rgba(0,0,0,.35));
+}
+/* replié (étroit) : un petit lion et la devise écrite à la verticale */
+.volet.v2:not(.epingle):not(.deplie)::after { width: 26px; }
+.volet.v2:not(.epingle):not(.deplie)::before {
+  content: "Équipe · Famille · Force"; order: 99; align-self: center; margin-top: 10px;
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--t-titre) 55%, transparent); white-space: nowrap;
+}
+/* épinglé / déplié : la devise sous le lion */
+.volet.v2.epingle::before, .volet.v2.deplie::before {
+  content: "Équipe · Famille · Force\A Détermination · Compétition"; white-space: pre; order: 100; text-align: center;
+  font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 12px; line-height: 1.5; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--t-label, #7a5a1e); margin-top: 8px;
+}
+.volet.v2::after { order: 99; }
+.volet.v2:not(.epingle):not(.deplie)::before { order: 100; }
+table.t.nm2 tbody td:not(.nm):not(:first-child):not(.x), table.t.nm2 thead th:not(.x) { white-space: nowrap !important; }
+
+/* ===== Finitions : encadrés et bordures sur toutes les pages ===== */
+:root { --cadre-or: color-mix(in srgb, var(--gold, #f5d300) 55%, #8a6a10); }
+/* Blocs : coins arrondis, fin liseré doré, ombre douce */
+.scene .panel, .panel {
+  border-radius: 16px !important; clip-path: none !important;
+  border: 1px solid color-mix(in srgb, var(--cadre-or) 45%, transparent);
+  box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 14px 30px -22px rgba(0,0,0,.45) !important;
+}
+.panel::before { left: 18px !important; top: -1px !important; width: 56px !important; height: 3px !important; border-radius: 0 0 3px 3px; background: linear-gradient(90deg, var(--accent, #e3190e), var(--gold, #f5d300)) !important; }
+.panel > .hd { border-radius: 16px 16px 0 0; border-bottom: 1px solid color-mix(in srgb, var(--cadre-or) 35%, transparent) !important; }
+/* Tableaux : cadre arrondi */
+table.t { border-collapse: separate !important; border-spacing: 0; border: 1px solid color-mix(in srgb, var(--cadre-or) 40%, transparent); border-radius: 12px; overflow: hidden; }
+.scroll-x:not(.x-ok) table.t { overflow: visible; }
+table.t tbody tr:last-child td { border-bottom: 0; }
+/* Cases chiffres (accueil, fiche, tableau de bord) : liseré de leur couleur */
+.fc-t, .tb-kpi, .tb-pc { border-radius: 14px; border: 1px solid color-mix(in srgb, var(--k, var(--cadre-or)) 35%, transparent); }
+/* Sous-titres : un trait dégradé club */
+.sec-title::after { height: 2px !important; background: linear-gradient(90deg, var(--cadre-or), transparent) !important; }
+/* Ligne de titre fixe : trait doré plus fin et net */
+.bl-titre { border-bottom: 0; }
+/* Boutons et pastilles : arrondis cohérents */
+.btn { border-radius: 10px; }
+.chip { border-radius: 99px !important; }
+.cl-filtres .chip { border: 1px solid color-mix(in srgb, var(--cadre-or) 40%, transparent); }
+/* Volet : onglets avec un liseré */
+.volet.v2 .vl-i:not(.on) { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cadre-or) 35%, transparent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .scene .panel, :root:not([data-theme="light"]) .panel { box-shadow: 0 14px 30px -22px rgba(0,0,0,.8) !important; } }
+/* le cadre arrondi ne doit pas empêcher les titres de colonnes de rester fixes */
+table.t { overflow: visible !important; }
+table.t thead th:first-child { border-top-left-radius: 11px; }
+table.t thead th:last-child { border-top-right-radius: 11px; }
+table.t tbody tr:last-child td:first-child { border-bottom-left-radius: 11px; }
+table.t tbody tr:last-child td:last-child { border-bottom-right-radius: 11px; }
