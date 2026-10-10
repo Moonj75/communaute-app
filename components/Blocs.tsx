@@ -38,6 +38,25 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
   const volet = useRef<HTMLElement>(null);
   // The side rail is folded (icons only); a tap on « ☰ » unfolds it with the titles written across.
   const [deplie, setDeplie] = useState(false);
+  // Computer with a wide screen: a real side menu, pinned open (titles written across). « Réduire » folds it back.
+  const [grand, setGrand] = useState(false);
+  const [epingle, setEpingle] = useState(true);
+  useEffect(() => {
+    try { setEpingle(localStorage.getItem("volet-epingle") !== "0"); } catch {}
+    const mq = window.matchMedia("(min-width: 1100px) and (pointer: fine)");
+    const maj = () => setGrand(mq.matches);
+    maj();
+    mq.addEventListener("change", maj);
+    return () => mq.removeEventListener("change", maj);
+  }, []);
+  const ep = grand && epingle;
+  const basculer = () => {
+    if (!grand) return setDeplie((d) => !d);
+    setEpingle((v) => {
+      try { localStorage.setItem("volet-epingle", v ? "0" : "1"); } catch {}
+      return !v;
+    });
+  };
   const [appui, setAppui] = useState<string | null>(null);
 
   // Page name for the fixed title: given, or read from the page heading.
@@ -194,12 +213,12 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
   const courantB = valides.find((b) => b.id === actif) || valides[0];
 
   return (
-    <div className={`blocs volet-ok${tout ? " tout" : ""}`}>
+    <div className={`blocs volet-ok${tout ? " tout" : ""}${ep ? " volet-ep" : ""}`}>
       <div ref={place} className="volet-place" aria-hidden="true" />
-      <nav ref={volet} className={`volet v2${deplie ? " deplie" : ""}`} id="onglets" aria-label="Parties de la page">
-        <button type="button" className="vl-pli" onClick={() => setDeplie((d) => !d)} aria-expanded={deplie} title={deplie ? "Replier" : "Déplier le menu"}>
-          <span aria-hidden="true">{deplie ? "«" : "☰"}</span>
-          <span className="vl-pli-t">{deplie ? "Replier" : ""}</span>
+      <nav ref={volet} className={`volet v2${deplie && !ep ? " deplie" : ""}${ep ? " epingle" : ""}`} id="onglets" aria-label="Parties de la page">
+        <button type="button" className="vl-pli" onClick={basculer} aria-expanded={deplie || ep} title={ep ? "Réduire le menu" : grand ? "Épingler le menu ouvert" : deplie ? "Replier" : "Déplier le menu"}>
+          <span aria-hidden="true">{deplie || ep ? "«" : "☰"}</span>
+          <span className="vl-pli-t">{ep ? "Réduire" : deplie ? "Replier" : ""}</span>
         </button>
         {tous.map((b) => {
           const on = b.href ? Boolean(b.actuel) : !tout && b.id === actif;
