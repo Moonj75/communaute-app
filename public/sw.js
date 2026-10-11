@@ -1,5 +1,5 @@
 /* SC Lions d'Eugies — service worker : notifications + page hors ligne. */
-const CACHE = "lions-v1";
+const CACHE = "lions-v2"; // change this number to wipe old copies kept by phones and browsers
 const OFFLINE = "/offline.html";
 
 self.addEventListener("install", (event) => {
