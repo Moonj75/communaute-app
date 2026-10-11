@@ -50,7 +50,7 @@ export default function VueAccueil(p: {
   const score = (
     <div className="vg">
       <section className="vg-hero" aria-label="Prochaine compétition">
-        <div className="vg-cpt">
+        <div className={`vg-cpt ${p.j === null ? "loin" : p.j <= 30 ? "proche" : p.j <= 60 ? "moyen" : "loin"}`}>
           <span className="vg-l">Prochaine compétition</span>
           <span className="vg-j num">{p.j === null ? "—" : p.j === 0 ? "Jour J" : p.j === 1 ? "Demain" : <>J-{p.j}</>}</span>
         </div>
