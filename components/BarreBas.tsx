@@ -45,74 +45,64 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
     return () => window.removeEventListener("keydown", esc);
   }, [ouvert]);
 
+  // Current page, for the default bottom bar (pages without parts).
+  const page = [...items, ...STAFF].find((i) => actif(i.href)) || items[0];
+
   return (
     <>
-      {ouvert ? <button type="button" className="feuille-fond" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
-      <div className={`feuille${ouvert ? " on" : ""}`} role="dialog" aria-label={isAdmin ? "Staff" : "Plus"} aria-hidden={!ouvert}>
-        <div className="feuille-tete">
+      {/* Main menu: hidden; a small button at the top left opens it from the left side. */}
+      <button type="button" className={`menu-bouton${ouvert ? " ouvert" : ""}`} aria-expanded={ouvert} aria-label={ouvert ? "Fermer le menu" : "Ouvrir le menu"} onClick={() => setOuvert((o) => !o)}>
+        <Icone n={ouvert ? "fermer" : "menu"} />
+      </button>
+      {ouvert ? <button type="button" className="menu-fond" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
+      <nav className={`menu-tiroir${ouvert ? " on" : ""}`} aria-label="Menu principal" aria-hidden={!ouvert}>
+        <div className="mt-tete">
           <span className="feuille-av" aria-hidden="true">{(nom || "?").slice(0, 1).toUpperCase()}</span>
           <span>
             <b>{nom}</b>
             <small>{isAdmin ? "Administrateur" : inactif ? "Membre non actif" : "Joueur"}</small>
           </span>
         </div>
-        <div className="feuille-liste">
-          {items.filter((i) => i.opt).map((i) => (
-            <Link key={i.href} href={i.href} className={`feuille-l opt${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1}>
-              <span className={`fl-ic c-${i.c}`}><Icone n={i.ic} taille={19} /></span>
-              <span className="fl-tx"><b>{i.label}</b><small>{i.desc}</small></span>
-              <span className="fl-go" aria-hidden="true">›</span>
+        <div className="mt-liste">
+          {items.map((i) => (
+            <Link key={i.href} href={i.href} className={`mt-l d-${i.c}${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => setOuvert(false)}>
+              <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
+              <span className="mt-t">{i.label}</span>
             </Link>
           ))}
           {isAdmin ? (
             <>
-              <p className="feuille-t"><Icone n="etoile" taille={13} /> Espace staff</p>
+              <p className="mt-sec"><Icone n="etoile" taille={13} /> Espace staff</p>
               {STAFF.map((i) => (
-                <Link key={i.href} href={i.href} className={`feuille-l${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1}>
-                  <span className={`fl-ic c-${i.c}`}><Icone n={i.ic} taille={19} /></span>
-                  <span className="fl-tx"><b>{i.label}</b><small>{i.desc}</small></span>
-                  <span className="fl-go" aria-hidden="true">›</span>
+                <Link key={i.href} href={i.href} className={`mt-l d-${i.c} staff${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => setOuvert(false)}>
+                  <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
+                  <span className="mt-t">{i.label}<small>{i.desc}</small></span>
                 </Link>
               ))}
             </>
           ) : null}
-          <form action="/auth/signout" method="post" className="feuille-sortie">
-            <button type="submit" className="feuille-l" tabIndex={ouvert ? 0 : -1}>
-              <Icone n="sortie" taille={18} /> Se déconnecter
+          <form action="/auth/signout" method="post" className="mt-sortie">
+            <button type="submit" className="mt-l" tabIndex={ouvert ? 0 : -1}>
+              <span className="mt-ic"><Icone n="sortie" taille={18} /></span>
+              <span className="mt-t">Se déconnecter</span>
             </button>
           </form>
         </div>
-      </div>
+      </nav>
 
-      <nav className="dock" aria-label="Navigation principale">
-        <div className="dock-in">
-          {items.map((i) => (
-            <Link key={i.href} href={i.href} className={`dock-i d-${i.c}${i.opt ? " opt" : ""}${actif(i.href) ? " on" : ""}`} aria-current={actif(i.href) ? "page" : undefined}>
-              <span className="dock-ic">
-                <Icone n={i.ic} />
-              </span>
-              <span className="dock-t">{i.label}</span>
-            </Link>
-          ))}
-          <span className="dock-sep" aria-hidden="true" />
-          <button
-            type="button"
-            className={`dock-rond${ouvert ? " ouvert" : ""}${staffActif ? " on" : ""}${isAdmin ? "" : " joueur"}`}
-            aria-expanded={ouvert}
-            aria-label={isAdmin ? "Espace staff" : "Plus"}
-            onClick={() => setOuvert((o) => !o)}
-          >
-            <Icone n={ouvert ? "fermer" : isAdmin ? "etoile" : "menu"} />
-            <span className="dock-t">{isAdmin ? "Staff" : "Plus"}</span>
+      {/* Default bottom bar (replaced by the page's own parts when it has some): the page in the middle. */}
+      <nav className="secnav defaut" aria-label="Navigation">
+        <div className="sn-barre">
+          <button type="button" className="sn-fl" onClick={() => window.history.back()} aria-label="Retour">
+            <span aria-hidden="true">◀</span><span className="sn-fl-t">Retour</span>
           </button>
-          <form action="/auth/signout" method="post" className="dock-sortie">
-            <button type="submit" className="dock-i" title="Se déconnecter" aria-label="Se déconnecter">
-              <span className="dock-ic">
-                <Icone n="sortie" />
-              </span>
-              <span className="dock-t">Sortir</span>
-            </button>
-          </form>
+          <span className={`sn-centre d-${page.c}`}>
+            <span className="sn-mini" aria-hidden="true"><Icone n={page.ic} taille={18} /></span>
+            <span className="sn-ct"><b>{page.label}</b><small>1 / 1</small></span>
+          </span>
+          <button type="button" className="sn-fl d" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Haut de page">
+            <span className="sn-fl-t">Haut</span><span aria-hidden="true">▲</span>
+          </button>
         </div>
       </nav>
     </>

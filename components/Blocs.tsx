@@ -238,54 +238,64 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
   const courantB = valides.find((b) => b.id === actif) || valides[0];
 
   return (
-    <div className={`blocs volet-ok${tout ? " tout" : ""}${ep ? " volet-ep" : ""}`}>
-      <div ref={place} className="volet-place" aria-hidden="true" />
-      <nav ref={volet} className={`volet v2${deplie && !ep ? " deplie" : ""}${ep ? " epingle" : ""}`} id="onglets" aria-label="Parties de la page">
-        <button type="button" className="vl-pli" onClick={basculer} aria-expanded={deplie || ep} title={ep ? "Réduire le menu" : grand ? "Épingler le menu ouvert" : deplie ? "Replier" : "Déplier le menu"}>
-          <span aria-hidden="true">{deplie || ep ? "«" : "☰"}</span>
-          <span className="vl-pli-t">{ep ? "Réduire" : deplie ? "Replier" : ""}</span>
-        </button>
-        {tous.map((b) => {
-          const on = b.href ? Boolean(b.actuel) : !tout && b.id === actif;
-          const badge = b.badge !== undefined && b.badge !== null && b.badge !== "" ? b.badge : null;
-          const dedans = (
-            <>
-              <span className="vl-ic" aria-hidden="true">{b.ic}</span>
-              {b.court ? <span className="vl-c" aria-hidden="true">{b.court}</span> : null}
-              <span className="vl-t">{b.titre}</span>
-              {badge && String(badge).length <= 3 ? <span className="vl-b">{badge}</span> : null}
-              <span className="vl-bulle" aria-hidden="true">{b.titre}{badge && String(badge).length > 3 ? ` · ${badge}` : ""}</span>
-            </>
-          );
-          const cls = `vl-i${on ? " on" : ""}${appui === b.id ? " appui" : ""}`;
-          if (b.href)
-            return (
-              <Link key={b.id} href={b.href} title={b.titre} aria-label={b.titre} className={`${cls} vl-lien`} aria-current={on ? "page" : undefined} onPointerDown={(e) => montrer(b.id, e)} onClick={() => setDeplie(false)}>
-                {dedans}
-              </Link>
-            );
-          return (
-            <button
-              key={b.id}
-              type="button"
-              data-bloc={b.id}
-              aria-label={b.titre}
-              className={cls}
-              aria-current={on ? "true" : undefined}
-              onPointerDown={(e) => montrer(b.id, e)}
-              onClick={() => ouvrir(b.id)}
-            >
-              {dedans}
-            </button>
-          );
-        })}
-        {valides.length > 1 ? (
-          <button type="button" className={`vl-i vl-tout${tout ? " on" : ""}${appui === "_tout" ? " appui" : ""}`} onPointerDown={(e) => montrer("_tout", e)} onClick={() => { setTout((t) => !t); setDeplie(false); }} aria-pressed={tout} aria-label={tout ? "Un à la fois" : "Tout afficher"}>
-            <span className="vl-ic" aria-hidden="true">{tout ? "◱" : "▦"}</span>
-            <span className="vl-t">{tout ? "Un à la fois" : "Tout afficher"}</span>
-            <span className="vl-bulle" aria-hidden="true">{tout ? "Un à la fois" : "Tout afficher"}</span>
-          </button>
+    <div className={`blocs volet-ok nv${tout ? " tout" : ""}`}>
+      {/* Bottom bar: the part being shown in the middle (tap = list of parts), previous / next on each side. */}
+      <nav ref={volet} className={`secnav blocs-nav${deplie ? " ouvert" : ""}`} id="onglets" aria-label="Parties de la page">
+        {deplie ? (
+          <div className="sn-liste" role="menu">
+            {tous.map((b) => {
+              const on = b.href ? Boolean(b.actuel) : !tout && b.id === actif;
+              const badge = b.badge !== undefined && b.badge !== null && b.badge !== "" ? b.badge : null;
+              const dedans = (
+                <>
+                  <span className="sn-ic" aria-hidden="true">{b.ic}</span>
+                  <span className="sn-t">{b.titre}</span>
+                  {badge ? <span className="sn-b">{badge}</span> : null}
+                </>
+              );
+              return b.href ? (
+                <Link key={b.id} href={b.href} className={`sn-l${on ? " on" : ""}`} role="menuitem" onClick={() => setDeplie(false)}>{dedans}</Link>
+              ) : (
+                <button key={b.id} type="button" className={`sn-l${on ? " on" : ""}`} role="menuitem" onClick={() => ouvrir(b.id)}>{dedans}</button>
+              );
+            })}
+            {valides.length > 1 ? (
+              <button type="button" className={`sn-l${tout ? " on" : ""}`} role="menuitem" onClick={() => { setTout((t) => !t); setDeplie(false); }}>
+                <span className="sn-ic" aria-hidden="true">{tout ? "◱" : "▦"}</span>
+                <span className="sn-t">{tout ? "Une partie à la fois" : "Tout afficher"}</span>
+              </button>
+            ) : null}
+          </div>
         ) : null}
+        {(() => {
+          const ix = tous.findIndex((b) => (b.href ? b.actuel : b.id === courantB?.id));
+          const prec = ix > 0 ? tous[ix - 1] : null;
+          const suiv = ix >= 0 && ix < tous.length - 1 ? tous[ix + 1] : null;
+          const aller = (b: BlocDef | null) => {
+            if (!b) return;
+            if (b.href) window.location.href = b.href;
+            else ouvrir(b.id);
+          };
+          return (
+            <div className="sn-barre">
+              <button type="button" className="sn-fl" disabled={!prec} onClick={() => aller(prec)} aria-label={prec ? `Partie précédente : ${prec.titre}` : "Pas de partie précédente"}>
+                <span aria-hidden="true">◀</span>
+                <span className="sn-fl-t">{prec ? prec.titre : ""}</span>
+              </button>
+              <button type="button" className="sn-centre" onClick={() => setDeplie((d) => !d)} aria-expanded={deplie} aria-label="Choisir une partie de la page">
+                <span className="sn-mini" aria-hidden="true">{tout ? "▦" : courantB?.ic}</span>
+                <span className="sn-ct">
+                  <b>{tout ? "Tout" : courantB?.titre}</b>
+                  <small>{ix + 1 > 0 ? ix + 1 : 1} / {tous.length} {deplie ? "▾" : "▴"}</small>
+                </span>
+              </button>
+              <button type="button" className="sn-fl d" disabled={!suiv} onClick={() => aller(suiv)} aria-label={suiv ? `Partie suivante : ${suiv.titre}` : "Pas de partie suivante"}>
+                <span className="sn-fl-t">{suiv ? suiv.titre : ""}</span>
+                <span aria-hidden="true">▶</span>
+              </button>
+            </div>
+          );
+        })()}
       </nav>
 
       <div className="bl-col">

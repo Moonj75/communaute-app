@@ -6,6 +6,7 @@ import MesureEntete from "./MesureEntete";
 import Installer from "./Installer";
 import Centrer from "./Centrer";
 import Fleches from "./Fleches";
+import BandeauUrgent from "./BandeauUrgent";
 import { quitterApercu } from "@/app/admin/apercu";
 
 export default function Header({
@@ -79,6 +80,7 @@ export default function Header({
           )}
         </div>
       </header>
+      {name ? <BandeauUrgent /> : null}
       </div>
       {name ? <BarreBas isAdmin={profil?.role === "admin"} nom={name} inactif={profil?.role !== "admin" && profil?.actif === false} /> : <BarrePublique connecte={connecte} />}
       <MesureEntete />
