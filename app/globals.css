@@ -3022,18 +3022,18 @@ td.c-club .logo-club { width: 24px; height: 24px; }
 table.t.serre .logo-club { width: 1.6em; height: 1.6em; }
 
 /* ===== Staff › Comptes de connexion ===== */
-.ad-t thead th { text-align: center !important; }
-.ad-t td { text-align: center; vertical-align: middle; }
-.ad-t td:first-child, .ad-t td:nth-child(2), .ad-t td:nth-child(3), .ad-t thead th:first-child, .ad-t thead th:nth-child(2), .ad-t thead th:nth-child(3) { text-align: left !important; }
-.ad-role { display: inline-flex; gap: 6px; align-items: center; }
-.ad-role select { min-height: 32px !important; height: 32px; width: auto !important; padding: 0 26px 0 10px; font-size: 13px; }
-.ad-ok, .ad-oeil {
+.cpt-t thead th { text-align: center !important; }
+.cpt-t td { text-align: center; vertical-align: middle; }
+.cpt-t td:first-child, .cpt-t td:nth-child(2), .cpt-t td:nth-child(3), .cpt-t thead th:first-child, .cpt-t thead th:nth-child(2), .cpt-t thead th:nth-child(3) { text-align: left !important; }
+.cpt-role { display: inline-flex; gap: 6px; align-items: center; }
+.cpt-role select { min-height: 32px !important; height: 32px; width: auto !important; padding: 0 26px 0 10px; font-size: 13px; }
+.cpt-ok, .cpt-oeil {
   display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 0;
   font-size: 16px; font-weight: 900; line-height: 1; transition: transform .12s, filter .12s;
 }
-.ad-ok { background: #1f9d55; color: #fff; box-shadow: 0 4px 10px -5px #1f9d55; }
-.ad-oeil { background: var(--surface); box-shadow: inset 0 0 0 1px var(--ligne-sep); font-size: 17px; }
-.ad-ok:hover, .ad-oeil:hover { transform: scale(1.1); filter: brightness(1.08); }
+.cpt-ok { background: #1f9d55; color: #fff; box-shadow: 0 4px 10px -5px #1f9d55; }
+.cpt-oeil { background: var(--surface); box-shadow: inset 0 0 0 1px var(--ligne-sep); font-size: 17px; }
+.cpt-ok:hover, .cpt-oeil:hover { transform: scale(1.1); filter: brightness(1.08); }
 /* Invitation : une case, les choix au survol (ou au toucher) */
 .inv { position: relative; display: inline-block; outline: none; }
 .inv-etat { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 99px; cursor: pointer; white-space: nowrap; font-size: 12.5px; font-weight: 700; background: var(--surface); box-shadow: inset 0 0 0 1px var(--ligne-sep); }
@@ -3043,9 +3043,9 @@ table.t.serre .logo-club { width: 1.6em; height: 1.6em; }
 .inv:hover .inv-menu, .inv:focus-within .inv-menu { display: flex; }
 .inv-b { border: 0; background: transparent; cursor: pointer; white-space: nowrap; text-align: left; padding: 7px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--t-titre); }
 .inv-b:hover { background: var(--sunk); }
-.ad-statut { border: 0; background: none; padding: 0; cursor: pointer; }
-.ad-statut .pill { transition: transform .12s; } .ad-statut:hover .pill { transform: scale(1.06); }
-.ad-role select { max-width: 150px; }
+.cpt-statut { border: 0; background: none; padding: 0; cursor: pointer; }
+.cpt-statut .pill { transition: transform .12s; } .cpt-statut:hover .pill { transform: scale(1.06); }
+.cpt-role select { max-width: 150px; }
 
 /* Sécurité : un bloc qui contient un tableau défilant prend toute la largeur disponible
    (sinon, sur certains navigateurs, le bloc se calait sur son titre et le tableau disparaissait) */
