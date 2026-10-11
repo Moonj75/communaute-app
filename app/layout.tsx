@@ -8,6 +8,7 @@ import "@fontsource/barlow-condensed/700.css";
 import "@fontsource/barlow-condensed/800.css";
 import "./globals.css";
 import EnregistrerSW from "@/components/EnregistrerSW";
+import BloquerZoom from "@/components/BloquerZoom";
 
 export const metadata: Metadata = {
   title: "SC Lions d'Eugies",
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0b0a0a", viewportFit: "cover" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, maximumScale: 1, minimumScale: 1, userScalable: false, themeColor: "#0b0a0a", viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <EnregistrerSW />
+        <BloquerZoom />
       </body>
     </html>
   );

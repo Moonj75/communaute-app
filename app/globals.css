@@ -3190,3 +3190,8 @@ body:has(.secnav.blocs-nav) .secnav.defaut { display: none; }
 }
 /* flèches de la page (ordi) au-dessus du bas de page */
 .fl-page { bottom: calc(var(--dock-h) + 16px) !important; }
+
+/* ===== Taille fixe : pas de zoom avec les doigts (on fait défiler et on touche, c'est tout) ===== */
+html, body, :where(body *) { touch-action: pan-x pan-y; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+@media (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
