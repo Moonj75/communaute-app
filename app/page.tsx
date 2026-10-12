@@ -28,7 +28,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
 
   const [{ data: fiches }, compets, cl, res, se, cal, noms, eug, clubsComplet] = await Promise.all([
     supabase.from("joueurs").select("notion_id,prenom,cagnotte,roles,actif").eq("email", (user.email || "").toLowerCase()),
-    prochainesCompetitions(1),
+    prochainesCompetitions(2),
     essayer(lireClassementsClub),
     essayer(() => lireResultats(6)),
     essayer(() => lireSeances(4)),
@@ -66,6 +66,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
           gens={(fiches || []) as Gens}
           prochaine={next ? { nom: next.nom, date: next.date, lieu: next.lieu } : null}
           j={next ? jours(next.date) : null}
+          suivante={compets[1] ? { nom: compets[1].nom, date: compets[1].date, lieu: compets[1].lieu, j: jours(compets[1].date) } : null}
           classements={cl.data || []}
           resultats={res.data || []}
           seances={se.data || []}

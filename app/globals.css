@@ -3323,7 +3323,3 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .fx-cagnotte .fcg-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fx-cagnotte .fcg-txt { flex: 1 1 auto; }
 @media (max-width: 420px) { .fx-l { font-size: 9px; letter-spacing: .04em; } }
-/* « Aller à ma ligne » : bouton (plus un lien), caché tant que notre ligne est à l'écran */
-button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, transform .25s ease, filter .15s; }
-.cl-aller.cache { opacity: 0; transform: scale(.85); pointer-events: none; }
-.ns-p { width: 56px; } .ns-p .ns-t { max-width: 54px; } .ns-p.on { width: 66px; } .ns-p.on .ns-t { max-width: 66px; } .ns-piste { gap: 6px; }
