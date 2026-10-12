@@ -2,6 +2,7 @@ import type React from "react";
 import Link from "next/link";
 import { couleurCategorie, LISTES, libelleMois, listeDef, nomComplet, pts, resserrer, tendance, type LigneClassement, type ListeDef } from "@/lib/classements-types";
 import { Fragment } from "react";
+import LogoFistf from "@/components/LogoFistf";
 
 const ordinal = (n: number) => (n === 1 ? "1er" : `${n}e`);
 
@@ -129,7 +130,7 @@ export function PlacesClub({ clubs }: { clubs: LigneClassement[] }) {
         {nat ? <span className="cp-m">FBFTS · {libelleMois(nat.mois, true)}</span> : null}
       </article>
       <article className="cp">
-        <span className="cp-l">🌍 Classement international des équipes</span>
+        <span className="cp-l"><LogoFistf /> Classement international des équipes</span>
         <span className="cp-v num">{equipes[0] ? <>{equipes[0].rang}<sup>{sup(equipes[0].rang)}</sup></> : "—"}</span>
         <span className="cp-qui v-club">{equipes[0] ? `${equipes[0].nom} · ${equipes[0].prenom || "Team A"}` : "SC Lions d'Eugies"}</span>
         <span className="cp-s">{equipes[0] ? `équipe · international · ${pts(equipes[0].points)} pts` : "En attente du classement"}</span>
@@ -175,8 +176,8 @@ export function NosJoueurs({ lignes, moi = [], lien = true, max = lien ? 12 : 0 
       <div className="nos-h" aria-hidden="true">
         <span>Joueur</span>
         <span>🇧🇪 National</span>
-        <span>🌍 Int. Open</span>
-        <span>🌍 Int. catégorie</span>
+        <span><LogoFistf /> Int. Open</span>
+        <span><LogoFistf /> Int. catégorie</span>
       </div>
       <ol className="nos-l">
         {joueurs.map((j) => {
@@ -302,7 +303,7 @@ export function ClassementsClubs({ nat: natTout, equipes: eqTout }: { nat: Ligne
       </section>
       <section className="cc-b monde">
         <header>
-          <span className="cc-k">🌍 Classement international des équipes de club</span>
+          <span className="cc-k"><LogoFistf /> Classement international des équipes de club</span>
           <span className="cc-m">FISTF · {equipes[0] ? libelleMois(equipes[0].mois, true) : ""} · les premiers et autour de nos équipes</span>
         </header>
         <div className="cc-cols" aria-hidden="true"><span>Place</span><span>Équipe</span><span>Points</span><span>±</span></div>

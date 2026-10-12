@@ -5,6 +5,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LogoClub } from "./Classements";
 import { couleurCategorie, libelleMois, pts, resserrer, tendance, type LigneClassement } from "@/lib/classements-types";
+import LogoFistf from "@/components/LogoFistf";
 
 const sup = (n: number) => (n === 1 ? "er" : "e");
 
@@ -41,7 +42,7 @@ export default function ClubDuo({ nat, equipes, eug, moi = [] }: { nat: LigneCla
     <div ref={racine} className={`duo ${intl ? "monde" : "nat"}`}>
       <div ref={bande} className="duo-bande"><div className="duo-choix" role="tablist" aria-label="Portée du classement">
         <button type="button" role="tab" aria-selected={!intl} className={!intl ? "on" : ""} onClick={() => setVue("nat")}>🇧🇪 National</button>
-        <button type="button" role="tab" aria-selected={intl} className={intl ? "on" : ""} onClick={() => setVue("int")}>🌍 International</button>
+        <button type="button" role="tab" aria-selected={intl} className={intl ? "on" : ""} onClick={() => setVue("int")}><LogoFistf /> International</button>
         {mois ? <span className="duo-mois">{libelleMois(mois, true)}</span> : null}
       </div></div>
       <div className="duo-cols">

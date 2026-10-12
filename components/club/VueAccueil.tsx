@@ -5,6 +5,7 @@ import { BlocEntrainements, BlocResultats } from "./VueClub";
 import ClubDuo from "./ClubDuo";
 import type React from "react";
 import { libelleMois, listeDef, pts, type LigneClassement } from "@/lib/classements-types";
+import LogoFistf from "@/components/LogoFistf";
 
 export type Gens = { prenom: string | null; cagnotte: number | null; roles: string[] | null; actif: boolean }[];
 
@@ -88,12 +89,12 @@ export default function VueAccueil(p: {
           <span className="acc-s">{maNat ? `Catégorie ${maNat.categorie || "?"}` : "non classé"}</span>
         </Link>
         <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-open)" } as React.CSSProperties}>
-          <span className="acc-l">🌍 International</span>
+          <span className="acc-l"><LogoFistf /> International</span>
           <b className="acc-v num">{rang(monOpen?.rang)}</b>
           <span className="acc-s">FISTF Open</span>
         </Link>
         <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-categorie)" } as React.CSSProperties}>
-          <span className="acc-l">🌍 Catégorie</span>
+          <span className="acc-l"><LogoFistf /> Catégorie</span>
           <b className="acc-v num">{rang(maCat?.rang)}</b>
           <span className="acc-s">{maCat ? `FISTF ${listeDef(maCat.liste).court}` : "non classé"}</span>
         </Link>
@@ -108,7 +109,7 @@ export default function VueAccueil(p: {
           <span className="acc-s">{clubNat ? `${pts(clubNat.points)} pts · ${libelleMois(clubNat.mois)}` : "clubs belges"}</span>
         </a>
         <a className="acc-c" href="#bloc-club" style={{ "--k": "var(--n-open)" } as React.CSSProperties}>
-          <span className="acc-l">🌍 Club · international</span>
+          <span className="acc-l"><LogoFistf /> Club · international</span>
           <b className="acc-v num">{rang(equipe?.rang)}</b>
           <span className="acc-s">{equipe ? `Eugies ${equipe.prenom || "Team A"}${autresEq.length ? ` · ${autresEq.map((e) => `${e.prenom} ${e.rang}e`).join(" · ")}` : ""}` : "pas encore classé"}</span>
         </a>

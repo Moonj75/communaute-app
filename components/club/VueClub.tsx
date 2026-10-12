@@ -1,5 +1,6 @@
 import type { ClassementClub, Evenement, Resultat, Seance } from "@/lib/club-types";
 import { aujourdhui, compteARebours, dateCourte, dateMoyenne } from "@/lib/club-types";
+import LogoFistf from "@/components/LogoFistf";
 
 function Tendance({ maintenant, avant }: { maintenant: number | null; avant: number | null }) {
   if (!maintenant || !avant) return null;
@@ -21,7 +22,7 @@ export function BlocClassements({ classements }: { classements: ClassementClub[]
           <Tendance maintenant={now?.national ?? null} avant={prev?.national ?? null} />
         </div>
         <div className="clt">
-          <span className="fl-l">🌍 Classement international</span>
+          <span className="fl-l"><LogoFistf /> Classement international</span>
           <span className="clt-v num">{now?.international ? <><small>#</small>{now.international}</> : "—"}</span>
           <Tendance maintenant={now?.international ?? null} avant={prev?.international ?? null} />
         </div>
