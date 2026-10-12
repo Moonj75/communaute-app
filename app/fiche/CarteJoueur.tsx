@@ -2,6 +2,7 @@ import { initiales } from "@/lib/club-types";
 import Photo from "./Photo";
 import type React from "react";
 import { couleurCategorie } from "@/lib/classements-types";
+import LogoFistf from "@/components/LogoFistf";
 
 export type Fiche = {
   notion_id: string;
@@ -82,12 +83,12 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
             <span className="fx-p">FBFTS</span>
           </div>
           <div className="fx-s" style={{ "--k": "#5fa8ff" } as React.CSSProperties}>
-            <span className="fx-l">🌍 Open</span>
+            <span className="fx-l"><LogoFistf /> Open</span>
             <b className="fx-v num">{place(places ? places.open : f.classement_international)}</b>
             <span className="fx-p">FISTF monde</span>
           </div>
           <div className="fx-s" style={{ "--k": kIc || "#4fd6a4" } as React.CSSProperties}>
-            <span className="fx-l">🌍 {places?.categorie ? places.categorie.nom : "Catégorie"}</span>
+            <span className="fx-l"><LogoFistf /> {places?.categorie ? places.categorie.nom : "Catégorie"}</span>
             <b className="fx-v num">{place(places?.categorie?.rang)}</b>
             <span className="fx-p">{places?.categorie ? "FISTF cat." : "non classé"}</span>
           </div>
