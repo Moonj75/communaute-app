@@ -103,7 +103,6 @@ export default function VueDecouverte(p: {
             ),
           },
           { id: "entrainements", titre: "Entraînements", ic: "🎯", badge: p.seances.filter((s) => !s.annule).length || null, contenu: <BlocEntrainements seances={p.seances} noms={p.noms} /> },
-          { id: "classements", titre: "Classements", ic: "📊", href: "/club/classements", contenu: null },
         ]}
       />
     </>

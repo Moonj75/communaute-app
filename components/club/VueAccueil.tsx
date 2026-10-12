@@ -34,7 +34,6 @@ export default function VueAccueil(p: {
   const now = p.classements[0];
   const eug = p.eug || [];
   const natAuto = eug.find((e) => e.liste === "FBFTS-Clubs")?.rang;
-  const nbJoueurs = new Set(eug.filter((e) => e.prenom !== null && e.liste !== "WR-Teams").map((e) => e.joueur_id || e.nom)).size;
 
   const moi = p.moi || [];
   const maNat = eug.filter((e) => e.liste === "FBFTS" && e.joueur_id && moi.includes(e.joueur_id)).sort((a, b) => a.rang - b.rang)[0];
@@ -118,7 +117,6 @@ export default function VueAccueil(p: {
         blocs={[
           { id: "vue", titre: "Vue générale", ic: "🏁", contenu: score },
           { id: "club", titre: "Le club", ic: "🏆", badge: natAuto ? `${natAuto}e` : now?.national ? `${now.national}e` : null, contenu: <><ClubDuo nat={p.clubsComplet?.nat || []} equipes={p.clubsComplet?.equipes || []} eug={eug} moi={p.moi} /><p className="sec-title">Derniers résultats</p><BlocResultats resultats={p.resultats} evs={p.evs} noms={p.noms} /></> },
-          { id: "classements", titre: "Classements", ic: "📊", badge: nbJoueurs || null, href: "/club/classements", contenu: null },
           { id: "entrainements", titre: "Entraînements", ic: "🎯", badge: p.seances.filter((s) => !s.annule).length || null, contenu: <BlocEntrainements seances={p.seances} noms={p.noms} /> },
         ]}
       />

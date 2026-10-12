@@ -79,7 +79,6 @@ export default function VuePublique({ infos, evs, seances, classements, m, conne
             ),
           },
           { id: "entrainements", titre: "Entraînements", ic: "🎯", contenu: <BlocEntrainements seances={seances} noms={new Map()} /> },
-          { id: "classements", titre: "Classements", ic: "🏆", href: "/club/classements", contenu: null },
         ]}
       />
     </>
