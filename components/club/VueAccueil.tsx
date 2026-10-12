@@ -3,9 +3,8 @@ import Blocs from "@/components/Blocs";
 import type { ClassementClub, Evenement, Resultat, Seance } from "@/lib/club-types";
 import { BlocEntrainements, BlocResultats } from "./VueClub";
 import ClubDuo from "./ClubDuo";
-import { libelleMois, pts, type LigneClassement } from "@/lib/classements-types";
-
-const euro = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+import type React from "react";
+import { libelleMois, listeDef, pts, type LigneClassement } from "@/lib/classements-types";
 
 export type Gens = { prenom: string | null; cagnotte: number | null; roles: string[] | null; actif: boolean }[];
 
@@ -18,6 +17,8 @@ export default function VueAccueil(p: {
   gens: Gens;
   prochaine: { nom: string; date: string; lieu: string | null } | null;
   j: number | null;
+  /** The competition right after the next one. */
+  suivante?: { nom: string; date: string; lieu: string | null; j: number } | null;
   classements: ClassementClub[];
   resultats: Resultat[];
   seances: Seance[];
@@ -28,7 +29,6 @@ export default function VueAccueil(p: {
   moi?: string[];
 }) {
   const { gens } = p;
-  const cagnotte = gens.reduce((s, g) => s + (Number(g.cagnotte) || 0), 0);
   const roles = [...new Set(gens.flatMap((g) => g.roles || []))];
   const famille = gens.length > 1;
   const now = p.classements[0];
@@ -38,6 +38,8 @@ export default function VueAccueil(p: {
   const moi = p.moi || [];
   const maNat = eug.filter((e) => e.liste === "FBFTS" && e.joueur_id && moi.includes(e.joueur_id)).sort((a, b) => a.rang - b.rang)[0];
   const monWr = eug.filter((e) => e.liste.startsWith("WR-") && e.liste !== "WR-Teams" && e.joueur_id && moi.includes(e.joueur_id)).sort((a, b) => a.rang - b.rang)[0];
+  const monOpen = eug.filter((e) => e.liste === "WR-Open" && e.joueur_id && moi.includes(e.joueur_id)).sort((a, b) => a.rang - b.rang)[0];
+  const maCat = eug.filter((e) => e.liste.startsWith("WR-") && e.liste !== "WR-Open" && e.liste !== "WR-Teams" && e.joueur_id && moi.includes(e.joueur_id)).sort((a, b) => a.rang - b.rang)[0];
   const seance = p.seances.find((x) => !x.annule);
   const clubNat = eug.find((e) => e.liste === "FBFTS-Clubs");
   const eqs = eug.filter((e) => e.liste === "WR-Teams").sort((a, b) => a.rang - b.rang);
@@ -46,6 +48,8 @@ export default function VueAccueil(p: {
   const qui = maNat ? `${maNat.prenom} ${maNat.nom}` : monWr ? `${monWr.prenom} ${monWr.nom.charAt(0)}${monWr.nom.slice(1).toLowerCase()}` : p.name;
   const dateLongue = (d: string) => new Date(d.slice(0, 10) + "T12:00:00Z").toLocaleDateString("fr-BE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
+  const rang = (n?: number | null) => (n ? <>{n}<sup>{n === 1 ? "er" : "e"}</sup></> : "—");
+  const proche = (j: number) => (j <= 30 ? "proche" : j <= 60 ? "moyen" : "loin");
   const score = (
     <div className="vg">
       <section className="vg-hero" aria-label="Prochaine compétition">
@@ -67,37 +71,54 @@ export default function VueAccueil(p: {
           </span>
         </div>
       </section>
-      <div className="fc-grille vg-grille">
-        <Link className="fc-t t-nat" href="/fiche">
-          <span className="fl-l">🇧🇪 {famille ? "Classement national" : "Ma place nationale"}</span>
-          <b className="fc-v num">{maNat ? <>{maNat.rang}<sup>{maNat.rang === 1 ? "er" : "e"}</sup></> : "—"}</b>
-          <span className="fc-qui">{qui}</span>
-          <span className="fc-s">{maNat ? `Catégorie ${maNat.categorie || "?"}` : monWr ? `International : ${monWr.rang}e` : "Pas encore classé"}</span>
+      {p.suivante ? (
+        <Link className={`acc-suiv ${proche(p.suivante.j)}`} href="/calendrier">
+          <span className="acc-sk">Ensuite</span>
+          <b className="acc-sj num">J-{p.suivante.j}</b>
+          <span className="acc-sn">{p.suivante.nom}</span>
+          <span className="acc-sd">{dateLongue(p.suivante.date)}{p.suivante.lieu ? ` · ${p.suivante.lieu}` : ""}</span>
         </Link>
-        <Link className="fc-t t-euro" href="/fiche">
-          <span className="fl-l">💶 {famille ? "Cagnotte famille" : "Ma cagnotte"}</span>
-          <b className="fc-v num">{euro.format(cagnotte)}</b>
-          <span className="fc-qui">{famille ? gens.map((g) => g.prenom).filter(Boolean).join(" · ") : qui}</span>
-          <span className="fc-s">déplacements</span>
+      ) : null}
+
+      {/* My places: national, international (Open), international in my category. */}
+      <div className="acc-ligne l3">
+        <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-national)" } as React.CSSProperties}>
+          <span className="acc-l">🇧🇪 National</span>
+          <b className="acc-v num">{rang(maNat?.rang)}</b>
+          <span className="acc-s">{maNat ? `Catégorie ${maNat.categorie || "?"}` : "non classé"}</span>
         </Link>
-        <a className="fc-t t-cnat" href="#bloc-club">
-          <span className="fl-l">🇧🇪 Club · national</span>
-          <b className="fc-v num">{clubNat ? <>{clubNat.rang}<sup>{clubNat.rang === 1 ? "er" : "e"}</sup></> : now?.national ? <>{now.national}<sup>e</sup></> : "—"}</b>
-          <span className="fc-qui v-club">SC Lions d&apos;Eugies</span>
-          <span className="fc-s">{clubNat ? `${pts(clubNat.points)} pts · ${libelleMois(clubNat.mois)}` : "clubs belges"}</span>
+        <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-open)" } as React.CSSProperties}>
+          <span className="acc-l">🌍 International</span>
+          <b className="acc-v num">{rang(monOpen?.rang)}</b>
+          <span className="acc-s">FISTF Open</span>
+        </Link>
+        <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-categorie)" } as React.CSSProperties}>
+          <span className="acc-l">🌍 Catégorie</span>
+          <b className="acc-v num">{rang(maCat?.rang)}</b>
+          <span className="acc-s">{maCat ? `FISTF ${listeDef(maCat.liste).court}` : "non classé"}</span>
+        </Link>
+      </div>
+      {famille ? <p className="acc-qui">Places de {qui}</p> : null}
+
+      {/* The club's places. */}
+      <div className="acc-ligne l2">
+        <a className="acc-c" href="#bloc-club" style={{ "--k": "var(--n-club)" } as React.CSSProperties}>
+          <span className="acc-l">🦁 Club · national</span>
+          <b className="acc-v num">{clubNat ? rang(clubNat.rang) : rang(now?.national)}</b>
+          <span className="acc-s">{clubNat ? `${pts(clubNat.points)} pts · ${libelleMois(clubNat.mois)}` : "clubs belges"}</span>
         </a>
-        <a className="fc-t t-int" href="#bloc-club">
-          <span className="fl-l">🌍 Club · international</span>
-          <b className="fc-v num">{equipe ? <>{equipe.rang}<sup>{equipe.rang === 1 ? "er" : "e"}</sup></> : "—"}</b>
-          <span className="fc-qui v-club">{equipe ? `Eugies ${equipe.prenom || "Team A"}` : "SC Lions d'Eugies"}</span>
-          <span className="fc-s">{equipe ? `FISTF équipes${autresEq.length ? ` · ${autresEq.map((e) => `${e.prenom} ${e.rang}e`).join(" · ")}` : ""}` : "pas encore classé"}</span>
-        </a>
-        <a className="fc-t t-temps fc-large" href="#bloc-entrainements">
-          <span className="fl-l">🎯 Prochain entraînement</span>
-          <b className="fc-v fc-v-txt">{seance ? dateLongue(seance.date) : "—"}</b>
-          <span className="fc-s">{seance ? [seance.debut && seance.fin ? `${seance.debut} – ${seance.fin}` : seance.debut, seance.lieu].filter(Boolean).join(" · ") : "Aucune séance prévue"}</span>
+        <a className="acc-c" href="#bloc-club" style={{ "--k": "var(--n-open)" } as React.CSSProperties}>
+          <span className="acc-l">🌍 Club · international</span>
+          <b className="acc-v num">{rang(equipe?.rang)}</b>
+          <span className="acc-s">{equipe ? `Eugies ${equipe.prenom || "Team A"}${autresEq.length ? ` · ${autresEq.map((e) => `${e.prenom} ${e.rang}e`).join(" · ")}` : ""}` : "pas encore classé"}</span>
         </a>
       </div>
+
+      <a className="acc-c acc-entr" href="#bloc-entrainements" style={{ "--k": "var(--n-temps)" } as React.CSSProperties}>
+        <span className="acc-l">🎯 Prochain entraînement</span>
+        <b className="acc-v txt">{seance ? dateLongue(seance.date) : "—"}</b>
+        <span className="acc-s">{seance ? [seance.debut && seance.fin ? `${seance.debut} – ${seance.fin}` : seance.debut, seance.lieu].filter(Boolean).join(" · ") : "Aucune séance prévue"}</span>
+      </a>
     </div>
   );
 
