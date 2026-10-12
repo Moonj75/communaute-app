@@ -24,6 +24,10 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, maxi
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
+      <head>
+        {/* The browser may offer the install before the page is ready: keep the offer for the « Installer » banner. */}
+        <script dangerouslySetInnerHTML={{ __html: "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__installEvt=e;window.dispatchEvent(new Event('install-pret'));});" }} />
+      </head>
       <body>
         {children}
         <EnregistrerSW />
