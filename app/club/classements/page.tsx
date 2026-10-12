@@ -4,7 +4,7 @@ import Blocs from "@/components/Blocs";
 import { TableClassement } from "@/components/club/Classements";
 import { compterListes, lireEugies, lireImports, lireListe } from "@/lib/classements-lire";
 import { LISTES, SOURCES, libelleMois, listeDef } from "@/lib/classements-types";
-import { displayName, estInactif, getVue } from "@/lib/profil";
+import { displayName, getVue } from "@/lib/profil";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Classements · SC Lions d'Eugies", description: "Classements national (FBFTS) et international (FISTF) avec les joueurs du club en évidence." };
@@ -87,35 +87,15 @@ export default async function Classements({ searchParams }: { searchParams: Prom
           <h2>Classements</h2>
           <p>
             🇧🇪 FBFTS {imp("fbfts") ? `(${libelleMois(imp("fbfts")!.mois, true)})` : ""} · 🌍 FISTF {imp("fistf") ? `(${libelleMois(imp("fistf")!.mois, true)})` : ""} — mis à jour
-            automatiquement le 1<sup>er</sup> de chaque mois. <Link href="/club">← Le club</Link>
+            automatiquement le 1<sup>er</sup> de chaque mois.
             {profil?.role === "admin" && !apercu ? <> · <Link href="/staff/classements">⚙️ Mettre à jour / importer un fichier</Link></> : null}
           </p>
         </section>
-        {/* One page only: the rankings, with their tabs (National, Clubs belges, International…) and filters. */}
+        {/* Independent page: the rankings alone, with their own bottom bar (no parts of the home page). */}
         <Blocs
-          page={!user ? "Espace visiteur" : "Accueil"}
+          page="Classements"
           actions={profil?.role === "admin" && !apercu ? <Link className="rf-btn" href="/staff/classements" title="Mettre à jour / importer un classement"><span className="rf-e" aria-hidden="true">⚙️</span> <span className="rf-t">Mise à jour</span></Link> : null}
-          blocs={[
-            // Same side rail as the home page, « Classements » lit up: the other parts open the home page there.
-            ...(!user
-              ? [
-                  { id: "club", titre: "Le club", ic: "🦁", href: "/club#bloc-club", contenu: null },
-                  { id: "calendrier", titre: "Calendrier", ic: "📅", href: "/club#bloc-calendrier", contenu: null },
-                  { id: "entrainements", titre: "Entraînements", ic: "🎯", href: "/club#bloc-entrainements", contenu: null },
-                ]
-              : estInactif(profil)
-                ? [
-                    { id: "club", titre: "Le club", ic: "🦁", href: "/#bloc-club", contenu: null },
-                    { id: "calendrier", titre: "Calendrier", ic: "📅", href: "/#bloc-calendrier", contenu: null },
-                    { id: "entrainements", titre: "Entraînements", ic: "🎯", href: "/#bloc-entrainements", contenu: null },
-                  ]
-                : [
-                    { id: "vue", titre: "Vue générale", ic: "🏁", href: "/#bloc-vue", contenu: null },
-                    { id: "club", titre: "Le club", ic: "🏆", href: "/#bloc-club", contenu: null },
-                  ]),
-            { id: "complet", titre: "Classements", ic: "📊", badge: def.court, contenu: complet },
-            ...(user && !estInactif(profil) ? [{ id: "entrainements", titre: "Entraînements", ic: "🎯", href: "/#bloc-entrainements", contenu: null }] : []),
-          ]}
+          blocs={[{ id: "complet", titre: def.titre, ic: def.ic, contenu: complet }]}
         />
       </main>
     </>
