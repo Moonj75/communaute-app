@@ -2,6 +2,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Blocs from "@/components/Blocs";
 import { TableClassement } from "@/components/club/Classements";
+import AllerLigne from "@/components/club/AllerLigne";
 import { compterListes, lireEugies, lireImports, lireListe } from "@/lib/classements-lire";
 import { LISTES, SOURCES, libelleMois, listeDef } from "@/lib/classements-types";
 import { displayName, getVue } from "@/lib/profil";
@@ -62,10 +63,8 @@ export default async function Classements({ searchParams }: { searchParams: Prom
             </span>
           </div>
           {/* Fixed with the table's title: one tap brings our line to the middle of the table. */}
-          {lignes.some((l) => l.eugies) && !filtre ? (
-            <a className="cl-aller" href="#ma-ligne">
-              <span aria-hidden="true">🎯</span> {moi.length && lignes.some((l) => l.joueur_id && moi.includes(l.joueur_id)) ? "Aller à ma ligne" : "Aller à notre premier joueur"}
-            </a>
+          {lignes.some((l) => l.eugies || (l.joueur_id && moi.includes(l.joueur_id))) ? (
+            <AllerLigne bouton={!filtre} texte={moi.length && lignes.some((l) => l.joueur_id && moi.includes(l.joueur_id)) ? "Aller à ma ligne" : "Aller à notre premier joueur"} />
           ) : null}
         </div>
         <div className="bd">
