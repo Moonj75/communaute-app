@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import NavSection, { type PageSection } from "./NavSection";
 
 export type BlocDef = {
   id: string;
@@ -24,7 +24,7 @@ export type BlocDef = {
  * Page layout: a thin side rail (titles written vertically) lists every part of the page.
  * Clicking a title shows that part alone, next to the rail; the rail stays in place while scrolling.
  */
-export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDef[]; initial?: string | null; page?: string; /** Buttons at the right of the fixed title line (e.g. refresh from Notion). */ actions?: ReactNode }) {
+export default function Blocs({ blocs, initial, page, actions, pages, pageActuelle }: { blocs: BlocDef[]; initial?: string | null; page?: string; /** Buttons at the right of the fixed title line (e.g. refresh from Notion). */ actions?: ReactNode; /** Pages of the section (e.g. the rankings), shown in the bottom bar when the page has a single part. */ pages?: PageSection[]; pageActuelle?: string }) {
   const tous = blocs.filter(Boolean);
   const valides = tous.filter((b) => !b.href);
   const premier = valides[0]?.id;
@@ -188,6 +188,18 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
     return () => { ro.disconnect(); window.removeEventListener("resize", demander); if (raf) cancelAnimationFrame(raf); };
   }, [actif, tout]);
 
+  // Section chosen again from the main menu: back to its first part.
+  useEffect(() => {
+    const premierePartie = () => {
+      setActif(premier);
+      setTout(false);
+      setDeplie(false);
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    };
+    window.addEventListener("blocs-premier", premierePartie);
+    return () => window.removeEventListener("blocs-premier", premierePartie);
+  }, [premier]);
+
   useEffect(() => {
     if (!deplie) return;
     const dehors = (e: PointerEvent) => { if (volet.current && !volet.current.contains(e.target as Node)) setDeplie(false); };
@@ -224,6 +236,7 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
   if (tous.length <= 1)
     return (
       <div className="blocs seul">
+        {pages && pages.length ? <NavSection pages={pages} actuel={pageActuelle || pages[0].id} className="blocs-nav" /> : null}
         <div className="bl-col">
           <div ref={barre} className="bl-titre" aria-live="polite">
             {titreHtml ? <span className="bl-page bl-page-html" dangerouslySetInnerHTML={{ __html: titreHtml }} /> : titrePage ? <span className="bl-page">{titrePage}</span> : null}
@@ -239,64 +252,15 @@ export default function Blocs({ blocs, initial, page, actions }: { blocs: BlocDe
 
   return (
     <div className={`blocs volet-ok nv${tout ? " tout" : ""}`}>
-      {/* Bottom bar: the part being shown in the middle (tap = list of parts), previous / next on each side. */}
-      <nav ref={volet} className={`secnav blocs-nav${deplie ? " ouvert" : ""}`} id="onglets" aria-label="Parties de la page">
-        {deplie ? (
-          <div className="sn-liste" role="menu">
-            {tous.map((b) => {
-              const on = b.href ? Boolean(b.actuel) : !tout && b.id === actif;
-              const badge = b.badge !== undefined && b.badge !== null && b.badge !== "" ? b.badge : null;
-              const dedans = (
-                <>
-                  <span className="sn-ic" aria-hidden="true">{b.ic}</span>
-                  <span className="sn-t">{b.titre}</span>
-                  {badge ? <span className="sn-b">{badge}</span> : null}
-                </>
-              );
-              return b.href ? (
-                <Link key={b.id} href={b.href} className={`sn-l${on ? " on" : ""}`} role="menuitem" onClick={() => setDeplie(false)}>{dedans}</Link>
-              ) : (
-                <button key={b.id} type="button" className={`sn-l${on ? " on" : ""}`} role="menuitem" onClick={() => ouvrir(b.id)}>{dedans}</button>
-              );
-            })}
-            {valides.length > 1 ? (
-              <button type="button" className={`sn-l${tout ? " on" : ""}`} role="menuitem" onClick={() => { setTout((t) => !t); setDeplie(false); }}>
-                <span className="sn-ic" aria-hidden="true">{tout ? "◱" : "▦"}</span>
-                <span className="sn-t">{tout ? "Une partie à la fois" : "Tout afficher"}</span>
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-        {(() => {
-          const ix = tous.findIndex((b) => (b.href ? b.actuel : b.id === courantB?.id));
-          const prec = ix > 0 ? tous[ix - 1] : null;
-          const suiv = ix >= 0 && ix < tous.length - 1 ? tous[ix + 1] : null;
-          const aller = (b: BlocDef | null) => {
-            if (!b) return;
-            if (b.href) window.location.href = b.href;
-            else ouvrir(b.id);
-          };
-          return (
-            <div className="sn-barre">
-              <button type="button" className="sn-fl" disabled={!prec} onClick={() => aller(prec)} aria-label={prec ? `Partie précédente : ${prec.titre}` : "Pas de partie précédente"}>
-                <span aria-hidden="true">◀</span>
-                <span className="sn-fl-t">{prec ? prec.titre : ""}</span>
-              </button>
-              <button type="button" className="sn-centre" onClick={() => setDeplie((d) => !d)} aria-expanded={deplie} aria-label="Choisir une partie de la page">
-                <span className="sn-mini" aria-hidden="true">{tout ? "▦" : courantB?.ic}</span>
-                <span className="sn-ct">
-                  <b>{tout ? "Tout" : courantB?.titre}</b>
-                  <small>{ix + 1 > 0 ? ix + 1 : 1} / {tous.length} {deplie ? "▾" : "▴"}</small>
-                </span>
-              </button>
-              <button type="button" className="sn-fl d" disabled={!suiv} onClick={() => aller(suiv)} aria-label={suiv ? `Partie suivante : ${suiv.titre}` : "Pas de partie suivante"}>
-                <span className="sn-fl-t">{suiv ? suiv.titre : ""}</span>
-                <span aria-hidden="true">▶</span>
-              </button>
-            </div>
-          );
-        })()}
-      </nav>
+      {/* Bottom bar: the parts of the section as thumbnails, the one shown bigger; arrows on each side. */}
+      <NavSection
+        className="blocs-nav"
+        actuel={tout ? "__tout" : courantB?.id || ""}
+        pages={[
+          ...tous.map((b): PageSection => ({ id: b.id, titre: b.titre, ic: b.ic, href: b.href, onClick: b.href ? undefined : () => ouvrir(b.id) })),
+          ...(valides.length > 1 ? [{ id: "__tout", titre: tout ? "Une à la fois" : "Tout", ic: "▦", special: true, onClick: () => setTout((t) => !t) }] : []),
+        ]}
+      />
 
       <div className="bl-col">
       <div ref={barre} className="bl-titre" aria-live="polite">

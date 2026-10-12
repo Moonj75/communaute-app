@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icone from "./Icone";
+import NavSection from "./NavSection";
 
 /* Same floating dock as the members' space, for visitors (no login):
    the parts of the public club page, the rankings, and a gold button to log in. */
@@ -30,6 +31,28 @@ export default function BarrePublique({ connecte = false }: { connecte?: boolean
     i.bloc ? path === "/club" && (hash === i.bloc || (!hash && i.bloc === "club")) : path === i.href || path.startsWith(i.href + "/");
   const [ouvert, setOuvert] = useState(false);
   useEffect(() => setOuvert(false), [path, hash]);
+  // The menu closes by itself after a few seconds without being touched.
+  const minuteur = useRef<number | null>(null);
+  const relancer = () => {
+    if (minuteur.current) clearTimeout(minuteur.current);
+    minuteur.current = window.setTimeout(() => setOuvert(false), 6000);
+  };
+  useEffect(() => {
+    if (!ouvert) { if (minuteur.current) clearTimeout(minuteur.current); return; }
+    relancer();
+    return () => { if (minuteur.current) clearTimeout(minuteur.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ouvert]);
+  // Choosing a section: the menu closes and the section opens on its first part.
+  const choisir = (href: string) => {
+    setOuvert(false);
+    const cible = new URL(href, window.location.href);
+    if (cible.pathname === window.location.pathname && !cible.hash) {
+      window.dispatchEvent(new Event("blocs-premier"));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   const page = ITEMS.find((i) => actif(i)) || ITEMS[0];
 
   return (
@@ -38,7 +61,7 @@ export default function BarrePublique({ connecte = false }: { connecte?: boolean
         <Icone n={ouvert ? "fermer" : "menu"} />
       </button>
       {ouvert ? <button type="button" className="menu-fond" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
-      <nav className={`menu-tiroir${ouvert ? " on" : ""}`} aria-label="Menu principal" aria-hidden={!ouvert}>
+      <nav onPointerMove={relancer} onPointerDown={relancer} onWheel={relancer} className={`menu-tiroir${ouvert ? " on" : ""}`} aria-label="Menu principal" aria-hidden={!ouvert}>
         <div className="mt-tete"><span className="feuille-av" aria-hidden="true">🦁</span><span><b>Espace visiteur</b><small>SC Lions d&apos;Eugies</small></span></div>
         <div className="mt-liste">
           {ITEMS.map((i) => {
@@ -47,7 +70,7 @@ export default function BarrePublique({ connecte = false }: { connecte?: boolean
             return i.bloc ? (
               <a key={i.href} href={i.href} className={cls} tabIndex={ouvert ? 0 : -1} onClick={() => setOuvert(false)}>{dedans}</a>
             ) : (
-              <Link key={i.href} href={i.href} className={cls} tabIndex={ouvert ? 0 : -1}>{dedans}</Link>
+              <Link key={i.href} href={i.href} className={cls} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>{dedans}</Link>
             );
           })}
           <Link href={connecte ? "/" : "/login"} className="mt-l staff" tabIndex={ouvert ? 0 : -1}>
@@ -56,13 +79,7 @@ export default function BarrePublique({ connecte = false }: { connecte?: boolean
           </Link>
         </div>
       </nav>
-      <nav className="secnav defaut" aria-label="Navigation">
-        <div className="sn-barre">
-          <button type="button" className="sn-fl" onClick={() => window.history.back()} aria-label="Retour"><span aria-hidden="true">◀</span><span className="sn-fl-t">Retour</span></button>
-          <span className={`sn-centre d-${page.c}`}><span className="sn-mini" aria-hidden="true"><Icone n={page.ic} taille={18} /></span><span className="sn-ct"><b>{page.label}</b><small>1 / 1</small></span></span>
-          <button type="button" className="sn-fl d" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Haut de page"><span className="sn-fl-t">Haut</span><span aria-hidden="true">▲</span></button>
-        </div>
-      </nav>
+      <NavSection className="defaut" couleur={page.c} actuel="ici" pages={[{ id: "ici", titre: page.label === "Entraîn." ? "Entraînements" : page.label, ic: <Icone n={page.ic} taille={18} /> }]} />
     </>
   );
 }

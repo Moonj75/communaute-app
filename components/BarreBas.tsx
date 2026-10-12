@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icone from "./Icone";
+import NavSection from "./NavSection";
 
 type Item = { href: string; label: string; ic: string; opt?: boolean; desc?: string; c?: string };
 
@@ -38,6 +39,28 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
     : JOUEUR;
 
   useEffect(() => setOuvert(false), [path]);
+  // The menu closes by itself after a few seconds without being touched.
+  const minuteur = useRef<number | null>(null);
+  const relancer = () => {
+    if (minuteur.current) clearTimeout(minuteur.current);
+    minuteur.current = window.setTimeout(() => setOuvert(false), 6000);
+  };
+  useEffect(() => {
+    if (!ouvert) { if (minuteur.current) clearTimeout(minuteur.current); return; }
+    relancer();
+    return () => { if (minuteur.current) clearTimeout(minuteur.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ouvert]);
+  // Choosing a section: the menu closes and the section opens on its first part.
+  const choisir = (href: string) => {
+    setOuvert(false);
+    const cible = new URL(href, window.location.href);
+    if (cible.pathname === window.location.pathname && !cible.hash) {
+      window.dispatchEvent(new Event("blocs-premier"));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   useEffect(() => {
     if (!ouvert) return;
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOuvert(false);
@@ -55,7 +78,7 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
         <Icone n={ouvert ? "fermer" : "menu"} />
       </button>
       {ouvert ? <button type="button" className="menu-fond" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
-      <nav className={`menu-tiroir${ouvert ? " on" : ""}`} aria-label="Menu principal" aria-hidden={!ouvert}>
+      <nav onPointerMove={relancer} onPointerDown={relancer} onWheel={relancer} className={`menu-tiroir${ouvert ? " on" : ""}`} aria-label="Menu principal" aria-hidden={!ouvert}>
         <div className="mt-tete">
           <span className="feuille-av" aria-hidden="true">{(nom || "?").slice(0, 1).toUpperCase()}</span>
           <span>
@@ -65,7 +88,7 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
         </div>
         <div className="mt-liste">
           {items.map((i) => (
-            <Link key={i.href} href={i.href} className={`mt-l d-${i.c}${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => setOuvert(false)}>
+            <Link key={i.href} href={i.href} className={`mt-l d-${i.c}${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>
               <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
               <span className="mt-t">{i.label}</span>
             </Link>
@@ -74,7 +97,7 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
             <>
               <p className="mt-sec"><Icone n="etoile" taille={13} /> Espace staff</p>
               {STAFF.map((i) => (
-                <Link key={i.href} href={i.href} className={`mt-l d-${i.c} staff${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => setOuvert(false)}>
+                <Link key={i.href} href={i.href} className={`mt-l d-${i.c} staff${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>
                   <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
                   <span className="mt-t">{i.label}<small>{i.desc}</small></span>
                 </Link>
@@ -90,21 +113,17 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
         </div>
       </nav>
 
-      {/* Default bottom bar (replaced by the page's own parts when it has some): the page in the middle. */}
-      <nav className="secnav defaut" aria-label="Navigation">
-        <div className="sn-barre">
-          <button type="button" className="sn-fl" onClick={() => window.history.back()} aria-label="Retour">
-            <span aria-hidden="true">◀</span><span className="sn-fl-t">Retour</span>
-          </button>
-          <span className={`sn-centre d-${page.c}`}>
-            <span className="sn-mini" aria-hidden="true"><Icone n={page.ic} taille={18} /></span>
-            <span className="sn-ct"><b>{page.label}</b><small>1 / 1</small></span>
-          </span>
-          <button type="button" className="sn-fl d" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Haut de page">
-            <span className="sn-fl-t">Haut</span><span aria-hidden="true">▲</span>
-          </button>
-        </div>
-      </nav>
+      {/* Default bottom bar (replaced by the page's own parts when it has some). Inside a section
+          (e.g. one logistics sheet), the section's main page comes first: the left arrow goes back to it. */}
+      <NavSection
+        className="defaut"
+        couleur={page.c}
+        actuel="ici"
+        pages={[
+          ...(path !== page.href && page.href !== "/" ? [{ id: "racine", titre: page.label, ic: <Icone n={page.ic} taille={18} />, href: page.href }] : []),
+          { id: "ici", titre: path !== page.href && page.href !== "/" ? "Détail" : page.label, ic: <Icone n={page.ic} taille={18} /> },
+        ]}
+      />
     </>
   );
 }
