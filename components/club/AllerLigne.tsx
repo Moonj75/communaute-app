@@ -32,10 +32,16 @@ function centrer(douce: boolean) {
 export default function AllerLigne({ texte, bouton = true }: { texte: string; bouton?: boolean }) {
   const [visible, setVisible] = useState(true);
 
-  // At opening, after the table has its final size (font adjusted to the screen).
+  // At opening: centred several times while the table takes its final size (fonts loaded, font size adjusted
+  // to the screen), until the player touches the page himself.
   useEffect(() => {
-    const t = window.setTimeout(() => centrer(false), 350);
-    return () => window.clearTimeout(t);
+    let fini = false;
+    const stop = () => { fini = true; };
+    const evs = ["pointerdown", "wheel", "touchstart", "keydown"] as const;
+    evs.forEach((e) => window.addEventListener(e, stop, { passive: true, once: true }));
+    const timers = [120, 400, 900, 1600, 2600].map((ms) => window.setTimeout(() => { if (!fini) centrer(false); }, ms));
+    document.fonts?.ready.then(() => { if (!fini) centrer(false); });
+    return () => { fini = true; timers.forEach((t) => window.clearTimeout(t)); evs.forEach((e) => window.removeEventListener(e, stop)); };
   }, []);
 
   // Is the row on screen (not hidden under the fixed bars)?
