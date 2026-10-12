@@ -3195,3 +3195,48 @@ body:has(.secnav.blocs-nav) .secnav.defaut { display: none; }
 html, body, :where(body *) { touch-action: pan-x pan-y; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 @media (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
+
+/* ===== Barre du bas : mini-pages de la section (transparentes), la page en cours plus grande et lumineuse ===== */
+.ns.d-rouge { --dc: #ff5a4a; --dg: linear-gradient(135deg, #ff4a1c, #c4120a); }
+.ns.d-canard { --dc: #2ec5d3; --dg: linear-gradient(135deg, #2ec5d3, #0b7f8c); }
+.ns.d-orange { --dc: #ffa83a; --dg: linear-gradient(135deg, #ffb347, #e07b00); }
+.ns.d-indigo { --dc: #7d93ff; --dg: linear-gradient(135deg, #5c78ff, #2a3fbf); }
+.ns.d-violet { --dc: #b98aff; --dg: linear-gradient(135deg, #a46bff, #6a35b5); }
+.ns.d-bleu { --dc: #6aa8ff; --dg: linear-gradient(135deg, #4d8dff, #1f4fb5); }
+.ns.d-rose { --dc: #ff7ab8; --dg: linear-gradient(135deg, #ff7ab8, #b0306a); }
+.ns.d-bronze { --dc: #d9a066; --dg: linear-gradient(135deg, #d9a066, #8a5a2a); }
+.ns.d-or { --dc: #f5d300; --dg: linear-gradient(135deg, #ffe34d, #e0a800); }
+
+:root { --dock-h: 84px; }
+.ns .ns-barre { display: flex; align-items: center; gap: 10px; height: var(--dock-h); max-width: 900px; margin: 0 auto; padding: 0 10px; }
+.ns-fl { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; color: #fff; text-decoration: none;
+  background: var(--dg); box-shadow: 0 6px 16px -6px var(--dc), inset 0 2px 0 rgba(255,255,255,.35), inset 0 -3px 6px rgba(0,0,0,.25), 0 0 0 2px rgba(255,255,255,.12);
+  transition: transform .15s ease, filter .15s ease, opacity .2s; }
+.ns-fl svg { filter: drop-shadow(0 1px 1px rgba(0,0,0,.45)); }
+.ns-fl:hover:not(:disabled) { filter: brightness(1.15); transform: scale(1.06); }
+.ns-fl:active:not(:disabled) { transform: scale(.94); }
+.ns-fl:disabled { background: rgba(255,255,255,.07); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); color: rgba(255,255,255,.25); cursor: default; }
+.ns-piste { flex: 1; min-width: 0; height: 100%; display: flex; align-items: center; gap: 8px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding: 0 6px; scroll-snap-type: x proximity; }
+.ns-piste::-webkit-scrollbar { display: none; }
+.ns-p { flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 50px; padding: 0; border: 0; background: none; color: #fff; text-decoration: none; cursor: pointer; font: inherit;
+  opacity: .42; transition: opacity .2s, transform .2s; scroll-snap-align: center; }
+.ns-p:first-child { margin-left: auto; } .ns-p:last-child { margin-right: auto; }
+.ns-p:hover { opacity: .75; }
+.ns-feuille { position: relative; display: grid; place-items: center; width: 36px; height: 44px; border-radius: 6px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08)); border: 1px solid rgba(255,255,255,.35); backdrop-filter: blur(3px); transition: all .2s; }
+.ns-bord { position: absolute; left: 0; right: 0; top: 0; height: 7px; background: var(--dg); }
+.ns-ic { margin-top: 2px; font-size: 15px; line-height: 1; display: grid; place-items: center; }
+.ns-lg { position: absolute; left: 6px; right: 6px; bottom: 9px; height: 2px; border-radius: 2px; background: rgba(255,255,255,.4); }
+.ns-lg.c { bottom: 5px; right: 14px; }
+.ns-t { max-width: 58px; font-size: 9.5px; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ns-p.on { opacity: 1; width: 64px; }
+.ns-p.on .ns-feuille { width: 46px; height: 56px; border: 2px solid var(--dc); background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.78)); color: #1a1400;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dc) 30%, transparent), 0 0 18px 2px var(--dc); }
+.ns-p.on .ns-bord { height: 9px; }
+.ns-p.on .ns-ic { font-size: 20px; }
+.ns-p.on .ns-lg { background: rgba(0,0,0,.18); }
+.ns-p.on .ns-t { max-width: 72px; font-size: 11px; font-weight: 800; color: #fff; text-shadow: 0 0 8px var(--dc); }
+.ns-p.sp .ns-feuille { border-style: dashed; background: transparent; }
+.ns-p.sp .ns-bord, .ns-p.sp .ns-lg { display: none; }
+@media (max-width: 420px) { .ns .ns-barre { gap: 6px; padding: 0 6px; } .ns-fl { width: 46px; height: 46px; } }
+.ns-piste { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); }
