@@ -33,84 +33,91 @@ export type PlacesVivantes = {
 
 const place = (n: number | null | undefined) => (n ? <>{n}<sup>{n === 1 ? "er" : "e"}</sup></> : "—");
 
-/** `places` = the player's places read from the latest imported rankings (always up to date). */
+/**
+ * One single player card (futuristic look): photo, name, category and the three rankings in the same frame;
+ * the honours scroll from right to left in a band at the bottom of the card. The kitty sits apart, below.
+ * `places` = the player's places read from the latest imported rankings (always up to date).
+ */
 export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famille: boolean; photoUrl: string | null; places?: PlacesVivantes }) {
   const full = [f.prenom, f.nom].filter(Boolean).join(" ");
   const cagnotte = Number(f.cagnotte) || 0;
   const titres = (f.palmares || "").split(/\n+/).map((t) => t.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
-  const autres = titres.length > 4 ? titres.slice(4) : [];
+  // Enough items for the band to be full while it scrolls (the list is repeated if short).
+  const tour = titres.length ? Array.from({ length: Math.max(1, Math.ceil(6 / titres.length)) }, () => titres).flat() : [];
+  const duree = Math.max(16, tour.reduce((n, t) => n + t.length, 0) * 0.28);
+  const cat = places?.national?.categorie || f.categorie;
+  const kCat = couleurCategorie(cat);
+  const kIc = places?.categorie ? couleurCategorie(places.categorie.nom) : undefined;
   return (
-    <article className="fiche-c">
-      <header className="fc-tete">
-        <Photo notionId={f.notion_id} url={photoUrl} path={f.photo_path || null} initiales={initiales(full)} nom={full} />
-        <div className="fc-id">
-          <h2 className="fc-nom">
-            <span className="perso">{f.prenom}</span> {f.nom}
-          </h2>
-          <div className="fc-pills">
-            <span className={`pill ${f.actif ? "on" : ""}`}>{f.actif ? "Actif" : "Non actif"}</span>
-            {famille ? <span className={`pill ${f.titulaire ? "adm" : ""}`}>{f.titulaire ? "Titulaire du compte" : "Famille"}</span> : null}
-            {(f.roles || []).map((r) => (
-              <span key={r} className="role-chip">{r}</span>
-            ))}
+    <article className="fx">
+      <div className="fx-carte">
+        <span className="fx-coin a" aria-hidden="true" /><span className="fx-coin b" aria-hidden="true" />
+        <header className="fx-tete">
+          <Photo notionId={f.notion_id} url={photoUrl} path={f.photo_path || null} initiales={initiales(full)} nom={full} />
+          <div className="fx-id">
+            <span className="fx-k">Carte joueur · LEAW</span>
+            <h2 className="fx-nom">
+              <span className="perso">{f.prenom}</span> {f.nom}
+            </h2>
+            <div className="fx-pills">
+              <span className={`fx-pill${f.actif ? " on" : ""}`}>{f.actif ? "● Actif" : "○ Non actif"}</span>
+              {famille ? <span className={`fx-pill${f.titulaire ? " or" : ""}`}>{f.titulaire ? "Titulaire" : "Famille"}</span> : null}
+              {(f.roles || []).map((r) => (
+                <span key={r} className="fx-pill">{r}</span>
+              ))}
+            </div>
+            <span className="fx-tel">📞 {f.telephone || "—"}</span>
           </div>
-          <span className="fc-tel">📞 {f.telephone || "—"}</span>
-        </div>
-      </header>
+        </header>
 
-      <div className="fc-grille fc-4">
-        <div className="fc-t t-cat" style={couleurCategorie(places?.national?.categorie || f.categorie) ? ({ "--k": couleurCategorie(places?.national?.categorie || f.categorie) } as React.CSSProperties) : undefined}>
-          <span className="fl-l">Catégorie</span>
-          <b className="fc-v">{places?.national?.categorie || f.categorie || "—"}</b>
-          <span className="fc-s">{places?.national?.suivante && places.national.suivante !== places.national.categorie ? `→ ${places.national.suivante} · ` : ""}Série {f.serie || "—"}</span>
+        <div className="fx-stats">
+          <div className="fx-s" style={kCat ? ({ "--k": kCat } as React.CSSProperties) : undefined}>
+            <span className="fx-l">Catégorie</span>
+            <b className="fx-v">{cat || "—"}</b>
+            <span className="fx-p">{places?.national?.suivante && places.national.suivante !== places.national.categorie ? `→ ${places.national.suivante} · ` : ""}Série {f.serie || "—"}</span>
+          </div>
+          <div className="fx-s" style={{ "--k": "#ff5a4a" } as React.CSSProperties}>
+            <span className="fx-l">🇧🇪 National</span>
+            <b className="fx-v num">{place(places ? places.national?.rang : f.classement_belge)}</b>
+            <span className="fx-p">FBFTS</span>
+          </div>
+          <div className="fx-s" style={{ "--k": "#5fa8ff" } as React.CSSProperties}>
+            <span className="fx-l">🌍 Open</span>
+            <b className="fx-v num">{place(places ? places.open : f.classement_international)}</b>
+            <span className="fx-p">FISTF monde</span>
+          </div>
+          <div className="fx-s" style={{ "--k": kIc || "#4fd6a4" } as React.CSSProperties}>
+            <span className="fx-l">🌍 {places?.categorie ? places.categorie.nom : "Catégorie"}</span>
+            <b className="fx-v num">{place(places?.categorie?.rang)}</b>
+            <span className="fx-p">{places?.categorie ? "FISTF cat." : "non classé"}</span>
+          </div>
         </div>
-        <div className="fc-t t-nat">
-          <span className="fl-l">🇧🇪 National</span>
-          <b className="fc-v num">{place(places ? places.national?.rang : f.classement_belge)}</b>
-          <span className="fc-s">FBFTS</span>
-        </div>
-        <div className="fc-t t-int">
-          <span className="fl-l">🌍 International Open</span>
-          <b className="fc-v num">{place(places ? places.open : f.classement_international)}</b>
-          <span className="fc-s">FISTF · toutes cat.</span>
-        </div>
-        <div className="fc-t t-intcat" style={places?.categorie && couleurCategorie(places.categorie.nom) ? ({ "--k": couleurCategorie(places.categorie.nom) } as React.CSSProperties) : undefined}>
-          <span className="fl-l">🌍 International catégorie</span>
-          <b className="fc-v num">{place(places?.categorie?.rang)}</b>
-          <span className="fc-s">{places?.categorie ? `FISTF · ${places.categorie.nom}` : "pas de classement de catégorie"}</span>
+
+        <div className="fx-palma" role="region" aria-label="Palmarès">
+          <span className="fx-pk">🏆 Palmarès</span>
+          <div className="fx-pv">
+            {tour.length ? (
+              <div className="fx-pp" style={{ animationDuration: `${duree}s` }}>
+                {[0, 1].map((c) => (
+                  <span key={c} className="fx-pc" aria-hidden={c === 1 ? true : undefined}>
+                    {tour.map((t, i) => (
+                      <span key={i} className="fx-pi">🏅 {t}</span>
+                    ))}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="fx-pi vide">Pas encore de titre… le premier arrive ! 💪</span>
+            )}
+          </div>
         </div>
       </div>
 
-      <section className="fc-palma">
-        <span className="fl-l">🏆 Palmarès</span>
-        {titres.length ? (
-          <>
-            <ul>
-              {titres.slice(0, 4).map((t, i) => (
-                <li key={i}>{t}</li>
-              ))}
-            </ul>
-            {autres.length ? (
-              <details>
-                <summary>+ {autres.length} autre{autres.length > 1 ? "s" : ""}</summary>
-                <ul>
-                  {autres.map((t, i) => (
-                    <li key={i}>{t}</li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
-          </>
-        ) : (
-          <p className="fc-s">Pas encore de titre… le premier arrive ! 💪</p>
-        )}
-      </section>
-
-      <section className="fc-cagnotte" aria-label="Cagnotte">
+      <section className="fc-cagnotte fx-cagnotte" aria-label="Cagnotte">
         <span className="fcg-ic" aria-hidden="true">💰</span>
         <span className="fcg-txt">
           <span className="fcg-l">Ma cagnotte</span>
-          <span className="fcg-s">pour les déplacements du club</span>
+          <span className="fcg-s">déplacements du club</span>
         </span>
         <b className="fcg-v num or-brillant">{euro.format(cagnotte)}</b>
       </section>
