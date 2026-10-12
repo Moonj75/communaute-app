@@ -6,6 +6,7 @@ import AllerLigne from "@/components/club/AllerLigne";
 import { compterListes, lireEugies, lireImports, lireListe } from "@/lib/classements-lire";
 import { LISTES, SOURCES, libelleMois, listeDef } from "@/lib/classements-types";
 import { displayName, getVue } from "@/lib/profil";
+import LogoFistf from "@/components/LogoFistf";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Classements · SC Lions d'Eugies", description: "Classements national (FBFTS) et international (FISTF) avec les joueurs du club en évidence." };
@@ -34,18 +35,26 @@ export default async function Classements({ searchParams }: { searchParams: Prom
   const moi = ((mesFiches.data || []) as { notion_id: string }[]).map((j) => j.notion_id);
   const lien = (l: string, f = filtre) => `/club/classements?l=${l}${f ? `&f=${f}` : ""}#bloc-complet`;
   const imp = (s: string) => imports.find((i) => i.source === s);
+  // Three pages in the section: national (players), national (clubs), international (with its own small tabs).
+  const groupe = def.id === "FBFTS" ? "nat" : def.id === "FBFTS-Clubs" ? "clubs" : "int";
+  const INTER = LISTES.filter((l) => l.source === "fistf");
+  const court = (l: (typeof LISTES)[number]) => l.court.replace(/^International\s+/, "");
+  const natFiltre = filtre === "bel" ? "" : filtre;
 
   const complet = (
     <>
       <div className="bande-fixe cl-bande">
-      <nav className="cl-tabs" aria-label="Classements">
-        {LISTES.map((l) => (
-          <Link key={l.id} href={lien(l.id, l.source === "fistf" || filtre !== "bel" ? filtre : "")} className={l.id === def.id ? "on" : undefined} aria-current={l.id === def.id ? "page" : undefined}>
-            <span aria-hidden="true">{l.ic}</span> {l.court}
-            {eug.some((e) => e.liste === l.id) ? <span className="cl-n">{eug.filter((e) => e.liste === l.id && e.prenom !== null).length || "🦁"}</span> : null}
-          </Link>
-        ))}
-      </nav>
+      {/* International: small tabs for its lists (Open, Vétérans, Femmes, U20…). The national pages have none. */}
+      {groupe === "int" ? (
+        <nav className="cl-tabs cl-petits" aria-label="Classements internationaux">
+          {INTER.map((l) => (
+            <Link key={l.id} href={lien(l.id)} className={l.id === def.id ? "on" : undefined} aria-current={l.id === def.id ? "page" : undefined}>
+              {court(l)}
+              {eug.some((e) => e.liste === l.id) ? <span className="cl-n">{eug.filter((e) => e.liste === l.id && e.prenom !== null).length || "🦁"}</span> : null}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
       <div className="cl-filtres">
         {FILTRES.filter((f) => !f.fistf || def.source === "fistf").map((f) => (
           <Link key={f.id} href={lien(def.id, f.id)} className={`chip${filtre === f.id ? " on" : ""}`}>
@@ -85,7 +94,7 @@ export default async function Classements({ searchParams }: { searchParams: Prom
           <span className="kicker">Classements officiels</span>
           <h2>Classements</h2>
           <p>
-            🇧🇪 FBFTS {imp("fbfts") ? `(${libelleMois(imp("fbfts")!.mois, true)})` : ""} · 🌍 FISTF {imp("fistf") ? `(${libelleMois(imp("fistf")!.mois, true)})` : ""} — mis à jour
+            🇧🇪 FBFTS {imp("fbfts") ? `(${libelleMois(imp("fbfts")!.mois, true)})` : ""} · <LogoFistf /> FISTF {imp("fistf") ? `(${libelleMois(imp("fistf")!.mois, true)})` : ""} — mis à jour
             automatiquement le 1<sup>er</sup> de chaque mois.
             {profil?.role === "admin" && !apercu ? <> · <Link href="/staff/classements">⚙️ Mettre à jour / importer un fichier</Link></> : null}
           </p>
@@ -94,10 +103,14 @@ export default async function Classements({ searchParams }: { searchParams: Prom
         <Blocs
           page="Classements"
           actions={profil?.role === "admin" && !apercu ? <Link className="rf-btn" href="/staff/classements" title="Mettre à jour / importer un classement"><span className="rf-e" aria-hidden="true">⚙️</span> <span className="rf-t">Mise à jour</span></Link> : null}
-          blocs={[{ id: "complet", titre: def.titre, ic: def.ic, contenu: complet }]}
+          blocs={[{ id: "complet", titre: def.titre, ic: def.source === "fistf" ? <LogoFistf taille={22} /> : def.ic, contenu: complet }]}
           // Bottom bar: the rankings of the section, one thumbnail each; arrows go from one ranking to the next.
-          pages={LISTES.map((l) => ({ id: l.id, titre: l.court, ic: l.ic, href: lien(l.id, l.source === "fistf" || filtre !== "bel" ? filtre : "") }))}
-          pageActuelle={def.id}
+          pages={[
+            { id: "nat", titre: "National", ic: "🇧🇪", href: lien("FBFTS", natFiltre) },
+            { id: "clubs", titre: "Clubs belges", ic: "🏟️", href: lien("FBFTS-Clubs", natFiltre) },
+            { id: "int", titre: "International", ic: <LogoFistf taille={22} />, href: lien(groupe === "int" ? def.id : "WR-Open") },
+          ]}
+          pageActuelle={groupe}
         />
       </main>
     </>
