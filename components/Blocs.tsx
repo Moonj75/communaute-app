@@ -6,7 +6,7 @@ import NavSection, { type PageSection } from "./NavSection";
 export type BlocDef = {
   id: string;
   titre: string;
-  ic: string;
+  ic: ReactNode;
   /** Small number or word shown next to the title (e.g. « 3 »). */
   badge?: string | number | null;
   contenu: ReactNode;
