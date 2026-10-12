@@ -53,7 +53,8 @@ export default function BarrePublique({ connecte = false }: { connecte?: boolean
     }
   };
 
-  const page = ITEMS.find((i) => actif(i)) || ITEMS[0];
+  const connexion = path.startsWith("/login") || path.startsWith("/auth");
+  const page = connexion ? { href: "/login", bloc: null, label: "Connexion", ic: "entree", c: "or" } : ITEMS.find((i) => actif(i)) || ITEMS[0];
 
   return (
     <>
