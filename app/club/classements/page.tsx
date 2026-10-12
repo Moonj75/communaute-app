@@ -96,6 +96,9 @@ export default async function Classements({ searchParams }: { searchParams: Prom
           page="Classements"
           actions={profil?.role === "admin" && !apercu ? <Link className="rf-btn" href="/staff/classements" title="Mettre à jour / importer un classement"><span className="rf-e" aria-hidden="true">⚙️</span> <span className="rf-t">Mise à jour</span></Link> : null}
           blocs={[{ id: "complet", titre: def.titre, ic: def.ic, contenu: complet }]}
+          // Bottom bar: the rankings of the section, one thumbnail each; arrows go from one ranking to the next.
+          pages={LISTES.map((l) => ({ id: l.id, titre: l.court, ic: l.ic, href: lien(l.id, l.source === "fistf" || filtre !== "bel" ? filtre : "") }))}
+          pageActuelle={def.id}
         />
       </main>
     </>
