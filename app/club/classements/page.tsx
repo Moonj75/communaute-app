@@ -64,7 +64,7 @@ export default async function Classements({ searchParams }: { searchParams: Prom
           </div>
           {/* Fixed with the table's title: one tap brings our line to the middle of the table. */}
           {lignes.some((l) => l.eugies || (l.joueur_id && moi.includes(l.joueur_id))) ? (
-            <AllerLigne bouton={!filtre} texte={moi.length && lignes.some((l) => l.joueur_id && moi.includes(l.joueur_id)) ? "Aller à ma ligne" : "Aller à notre premier joueur"} />
+            <AllerLigne key={`${def.id}-${filtre}`} bouton={!filtre} texte={moi.length && lignes.some((l) => l.joueur_id && moi.includes(l.joueur_id)) ? "Aller à ma ligne" : "Aller à notre premier joueur"} />
           ) : null}
         </div>
         <div className="bd">
