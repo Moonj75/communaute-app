@@ -179,6 +179,19 @@ export default function Blocs({ blocs, initial, page, actions, pages, pageActuel
       sc.querySelectorAll<HTMLElement>("table, .nos-h, .cc-cols").forEach((t) => {
         t.style.setProperty("--sous-h", `${auDessus(t)}px`);
       });
+      // Everything on one screen: when the open part is just a little too tall for the space between the
+      // fixed top and the bottom bar, it is shrunk a little (down to 76 %) so it fits without scrolling.
+      // Long lists (much taller) are left as they are: they scroll.
+      const contenu = [...sc.querySelectorAll<HTMLElement>(":scope > .scene-bloc:not([hidden]) > .scene-c")][0] || (sc.classList.contains("solo") ? sc : null);
+      if (contenu && !sc.closest(".tout")) {
+        contenu.style.zoom = "";
+        const cs = getComputedStyle(document.documentElement);
+        const bas = (parseFloat(cs.getPropertyValue("--dock-h")) || 84) + 14;
+        const haut = contenu.getBoundingClientRect().top + window.scrollY;
+        const dispo = window.innerHeight - haut - bas;
+        const besoin = contenu.scrollHeight;
+        if (dispo > 200 && besoin > dispo && besoin <= dispo / 0.76) contenu.style.zoom = String(Math.floor((dispo / besoin) * 100) / 100);
+      }
     };
     const demander = () => { if (!raf) raf = requestAnimationFrame(caler); };
     caler();
