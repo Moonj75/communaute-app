@@ -3323,3 +3323,35 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .fx-cagnotte .fcg-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fx-cagnotte .fcg-txt { flex: 1 1 auto; }
 @media (max-width: 420px) { .fx-l { font-size: 9px; letter-spacing: .04em; } }
+/* « Aller à ma ligne » : bouton (plus un lien), caché tant que notre ligne est à l'écran */
+button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, transform .25s ease, filter .15s; }
+.cl-aller.cache { opacity: 0; transform: scale(.85); pointer-events: none; }
+.ns-p { width: 56px; } .ns-p .ns-t { max-width: 54px; } .ns-p.on { width: 66px; } .ns-p.on .ns-t { max-width: 66px; } .ns-piste { gap: 6px; }
+
+/* ===== Accueil compact : toute la Vue générale tient sur l'écran (téléphone et ordinateur) ===== */
+.vg { gap: 8px !important; }
+.vg-cpt { padding: 12px 20px !important; min-width: 160px; }
+.vg-j { font-size: 46px !important; }
+.vg-ev { padding: 12px 20px !important; gap: 3px !important; }
+.vg-ev b { font-size: 24px !important; }
+.vg-act { margin-top: 5px !important; }
+.vg-act .btn { min-height: 34px !important; height: 34px; font-size: 13px !important; }
+.acc-suiv { height: 36px; }
+.acc-sj { font-size: 18px; } .acc-sn { font-size: 14.5px; }
+.acc-ligne { gap: 8px; }
+.acc-c { gap: 1px; padding: 9px 6px 7px; border-radius: 14px; }
+.acc-c::before { height: 4px; }
+.acc-v { font-size: clamp(24px, 6.5vw, 32px); }
+.acc-v.txt { font-size: clamp(16px, 4.4vw, 20px); }
+.acc-entr { flex-direction: row; justify-content: center; flex-wrap: nowrap; gap: 10px; padding: 9px 10px; }
+.acc-entr .acc-s { flex: 0 1 auto; }
+@media (max-width: 699px) {
+  .vg-cpt { padding: 6px 14px !important; }
+  .vg-j { font-size: 32px !important; }
+  .vg-ev { padding: 8px 14px 10px !important; }
+  .vg-ev b { font-size: 19px !important; }
+  .vg-ev > span { font-size: 13px; }
+  .vg-act .btn { min-height: 32px !important; height: 32px; font-size: 12px !important; }
+  .acc-c { padding: 8px 4px 6px; }
+  .acc-entr { flex-direction: column; gap: 0; padding: 7px 8px 6px; }
+}
