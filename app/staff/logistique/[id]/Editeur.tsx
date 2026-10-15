@@ -8,7 +8,8 @@ type Personne = { id: string; nom: string };
 
 /**
  * Logistics sheet editor: every field shows ✓ when filled, can be marked « Pas utile »
- * (then hidden from players). « Publier » unlocks when every field is ready.
+ * (then hidden from players). When every line is green, saving publishes the sheet for the players
+ * (Notion status « Prête »); if a line goes back to empty, saving hides it again.
  */
 export default function Editeur(p: { id: string; url: string; statut: string | null; initiales: Record<string, Valeur>; masquesInit: string[]; actifs: Personne[]; joueurs: Personne[] }) {
   const [v, setV] = useState<Record<string, Valeur>>(p.initiales);
@@ -122,7 +123,7 @@ export default function Editeur(p: { id: string; url: string; statut: string | n
             {av.prets}
             <small>/{av.total}</small>
           </span>
-          <span className="fe-av-t">{av.complet ? "Tout est prêt : tu peux publier" : `${av.total - av.prets} champ${av.total - av.prets > 1 ? "s" : ""} à compléter`}</span>
+          <span className="fe-av-t">{av.complet ? (publiee ? "Tout est au vert : les joueurs voient la fiche" : "Tout est au vert : enregistre pour la publier") : `${av.total - av.prets} ligne${av.total - av.prets > 1 ? "s" : ""} encore à remplir (ou « Pas utile »)`}</span>
           <span className="fe-barre"><span style={{ width: `${(av.prets / av.total) * 100}%` }} /></span>
         </div>
         <span className={`fe-statut ${publiee ? "pub" : "brou"}`}>{publiee ? "✓ Publiée" : "✎ Brouillon"}</span>
@@ -132,13 +133,13 @@ export default function Editeur(p: { id: string; url: string; statut: string | n
         const champs = CHAMPS.filter((c) => c.groupe === g.id);
         const ok = champs.filter((c) => masques.includes(c.cle) || rempli(c, v[c.cle])).length;
         return (
-          <section key={g.id} className={`fe-g g-${g.c}`}>
+          <section key={g.id} className={`fe-g g-${g.c}${ok === champs.length ? " vert" : ""}`}>
             <header>
               <h3>
                 <span aria-hidden="true">{g.ic}</span> {g.titre}
               </h3>
               <span className={`fe-g-n${ok === champs.length ? " ok" : ""}`}>
-                {ok}/{champs.length}
+                {ok === champs.length ? "✓ " : ""}{ok}/{champs.length}
               </span>
             </header>
             {champs.map((c) => {
@@ -166,15 +167,13 @@ export default function Editeur(p: { id: string; url: string; statut: string | n
 
       <div className="fe-bar">
         {msg ? <span className={`fe-msg ${msg.ok ? "ok" : "err"}`}>{msg.t}</span> : modifie ? <span className="fe-msg">Modifications non enregistrées</span> : <a className="fe-msg" href={p.url} target="_blank" rel="noopener">Ouvrir dans Notion ↗</a>}
-        <button type="button" className="btn" disabled={pending || !modifie} onClick={() => envoyer("brouillon")}>
-          {pending ? "…" : "💾 Enregistrer"}
+        {/* One button: saved in Notion; when every line is green the sheet is published for the players at once. */}
+        <button type="button" className="btn primary" disabled={pending || !modifie} onClick={() => envoyer(av.complet ? "publier" : publiee ? "depublier" : "brouillon")}>
+          {pending ? "…" : av.complet ? "✅ Enregistrer et publier" : "💾 Enregistrer"}
         </button>
-        {publiee ? (
-          <button type="button" className="btn" disabled={pending} onClick={() => envoyer("depublier")}>Repasser en brouillon</button>
+        {publiee && !modifie ? (
+          <button type="button" className="btn" disabled={pending} onClick={() => envoyer("depublier")}>Cacher aux joueurs</button>
         ) : null}
-        <button type="button" className="btn primary" disabled={pending || !av.complet || (publiee && !modifie)} onClick={() => envoyer("publier")} title={av.complet ? undefined : "Remplis ou marque « Pas utile » tous les champs"}>
-          {publiee ? "🚀 Republier" : "🚀 Publier"}
-        </button>
       </div>
     </div>
   );
