@@ -7,6 +7,7 @@ import Installer from "./Installer";
 import Centrer from "./Centrer";
 import Fleches from "./Fleches";
 import BandeauUrgent from "./BandeauUrgent";
+import BoiteCourrier from "./BoiteCourrier";
 import { quitterApercu } from "@/app/admin/apercu";
 
 export default function Header({
@@ -49,6 +50,7 @@ export default function Header({
               <p>{subtitle}</p>
             </div>
           </Link>
+          {name ? <BoiteCourrier /> : null}
           {name ? (
             <div className="hud" aria-label={`Connecté : ${[profil?.prenom || name, profil?.nom].filter(Boolean).join(" ")}`}>
               <span className="hud-coin hg" aria-hidden="true" />
