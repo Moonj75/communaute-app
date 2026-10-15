@@ -28,6 +28,8 @@ type Prop = Record<string, unknown> & { type: string };
 
 function text(p?: Prop): string | null {
   if (!p) return null;
+  // A dropdown list (e.g. « Catégorie ») gives its chosen option.
+  if (p.type === "select" || p.type === "status") return ((p[p.type] as { name?: string } | null)?.name || null) as string | null;
   const arr = (p[p.type] as { plain_text?: string }[] | undefined) ?? [];
   if (Array.isArray(arr)) {
     const s = arr.map((t) => t.plain_text || "").join("").trim();
