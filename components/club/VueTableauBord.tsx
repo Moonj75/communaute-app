@@ -3,11 +3,12 @@ import type { Evenement, FicheLogistique as FicheLogistiqueT, JoueurLite, Partic
 import { Anneau, couleurObjectif, Rythme } from "./Graphes";
 import FicheLogistique from "./FicheLogistique";
 import {
-  ajouterJours, aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, lienReponse, moisCourt, DECISION_OUI,
+  ajouterJours, aujourdhui, concerne, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, initiales, lienReponse, moisCourt, DECISION_OUI,
 } from "@/lib/club-types";
 import Jalons from "./Jalons";
 import CopierLien from "./CopierLien";
 import Blocs from "@/components/Blocs";
+import ChoixJoueurs from "./ChoixJoueurs";
 
 type Props = {
   fiches?: Map<string, FicheLogistiqueT>;
@@ -18,11 +19,13 @@ type Props = {
   e?: string;
   erreur?: string | null;
   rafraichir?: React.ReactNode;
+  /** Players concerned by each form (none = every active player). */
+  elig?: Map<string, string[]>;
 };
 
 const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 
-export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraichir, fiches, noms }: Props) {
+export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraichir, fiches, noms, elig }: Props) {
   const today = aujourdhui();
   const actifs = joueurs.filter((j) => j.actif);
   const N = actifs.length;
@@ -34,10 +37,13 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
 
   const compte = (ev: Evenement) => {
     const m = idx.get(ev.id) || new Map<string, Participation>();
-    const by = (s: string) => actifs.filter((j) => m.get(j.notionId)?.statut === s);
-    const o = by("Oui"), p = by("Peut-être"), n = by("Non");
-    const att = actifs.filter((j) => !m.get(j.notionId)?.statut || m.get(j.notionId)?.statut === "En attente");
-    return { m, o, p, n, att };
+    // Players not concerned by this form count as « Non ».
+    const ok = (j: JoueurLite) => concerne(elig, ev.id, j.notionId);
+    const by = (s: string) => actifs.filter((j) => ok(j) && m.get(j.notionId)?.statut === s);
+    const nc = actifs.filter((j) => !ok(j));
+    const o = by("Oui"), p = by("Peut-être"), n = [...by("Non"), ...nc];
+    const att = actifs.filter((j) => ok(j) && (!m.get(j.notionId)?.statut || m.get(j.notionId)?.statut === "En attente"));
+    return { m, o, p, n, att, nc };
   };
 
   const c = sel ? compte(sel) : null;
@@ -223,6 +229,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                   </div>
                 ))}
               </div>
+              <ChoixJoueurs key={sel.id} evId={sel.id} joueurs={actifs.map((j) => ({ id: j.notionId, nom: j.nom }))} choisis={elig?.get(sel.id) || null} />
               <Jalons e={sel} compact />
               <div className="ev-actions">
                 <Link className="btn" href={lienReponse(sel)}>📝 Voir le formulaire</Link>
@@ -239,7 +246,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
         { id: "qui", titre: "Qui vient", ic: "👥", badge: c ? `${c.o.length}/${N}` : null, contenu: sel && c ? (
           <section className="panel"><div className="bd">
               <div className="three">
-                <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}</span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className="chip o"><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}</span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
+                <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}</span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className={`chip o${c.m.get(j.notionId)?.valide ? " valide" : ""}`}><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}</span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
                 <div className="box b-p"><span className="bh">En attente ({c.att.length})</span><div className="chips">{c.att.length ? c.att.map((j) => <Link key={j.notionId} className="chip chip-lien" href={lienReponse(sel, j.notionId)} title={`Répondre pour ${j.nom}`}><i>{initiales(j.nom)}</i>{j.nom} ✎</Link>) : <span className="muted small">Tout le monde a répondu 🎉</span>}</div></div>
                 <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <span key={j.notionId} className={`chip ${c.p.includes(j) ? "m" : "n"}`}><i>{initiales(j.nom)}</i>{j.nom}</span>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
               </div>
@@ -335,7 +342,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                     <td className="num mx-oui"><b>{oui}</b></td>
                     <td><span className="mx-rep"><span className="tb-dbar"><i style={{ width: `${rep}%` }} /></span><small className="num">{rep} %</small></span></td>
                     {cols.map((x) => {
-                      const s = idx.get(x.id)?.get(j.notionId)?.statut;
+                      const s = concerne(elig, x.id, j.notionId) ? idx.get(x.id)?.get(j.notionId)?.statut : "Non";
                       const k = s === "Oui" ? "o" : s === "Peut-être" ? "m" : s === "Non" ? "n" : "p";
                       return <td key={x.id}><span className={`cell ${k}`} title={`${j.nom} · ${x.nom} : ${s || "en attente"}`}>{s === "Oui" ? "Oui" : s === "Peut-être" ? "?" : s === "Non" ? "Non" : "·"}</span></td>;
                     })}

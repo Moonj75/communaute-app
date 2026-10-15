@@ -67,9 +67,12 @@ export default function CarteEvenement({
   const oui: string[] = [], peut: string[] = [];
   let non = 0, voitures = 0;
   const referents: string[] = [];
+  // Players who validated their form for good: circled in fluo green.
+  const valides = new Set<string>();
   rep.forEach((p, id) => {
     if (p.statut === "Oui") {
       oui.push(nom(id));
+      if (p.valide) valides.add(nom(id));
       if (p.vehicule === "Oui") voitures++;
       if (p.referent === "Oui") referents.push(nom(id));
     } else if (p.statut === "Peut-être") peut.push(nom(id));
@@ -153,10 +156,10 @@ export default function CarteEvenement({
       </p>
 
       <div className="ce-qui">
-        <span className="ce-qt">Participent ({oui.length})</span>
+        <span className="ce-qt">Participent ({oui.length}){valides.size ? <span className="ce-qv"> · <i className="ce-pv" aria-hidden="true" /> {valides.size} validé{valides.size > 1 ? "s" : ""}</span> : null}</span>
         <div className="ce-chips">
           {oui.length ? oui.map((n) => (
-            <span key={n} className="ce-chip o"><Avatar nom={n} />{n}{referents.includes(n) ? <i className="ce-ref" title="Référent volontaire">🧭</i> : null}</span>
+            <span key={n} className={`ce-chip o${valides.has(n) ? " valide" : ""}`} title={valides.has(n) ? "Participation validée définitivement" : undefined}><Avatar nom={n} />{n}{valides.has(n) ? <i className="ce-lock" aria-label="validé">🔒</i> : null}{referents.includes(n) ? <i className="ce-ref" title="Référent volontaire">🧭</i> : null}</span>
           )) : <span className="muted small">Personne pour l&apos;instant. Sois le premier !</span>}
         </div>
       </div>

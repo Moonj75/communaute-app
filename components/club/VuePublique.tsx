@@ -1,30 +1,19 @@
 import Blocs from "@/components/Blocs";
 import type { ClassementClub, Evenement, InfoPublique, Seance } from "@/lib/club-types";
-import { aujourdhui, compteARebours, estCompetition, estRetenu, moisCourt } from "@/lib/club-types";
-import Mois from "./Mois";
 import Affiche from "./Affiche";
 import { BlocEntrainements } from "./VueClub";
 import type { LigneClassement } from "@/lib/classements-types";
 
-function lien(q: { m?: string; e?: string }) {
-  const p = new URLSearchParams();
-  if (q.m) p.set("m", q.m);
-  return `/club?${p.toString()}#bloc-calendrier`;
-}
-
-/** Public space (no login): general info, calendar, trainings, club rankings. No personal data. */
+/** Public space (no login): welcome poster, club info, next trainings. No calendar, no personal data. */
 export default function VuePublique({ infos, evs, seances, classements, m, connecte, eug = [], clubsComplet }: { infos: InfoPublique[]; evs: Evenement[]; seances: Seance[]; classements: ClassementClub[]; m?: string; connecte: boolean; eug?: LigneClassement[]; clubsComplet?: { nat: LigneClassement[]; equipes: LigneClassement[] } }) {
-  const T = aujourdhui();
-  const comps = evs.filter((e) => e.date && e.date >= T && estCompetition(e) && estRetenu(e) && !e.jourSpecial).slice(0, 10);
-  const ym = m && /^\d{4}-\d{2}$/.test(m) ? m : T.slice(0, 7);
-  const publics = evs.filter((e) => e.jourSpecial || (estCompetition(e) && estRetenu(e)));
+  // The calendar is for members only: visitors see the next trainings.
+  void evs; void classements; void m; void eug; void clubsComplet;
 
   return (
     <>
 
       <Blocs
         page="Espace visiteur"
-        initial={m ? "calendrier" : undefined}
         blocs={[
           // Welcome poster: next training, where we train, contact.
           { id: "bienvenue", titre: "Bienvenue", ic: "🦁", contenu: <Affiche seance={seances.find((x) => !x.annule) || null} connecte={connecte} /> },
@@ -47,30 +36,7 @@ export default function VuePublique({ infos, evs, seances, classements, m, conne
               <p className="vide">Les informations du club arrivent bientôt.</p>
             ),
           },
-          {
-            id: "calendrier",
-            titre: "Calendrier",
-            ic: "📅",
-            badge: comps.length || null,
-            contenu: (
-              <>
-                <section className="panel"><div className="bd"><Mois ym={ym} evs={publics} lien={lien} /></div></section>
-                {comps.length ? (
-                  <section className="panel list">
-                    <div className="hd"><h2>Prochaines compétitions</h2></div>
-                    {comps.map((x) => (
-                      <div key={x.id} className="row">
-                        <span className="row-d"><b className="num">{Number(x.date!.slice(8))}</b><small>{moisCourt(x.date!)}</small></span>
-                        <span className="row-main"><b>{x.nom}</b><small>{x.lieu || "Lieu à préciser"} · {compteARebours(x.date, T)}</small></span>
-                        <span />
-                      </div>
-                    ))}
-                  </section>
-                ) : null}
-              </>
-            ),
-          },
-          { id: "entrainements", titre: "Entraînements", ic: "🎯", contenu: <BlocEntrainements seances={seances} noms={new Map()} /> },
+          { id: "entrainements", titre: "Prochains entraînements", ic: "🎯", badge: seances.filter((x) => !x.annule).length || null, contenu: <BlocEntrainements seances={seances} noms={new Map()} /> },
         ]}
       />
     </>

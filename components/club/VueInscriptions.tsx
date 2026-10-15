@@ -1,28 +1,30 @@
 import Link from "next/link";
 import type { Evenement, JoueurLite, Participation } from "@/lib/club-types";
 import {
-  aujourdhui, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, inscriptionsOuvertes, joursEntre, lienReponse, modifiable, phase, moisCourt, DECISION_OUI,
+  aujourdhui, concerne, compteARebours, dateCourte, dateMoyenne, estCompetition, estRetenu, indexReponses, inscriptionsOuvertes, joursEntre, lienReponse, modifiable, phase, moisCourt, DECISION_OUI,
 } from "@/lib/club-types";
 import StatutChip from "./StatutChip";
 import Blocs from "@/components/Blocs";
 import { decisionBadge } from "./VueCalendrier";
 
-export default function VueInscriptions({ evs, parts, famille, erreur }: { evs: Evenement[]; parts: Participation[]; famille: JoueurLite[]; erreur?: string | null }) {
+export default function VueInscriptions({ evs, parts, famille, erreur, elig }: { evs: Evenement[]; parts: Participation[]; famille: JoueurLite[]; erreur?: string | null; /** Players concerned by each form (none = everybody). */ elig?: Map<string, string[]> }) {
   const today = aujourdhui();
   const idx = indexReponses(parts, evs, famille);
   const comp = evs.filter((e) => e.date && e.date >= today && estCompetition(e) && estRetenu(e) && !e.jourSpecial);
-  const rep = (e: Evenement) => famille.map((j) => ({ j, p: idx.get(e.id)?.get(j.notionId) || null }));
+  const tous = (e: Evenement) => famille.map((j) => ({ j, p: idx.get(e.id)?.get(j.notionId) || null, ok: concerne(elig, e.id, j.notionId) }));
+  // Only the people concerned by the form count (the others are greyed and count as « Non »).
+  const rep = (e: Evenement) => tous(e).filter((x) => x.ok);
 
   const aConfirmer = comp.filter((e) => phase(e, today) === "confirmation" && rep(e).some((x) => x.p?.statut && x.p.statut !== "En attente" && !x.p.valide));
   const aRepondre = comp.filter((e) => !aConfirmer.includes(e) && inscriptionsOuvertes(e, today) && rep(e).some((x) => !x.p?.statut || x.p.statut === "En attente"));
-  const repondu = comp.filter((e) => !aRepondre.includes(e) && !aConfirmer.includes(e) && rep(e).some((x) => x.p?.statut && x.p.statut !== "En attente"));
+  const repondu = comp.filter((e) => !aRepondre.includes(e) && !aConfirmer.includes(e) && (rep(e).some((x) => x.p?.statut && x.p.statut !== "En attente") || !rep(e).length));
   const bientot = comp.filter((e) => !aRepondre.includes(e) && !repondu.includes(e) && !aConfirmer.includes(e));
   const ouiEvs = comp.filter((e) => rep(e).some((x) => x.p?.statut === "Oui"));
   const prochLimite = aRepondre.filter((e) => e.limite).sort((a, b) => a.limite!.localeCompare(b.limite!))[0];
   const famille2 = famille.length > 1;
 
   const Carte = ({ e, mode }: { e: Evenement; mode: "todo" | "done" | "soon" | "conf" }) => (
-    <article className={`ins ${mode}`}>
+    <article className={`ins ${mode}${rep(e).length ? "" : " nc"}`}>
       <div className="ins-d">
         <span className="m">{moisCourt(e.date!)}</span>
         <b className="num">{Number(e.date!.slice(8))}</b>
@@ -35,6 +37,12 @@ export default function VueInscriptions({ evs, parts, famille, erreur }: { evs: 
           {e.fin && e.fin !== e.date ? ` · jusqu'au ${dateCourte(e.fin)}` : ""}
         </p>
         <div className="ins-who">
+          {tous(e).filter((x) => !x.ok).map(({ j }) => (
+            <span key={j.notionId} className="who-l non-concerne" title="Ce formulaire est réservé à d'autres joueurs : compté « Non ».">
+              {famille2 ? <b>{j.nom.split(" ")[0]}</b> : null}
+              <span className="st-nc">🚫 Non concerné</span>
+            </span>
+          ))}
           {rep(e).map(({ j, p }) => (
             <span key={j.notionId} className="who-l">
               {famille2 ? <b>{j.nom.split(" ")[0]}</b> : null}
