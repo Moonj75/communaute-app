@@ -7,6 +7,7 @@ import SyncPanel from "./SyncPanel";
 import InviteCell from "./InviteCell";
 import { retirerMembre, updateMembre } from "./actions";
 import { commencerApercu } from "./apercu";
+import { basculerContact } from "./contacts";
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +28,15 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (profil?.role !== "admin") redirect("/");
 
-  const [{ data: membres }, { data: profils }, { data: joueurs }] = await Promise.all([
+  const [{ data: membres }, { data: profils }, { data: joueurs }, contactsRes] = await Promise.all([
     supabase.from("membres").select("email,nom,prenom,role,actif,synced_at,invite_le").order("nom"),
     supabase.from("profils").select("email"),
     supabase.from("joueurs").select("email,prenom,nom,actif,titulaire,roles,cagnotte"),
+    supabase.from("contacts").select("id,cree_le,prenom,nom,email,telephone,decouverte,message,traite").order("cree_le", { ascending: false }).limit(60),
   ]);
+  type Contact = { id: string; cree_le: string; prenom: string; nom: string | null; email: string; telephone: string | null; decouverte: string | null; message: string | null; traite: boolean };
+  const contacts = (contactsRes.data || []) as Contact[];
+  const aTraiter = contacts.filter((c) => !c.traite).length;
   type J = { email: string | null; prenom: string | null; nom: string; actif: boolean; titulaire: boolean; roles: string[] | null; cagnotte: number | null };
   const parEmail = new Map<string, J[]>();
   for (const j of (joueurs || []) as J[]) if (j.email) parEmail.set(j.email, [...(parEmail.get(j.email) || []), j]);
@@ -45,6 +50,40 @@ export default async function AdminPage() {
       <main className="wrap">
         <section className="hello"><span className="kicker">Staff</span><h2>Joueurs</h2><p>Liste Notion, comptes de connexion, invitations et aperçu joueur.</p></section>
         <Blocs blocs={[
+        { id: "contacts", titre: "Demandes de contact", ic: "✉️", badge: aTraiter || null, contenu: (
+        <section className="panel">
+          <div className="hd"><h2>✉️ Demandes de contact des visiteurs</h2><span className="muted small">Envoyées depuis « Nous contacter » sur l&apos;écran d&apos;accueil.</span></div>
+          <div className="bd">
+            {contactsRes.error ? (
+              <p className="notice err">La table des contacts n&apos;existe pas encore : colle le fichier « etape9-contacts.sql » dans Supabase → SQL Editor → Run.</p>
+            ) : !contacts.length ? (
+              <p className="vide">Aucune demande pour l&apos;instant.</p>
+            ) : (
+              <ul className="ctl">
+                {contacts.map((c) => (
+                  <li key={c.id} className={`ctl-l${c.traite ? " fait" : ""}`}>
+                    <div className="ctl-t">
+                      <b>{[c.prenom, c.nom].filter(Boolean).join(" ")}</b>
+                      <small>{new Date(c.cree_le).toLocaleString("fr-BE", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Brussels" })}</small>
+                    </div>
+                    <div className="ctl-c">
+                      <a href={`mailto:${c.email}`}>✉️ {c.email}</a>
+                      {c.telephone ? <a href={`tel:${c.telephone.replace(/\s/g, "")}`}>📞 {c.telephone}</a> : null}
+                    </div>
+                    {c.decouverte ? <p className="ctl-d"><span>Découverte du Subbuteo :</span> {c.decouverte}</p> : null}
+                    {c.message ? <p className="ctl-m pre">{c.message}</p> : null}
+                    <form action={basculerContact}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <input type="hidden" name="traite" value={c.traite ? "0" : "1"} />
+                      <button className={`btn${c.traite ? "" : " primary"}`} type="submit">{c.traite ? "↺ Remettre à traiter" : "✓ Marquer traitée"}</button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+        ) },
         { id: "apercu", titre: "Voir comme un joueur", ic: "👁️", contenu: (
         <section className="panel" style={{ borderTop: "3px solid var(--night)" }}>
           <div className="hd">
