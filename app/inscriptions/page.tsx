@@ -4,6 +4,7 @@ import VueInscriptions from "@/components/club/VueInscriptions";
 import { displayName, getVue, estInactif } from "@/lib/profil";
 import { essayer, lireCalendrier, lireParticipations } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
+import { lireEligibles } from "@/lib/eligibles";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +13,12 @@ export default async function InscriptionsPage() {
   if (!user) redirect("/login");
   // Members not active this season only see the discovery space (home page).
   if (estInactif(profil)) redirect("/");
-  const [cal, parts, famille] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email)]);
+  const [cal, parts, famille, elig] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email), lireEligibles(supabase)]);
   return (
     <>
       <Header subtitle="Mes inscriptions" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
-        <VueInscriptions evs={cal.data || []} parts={parts.data || []} famille={famille.filter((j) => j.actif)} erreur={cal.erreur || parts.erreur} />
+        <VueInscriptions evs={cal.data || []} parts={parts.data || []} famille={famille.filter((j) => j.actif)} erreur={cal.erreur || parts.erreur} elig={elig} />
       </main>
     </>
   );
