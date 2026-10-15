@@ -3420,3 +3420,47 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
 .dl-fleche.bas-d { bottom: 4px; right: 14px; animation: dl-bas 1s ease-in-out infinite; }
 @keyframes dl-haut { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes dl-bas { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+
+/* ===== Bandeau « À faire » : une annonce à la fois, qui arrive lentement, s'arrête en grand, puis repart ===== */
+.urg.urg2 { height: 46px; background: linear-gradient(90deg, #2a0a06, #120806 70%, #2a0a06); }
+.urg2 .urg-k { flex-direction: column; justify-content: center; align-items: flex-start; gap: 0; line-height: 1.05; }
+.urg2 .urg-k small { font-size: 10.5px; font-style: normal; font-weight: 800; opacity: .75; letter-spacing: .04em; }
+.urg2 .urg-v { position: relative; mask-image: none; -webkit-mask-image: none; }
+.urg-a { position: absolute; inset: 0 8px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff; text-decoration: none; white-space: nowrap; overflow: hidden;
+  animation: urg-cycle 7.5s cubic-bezier(.22,.8,.3,1) both; }
+.urg2:hover .urg-a, .urg2:active .urg-a, .urg2:hover .urg-temps, .urg2:active .urg-temps { animation-play-state: paused; }
+@keyframes urg-cycle {
+  0% { transform: translateX(105%); opacity: 0; }
+  20% { transform: translateX(0) scale(1); opacity: 1; }
+  24% { transform: translateX(0) scale(1.06); }
+  28%, 86% { transform: translateX(0) scale(1); opacity: 1; }
+  100% { transform: translateX(-105%); opacity: 0; }
+}
+.urg-ic { flex: 0 0 auto; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; font-size: 17px; background: rgba(255,255,255,.12); box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
+.urg-a.haut .urg-ic { background: #ff5a1f; box-shadow: 0 0 0 2px #ffd84d, 0 0 14px rgba(255,90,31,.8); }
+.urg-a.moyen .urg-ic { background: #b8860b; box-shadow: 0 0 0 2px rgba(255,216,77,.6); }
+.urg-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 800; letter-spacing: .01em; }
+.urg-a.haut .urg-t { color: #ffd84d; text-shadow: 0 0 10px rgba(255,216,77,.35); }
+.urg-go { flex: 0 0 auto; font-size: 22px; font-weight: 800; color: var(--gold, #f5d300); }
+.urg-temps { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--gold, #f5d300); transform-origin: left; animation: urg-temps 7.5s linear both; opacity: .8; }
+@keyframes urg-temps { 0%, 20% { transform: scaleX(0); } 86%, 100% { transform: scaleX(1); } }
+@media (max-width: 699px) { .urg.urg2 { height: 42px; } .urg2 .urg-k { font-size: 11px; } .urg-t { font-size: 14.5px; } .urg-ic { width: 28px; height: 28px; font-size: 15px; } }
+@media (prefers-reduced-motion: reduce) { .urg-a { animation-duration: 9s; animation-timing-function: steps(1); } }
+
+/* ===== Fiche logistique : une case sur le côté de chaque ligne, qui passe au vert quand la ligne est complète ===== */
+.fe-c { border-left: 5px solid transparent; transition: background .2s, border-color .2s; }
+.fe-c .fe-ind { width: 30px; height: 30px; border-radius: 8px; font-size: 17px; box-shadow: inset 0 0 0 2px #c9c2b6; background: #fff; transition: all .2s; }
+.fe-c.ok { background: rgba(26,140,70,.08) !important; border-left-color: #1a8c46; }
+.fe-c.ok .fe-ind { background: #1a8c46; color: #fff; box-shadow: 0 0 0 3px rgba(26,140,70,.25), 0 0 10px rgba(26,140,70,.5); }
+.fe-c.na { border-left-color: #b9b3a8; }
+.fe-c.na .fe-ind { background: #e9e5de; color: #8f897e; }
+.fe-c.vide .fe-ind { box-shadow: inset 0 0 0 2px #e0a800; background: #fff8dc; }
+.fe-g.vert { box-shadow: 0 0 0 2px #1a8c46, 0 10px 22px -16px #1a8c46; }
+.fe-g.vert .fe-g-n { background: #1a8c46; color: #fff; }
+.urg.urg2 { height: 52px; }
+.urg-txt { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; }
+.urg-d { max-width: 100%; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--gold, #f5d300); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.urg-txt .urg-t { max-width: 100%; font-family: var(--font-display); font-style: italic; font-size: 19px; text-transform: uppercase; color: #fff; }
+.urg-a.haut .urg-txt .urg-t { color: #fff; }
+.urg-a.haut .urg-d { color: #ffb36b; }
+@media (max-width: 699px) { .urg.urg2 { height: 50px; } .urg-txt .urg-t { font-size: 17px; } .urg-d { font-size: 10px; } }
