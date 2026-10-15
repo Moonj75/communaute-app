@@ -57,10 +57,10 @@ export default function VueDecouverte(p: {
             contenu: (
               <>
                 {p.infos.length ? (
-                  <div className="pub-infos">
+                  <div className="vis-infos">
                     {p.infos.map((i) => (
-                      <article key={i.id} className="pub-i">
-                        <span className="pub-ic" aria-hidden="true">{i.icone || "🦁"}</span>
+                      <article key={i.id} className="vis-i">
+                        <span className="vis-ic" aria-hidden="true">{i.icone || "🦁"}</span>
                         <h3>{i.titre}</h3>
                         {i.texte ? <p className="pre">{i.texte}</p> : null}
                         {i.lien ? <a href={i.lien} target="_blank" rel="noopener">En savoir plus ↗</a> : null}

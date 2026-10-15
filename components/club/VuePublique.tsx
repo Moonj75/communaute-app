@@ -1,8 +1,8 @@
-import Link from "next/link";
 import Blocs from "@/components/Blocs";
 import type { ClassementClub, Evenement, InfoPublique, Seance } from "@/lib/club-types";
 import { aujourdhui, compteARebours, estCompetition, estRetenu, moisCourt } from "@/lib/club-types";
 import Mois from "./Mois";
+import Affiche from "./Affiche";
 import { BlocEntrainements } from "./VueClub";
 import type { LigneClassement } from "@/lib/classements-types";
 
@@ -21,30 +21,22 @@ export default function VuePublique({ infos, evs, seances, classements, m, conne
 
   return (
     <>
-      <section className="pub-hero">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/crest.png" alt="" width={120} height={120} />
-        <div>
-          <span className="kicker">LEAW · Subbuteo Beyond Borders</span>
-          <h2>Bienvenue chez les Lions</h2>
-          <p>Le club de Subbuteo d&apos;Eugies : compétition, famille et esprit d&apos;équipe.</p>
-          <Link className="btn primary" href={connecte ? "/" : "/login"}>{connecte ? "Mon espace →" : "Espace membres · se connecter →"}</Link>
-        </div>
-      </section>
 
       <Blocs
         page="Espace visiteur"
         initial={m ? "calendrier" : undefined}
         blocs={[
+          // Welcome poster: next training, where we train, contact.
+          { id: "bienvenue", titre: "Bienvenue", ic: "🦁", contenu: <Affiche seance={seances.find((x) => !x.annule) || null} connecte={connecte} /> },
           {
             id: "club",
             titre: "Le club",
-            ic: "🦁",
+            ic: "🏆",
             contenu: infos.length ? (
-              <div className="pub-infos">
+              <div className="vis-infos">
                 {infos.map((i) => (
-                  <article key={i.id} className="pub-i">
-                    <span className="pub-ic" aria-hidden="true">{i.icone || "🦁"}</span>
+                  <article key={i.id} className="vis-i">
+                    <span className="vis-ic" aria-hidden="true">{i.icone || "🦁"}</span>
                     <h3>{i.titre}</h3>
                     {i.texte ? <p className="pre">{i.texte}</p> : null}
                     {i.lien ? <a href={i.lien} target="_blank" rel="noopener">En savoir plus ↗</a> : null}
