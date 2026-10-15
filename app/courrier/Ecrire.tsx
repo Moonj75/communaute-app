@@ -1,14 +1,33 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { envoyerMessage, type EtatMessage } from "./actions";
 
-/** Write a message: staff → chosen accounts; player → the staff. */
-export default function Ecrire({ mode, comptes = [], parent, titreInit = "", pour, compact = false }: { mode: "admin" | "staff"; comptes?: { email: string; nom: string }[]; parent?: string; titreInit?: string; pour?: string[]; compact?: boolean }) {
+type Props = { mode: "admin" | "staff"; comptes?: { email: string; nom: string }[]; parent?: string; titreInit?: string; pour?: string[]; compact?: boolean };
+
+/**
+ * Write a message: staff → chosen accounts; player → the staff.
+ * After sending, the confirmation shows and a fresh empty form is ready for the next message.
+ */
+export default function Ecrire(props: Props) {
+  const [n, setN] = useState(0);
+  const [ok, setOk] = useState<string | null>(null);
+  return (
+    <>
+      {ok ? <p className="cr-ok">{ok}</p> : null}
+      <Formulaire key={n} {...props} envoye={(m) => { setOk(m); setN((x) => x + 1); }} />
+    </>
+  );
+}
+
+function Formulaire({ mode, comptes = [], parent, titreInit = "", pour, compact = false, envoye }: Props & { envoye: (m: string) => void }) {
   const [etat, action, envoi] = useActionState<EtatMessage, FormData>(envoyerMessage, {});
   const [a, setA] = useState<string[]>(pour || []);
   const [cherche, setCherche] = useState("");
-  if (etat.ok) return <p className="cr-ok">{etat.message}</p>;
+  useEffect(() => {
+    if (etat.ok) envoye(etat.message || "✓ Message envoyé.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etat]);
   const visibles = comptes.filter((c) => !cherche || c.nom.toLowerCase().includes(cherche.toLowerCase()));
   return (
     <form action={action} className={`cr-form${compact ? " compact" : ""}`}>
