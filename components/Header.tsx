@@ -50,7 +50,6 @@ export default function Header({
               <p>{subtitle}</p>
             </div>
           </Link>
-          {name ? <BoiteCourrier /> : null}
           {name ? (
             <div className="hud" aria-label={`Connecté : ${[profil?.prenom || name, profil?.nom].filter(Boolean).join(" ")}`}>
               <span className="hud-coin hg" aria-hidden="true" />
@@ -89,6 +88,7 @@ export default function Header({
       <Installer />
       <Centrer />
       <Fleches />
+      {name ? <BoiteCourrier /> : null}
       {!name && valeurs ? (
       <div className="values" aria-label="Nos valeurs">
         <div className="wrap">
