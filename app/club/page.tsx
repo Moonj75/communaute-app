@@ -14,7 +14,7 @@ export default async function Club({ searchParams }: { searchParams: Promise<{ m
     supabase.auth.getUser(),
     essayer(lireInfosPubliques),
     essayer(lireCalendrier),
-    essayer(() => lireSeances(4)),
+    essayer(() => lireSeances(8)),
     essayer(lireClassementsClub),
     lireEugies(supabase),
     lireClubs(supabase),
