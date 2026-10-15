@@ -28,6 +28,7 @@ const COULEURS: [string, string][] = [
   ["/calendrier", "canard"],
   ["/inscriptions", "orange"],
   ["/fiche", "violet"],
+  ["/courrier", "or"],
   ["/club", "rouge"],
   ["/", "rouge"],
 ];
