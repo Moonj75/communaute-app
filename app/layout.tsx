@@ -25,6 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <head>
+        {/* Written by hand too, so the install works whatever Next does with the metadata. */}
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* The browser may offer the install before the page is ready: keep the offer for the « Installer » banner. */}
         <script dangerouslySetInnerHTML={{ __html: "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__installEvt=e;window.dispatchEvent(new Event('install-pret'));});" }} />
       </head>

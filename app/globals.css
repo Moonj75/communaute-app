@@ -3395,3 +3395,28 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
   input, textarea, select, [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
   img { -webkit-user-drag: none; }
 }
+
+/* ===== Bandeau « Télécharger l'application » + guide plein écran ===== */
+.install.dl { gap: 10px; padding: 9px 10px 9px 12px; border-radius: 14px; clip-path: none; background: linear-gradient(100deg, #1a1210, #0b0a0a 60%, #3a0a06); border: 2px solid var(--gold, #f5d300); box-shadow: 0 10px 24px -14px rgba(245,211,0,.8); }
+.install.dl img { display: block !important; width: 40px; height: 40px; }
+.install.dl .install-txt b { font-size: 15px; }
+.install.dl .install-txt .small { color: rgba(255,255,255,.7); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.install.dl .install-go { flex: 0 0 auto; display: inline-flex; align-items: center; height: 40px; padding: 0 14px !important; border-radius: 99px; background: var(--gold, #f5d300); color: #1a1400; font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 15px !important; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; box-shadow: 0 0 0 3px rgba(245,211,0,.25), 0 6px 14px -6px #f5d300; animation: dl-pulse 2.2s ease-in-out infinite; }
+@keyframes dl-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.install.dl .install-x { padding: 4px; font-size: 16px; }
+@media (max-width: 420px) { .install.dl .install-txt .small { display: none; } .install.dl .install-txt b { font-size: 13.5px; } .install.dl .install-go { font-size: 13.5px !important; padding: 0 11px !important; } }
+.dl-guide { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 18px; background: rgba(5,4,4,.82); backdrop-filter: blur(3px); animation: pas-in .2s ease; }
+.dl-carte { width: min(420px, 100%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 22px 20px 18px; border-radius: 20px; background: #fff; color: #1a1210; text-align: center; box-shadow: 0 30px 60px -20px rgba(0,0,0,.8), 0 0 0 3px var(--gold, #f5d300); }
+.dl-carte img { border-radius: 50%; }
+.dl-carte h3 { margin: 4px 0 0; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 24px; text-transform: uppercase; }
+.dl-sous { margin: 0; font-size: 13px; color: #6b6862; font-weight: 700; }
+.dl-carte ol { margin: 10px 0 14px; padding: 0; list-style: none; counter-reset: dl; display: flex; flex-direction: column; gap: 10px; text-align: left; width: 100%; }
+.dl-carte li { counter-increment: dl; display: flex; gap: 10px; align-items: flex-start; font-size: 16px; line-height: 1.35; }
+.dl-carte li::before { content: counter(dl); flex: 0 0 auto; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #c8102e; color: #fff; font-weight: 800; font-size: 15px; }
+.dl-carte .btn { width: 100%; min-height: 46px; justify-content: center; }
+.dl-fleche { position: fixed; z-index: 201; font-size: 54px; color: var(--gold, #f5d300); text-shadow: 0 0 18px rgba(245,211,0,.9); pointer-events: none; }
+.dl-fleche.haut { top: 4px; right: 14px; animation: dl-haut 1s ease-in-out infinite; }
+.dl-fleche.bas { bottom: 4px; left: 50%; margin-left: -20px; animation: dl-bas 1s ease-in-out infinite; }
+.dl-fleche.bas-d { bottom: 4px; right: 14px; animation: dl-bas 1s ease-in-out infinite; }
+@keyframes dl-haut { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes dl-bas { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
