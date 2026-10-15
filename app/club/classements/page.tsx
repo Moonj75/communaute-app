@@ -21,8 +21,12 @@ const FILTRES = [
 export default async function Classements({ searchParams }: { searchParams: Promise<{ l?: string; f?: string }> }) {
   const sp = await searchParams;
   const { supabase: sb, user, profil, apercu } = await getVue();
-  const def = listeDef(sp.l || "FBFTS");
-  const filtre = sp.f === "club" || (sp.f === "bel" && def.source === "fistf") ? sp.f : "";
+  // Visitors (not signed in) only see the club and our players: club national / international,
+  // our players national / international (Open), always filtered on Eugies.
+  const visiteur = !user;
+  const VISIBLES = ["FBFTS-Clubs", "WR-Teams", "FBFTS", "WR-Open"];
+  const def = listeDef(visiteur && !VISIBLES.includes(sp.l || "") ? "FBFTS-Clubs" : sp.l || "FBFTS");
+  const filtre = visiteur ? "club" : sp.f === "club" || (sp.f === "bel" && def.source === "fistf") ? sp.f : "";
 
   const email = (user?.email || "").toLowerCase();
   const [eug, lignes, nb, imports, mesFiches] = await Promise.all([
@@ -45,7 +49,7 @@ export default async function Classements({ searchParams }: { searchParams: Prom
     <>
       <div className="bande-fixe cl-bande">
       {/* International: small tabs for its lists (Open, Vétérans, Femmes, U20…). The national pages have none. */}
-      {groupe === "int" ? (
+      {groupe === "int" && !visiteur ? (
         <nav className="cl-tabs cl-petits" aria-label="Classements internationaux">
           {INTER.map((l) => (
             <Link key={l.id} href={lien(l.id)} className={l.id === def.id ? "on" : undefined} aria-current={l.id === def.id ? "page" : undefined}>
@@ -55,6 +59,7 @@ export default async function Classements({ searchParams }: { searchParams: Prom
           ))}
         </nav>
       ) : null}
+      {!visiteur ? (
       <div className="cl-filtres">
         {FILTRES.filter((f) => !f.fistf || def.source === "fistf").map((f) => (
           <Link key={f.id} href={lien(def.id, f.id)} className={`chip${filtre === f.id ? " on" : ""}`}>
@@ -62,6 +67,7 @@ export default async function Classements({ searchParams }: { searchParams: Prom
           </Link>
         ))}
       </div>
+      ) : null}
       </div>
       <section className="panel">
         <div className="hd cl-hd">
@@ -105,12 +111,17 @@ export default async function Classements({ searchParams }: { searchParams: Prom
           actions={profil?.role === "admin" && !apercu ? <Link className="rf-btn" href="/staff/classements" title="Mettre à jour / importer un classement"><span className="rf-e" aria-hidden="true">⚙️</span> <span className="rf-t">Mise à jour</span></Link> : null}
           blocs={[{ id: "complet", titre: def.titre, ic: def.source === "fistf" ? <LogoFistf taille={22} /> : def.ic, contenu: complet }]}
           // Bottom bar: the rankings of the section, one thumbnail each; arrows go from one ranking to the next.
-          pages={[
+          pages={visiteur ? [
+            { id: "FBFTS-Clubs", titre: "Club 🇧🇪", ic: "🦁", href: lien("FBFTS-Clubs") },
+            { id: "WR-Teams", titre: "Club FISTF", ic: <LogoFistf taille={22} />, href: lien("WR-Teams") },
+            { id: "FBFTS", titre: "Joueurs 🇧🇪", ic: "🇧🇪", href: lien("FBFTS") },
+            { id: "WR-Open", titre: "Joueurs FISTF", ic: <LogoFistf taille={22} />, href: lien("WR-Open") },
+          ] : [
             { id: "nat", titre: "National", ic: "🇧🇪", href: lien("FBFTS", natFiltre) },
             { id: "clubs", titre: "Clubs belges", ic: "🏟️", href: lien("FBFTS-Clubs", natFiltre) },
             { id: "int", titre: "International", ic: <LogoFistf taille={22} />, href: lien(groupe === "int" ? def.id : "WR-Open") },
           ]}
-          pageActuelle={groupe}
+          pageActuelle={visiteur ? def.id : groupe}
         />
       </main>
     </>
