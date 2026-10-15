@@ -2,6 +2,8 @@
 
 import { getSessionProfil } from "@/lib/profil";
 import { pousser, type Abonnement } from "@/lib/push";
+import { clientAdmin } from "@/lib/supabase/admin";
+import { deposer } from "@/lib/courrier";
 
 export type RetourNotif = { ok: boolean; message?: string };
 
@@ -34,6 +36,11 @@ export async function mEnvoyerUnTest(): Promise<RetourNotif> {
   const { supabase, user } = await getSessionProfil();
   if (!user?.email) return { ok: false, message: "Reconnecte-toi." };
   const { data } = await supabase.from("push_abonnements").select("endpoint,email,p256dh,auth").eq("email", user.email.toLowerCase());
+  // A copy in the Courrier too, so the notification can be read again in the app.
+  try {
+    const db = clientAdmin();
+    if (db) await deposer(db, [user.email], { type: "notification", titre: "🦁 Notifications activées", texte: "Tu recevras ici les ouvertures d'inscriptions et les rappels du club.", lien: "/" });
+  } catch {}
   try {
     const r = await pousser(supabase, (data || []) as Abonnement[], [user.email], {
       title: "🦁 Notifications activées",
