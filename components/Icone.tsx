@@ -1,6 +1,7 @@
 /* Line icons (24×24, stroke = currentColor) used by the bottom bar and the menus. */
 const P: Record<string, string> = {
   accueil: "M3 10.5 12 3l9 7.5M5.5 9v11h4.5v-6h4v6h4.5V9",
+  mail: "M3.5 6h17v12h-17zM3.5 6.5l8.5 7 8.5-7",
   calendrier: "M4 6.5h16v14H4zM4 10.5h16M8.5 3.5v5M15.5 3.5v5M8 14h2.5M13.5 14H16M8 17.5h2.5",
   drapeau: "M5 21V4M5 4.5c4-2.5 6.5 2.5 14 0v9c-7.5 2.5-10-2.5-14 0",
   podium: "M3 20.5h18M4.5 20.5v-6h5v6M9.5 20.5V9.5h5v11M14.5 20.5v-8h5v8M12 3.5l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 5.6l2-.3z",

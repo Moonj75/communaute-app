@@ -9,7 +9,8 @@ import NavSection from "./NavSection";
 /* Same floating dock as the members' space, for visitors (no login):
    the parts of the public club page, the rankings, and a gold button to log in. */
 const ITEMS = [
-  { href: "/club#bloc-club", bloc: "club", label: "Le club", ic: "accueil", c: "rouge" },
+  { href: "/club#bloc-bienvenue", bloc: "bienvenue", label: "Accueil", ic: "accueil", c: "rouge" },
+  { href: "/club#bloc-club", bloc: "club", label: "Le club", ic: "etoile", c: "bronze" },
   { href: "/club#bloc-calendrier", bloc: "calendrier", label: "Calendrier", ic: "calendrier", c: "canard" },
   { href: "/club#bloc-entrainements", bloc: "entrainements", label: "Entraîn.", ic: "cible", c: "orange" },
   { href: "/club/classements", bloc: null, label: "Classements", ic: "podium", c: "indigo" },
@@ -28,7 +29,7 @@ export default function BarrePublique({ connecte = false }: { connecte?: boolean
     return () => { window.removeEventListener("hashchange", lire); document.removeEventListener("click", clic); };
   }, [path]);
   const actif = (i: (typeof ITEMS)[number]) =>
-    i.bloc ? path === "/club" && (hash === i.bloc || (!hash && i.bloc === "club")) : path === i.href || path.startsWith(i.href + "/");
+    i.bloc ? path === "/club" && (hash === i.bloc || (!hash && i.bloc === "bienvenue")) : path === i.href || path.startsWith(i.href + "/");
   const [ouvert, setOuvert] = useState(false);
   useEffect(() => setOuvert(false), [path, hash]);
   // The menu closes by itself after a few seconds without being touched.
@@ -54,7 +55,7 @@ export default function BarrePublique({ connecte = false }: { connecte?: boolean
   };
 
   const connexion = path.startsWith("/login") || path.startsWith("/auth");
-  const page = connexion ? { href: "/login", bloc: null, label: "Connexion", ic: "entree", c: "or" } : ITEMS.find((i) => actif(i)) || ITEMS[0];
+  const page = connexion ? { href: "/login", bloc: null, label: "Connexion", ic: "entree", c: "or" } : path.startsWith("/club/contact") ? { href: "/club/contact", bloc: null, label: "Contact", ic: "mail", c: "rouge" } : ITEMS.find((i) => actif(i)) || ITEMS[0];
 
   return (
     <>
@@ -74,6 +75,10 @@ export default function BarrePublique({ connecte = false }: { connecte?: boolean
               <Link key={i.href} href={i.href} className={cls} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>{dedans}</Link>
             );
           })}
+          <Link href="/club/contact" className={`mt-l d-rouge${path.startsWith("/club/contact") ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => setOuvert(false)}>
+            <span className="mt-ic"><Icone n="mail" taille={19} /></span>
+            <span className="mt-t">Nous contacter</span>
+          </Link>
           <Link href={connecte ? "/" : "/login"} className="mt-l staff" tabIndex={ouvert ? 0 : -1}>
             <span className="mt-ic"><Icone n={connecte ? "joueur" : "entree"} taille={19} /></span>
             <span className="mt-t">{connecte ? "Mon espace" : "Se connecter"}</span>
