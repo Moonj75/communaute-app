@@ -46,7 +46,8 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
   // Enough items for the band to be full while it scrolls (the list is repeated if short).
   const tour = titres.length ? Array.from({ length: Math.max(1, Math.ceil(6 / titres.length)) }, () => titres).flat() : [];
   const duree = Math.max(16, tour.reduce((n, t) => n + t.length, 0) * 0.28);
-  const cat = places?.national?.categorie || f.categorie;
+  // The player's category (Open, Vétérans, Femmes, U20…) — not the division (Elite, A, B…). None → Open.
+  const cat = places?.categorie?.nom || "Open";
   const kCat = couleurCategorie(cat);
   const kIc = places?.categorie ? couleurCategorie(places.categorie.nom) : undefined;
   return (
@@ -79,8 +80,7 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
         <div className="fx-stats">
           <div className="fx-s" style={kCat ? ({ "--k": kCat } as React.CSSProperties) : undefined}>
             <span className="fx-l">Catégorie</span>
-            <b className="fx-v">{cat || "—"}</b>
-            <span className="fx-p">{places?.national?.suivante && places.national.suivante !== places.national.categorie ? `→ ${places.national.suivante} · ` : ""}Série {f.serie || "—"}</span>
+            <b className="fx-v fx-cat">{cat}</b>
           </div>
           <div className="fx-s" style={{ "--k": "#ff5a4a" } as React.CSSProperties}>
             <span className="fx-l">🇧🇪 National</span>
