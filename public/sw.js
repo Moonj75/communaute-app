@@ -27,6 +27,8 @@ self.addEventListener("push", (event) => {
     data = { body: event.data ? event.data.text() : "" };
   }
   const titre = data.title || "SC Lions d'Eugies";
+  // Red dot on the app icon until the message is read in the app (Courrier).
+  try { if (self.navigator && self.navigator.setAppBadge) self.navigator.setAppBadge(); } catch (e) {}
   event.waitUntil(
     self.registration.showNotification(titre, {
       body: data.body || "",
