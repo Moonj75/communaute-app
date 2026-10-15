@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { clientAdmin } from "@/lib/supabase/admin";
 import { lireCalendrier, lireParticipations, lireTaches } from "@/lib/club";
 import { pousser, pushPret, type Abonnement, type MessagePush } from "@/lib/push";
-import { comptesActifs, inscritsOui, sansReponse } from "@/lib/audiences";
+import { comptesActifs, comptesConcernes, inscritsOui, sansReponse } from "@/lib/audiences";
+import { lireEligibles } from "@/lib/eligibles";
+import { deposer } from "@/lib/courrier";
 import type { JoueurLite } from "@/lib/club-types";
 import { ajouterJours, ajouterMois, aujourdhui, dateCourte, estCompetition, estRetenu, indexReponses, lienReponse, DECISION_OUI } from "@/lib/club-types";
 
@@ -40,6 +42,7 @@ export async function GET(req: NextRequest) {
   const staff = new Set(((rm.data || []) as { email: string; role: string; actif: boolean }[]).filter((m) => m.role === "admin" && m.actif).map((m) => m.email));
   const abonnes = (ra.data || []) as Abonnement[];
   const actifs = comptesActifs(joueurs);
+  const elig = await lireEligibles(db);
   const comps = evs.filter((e) => e.date && estCompetition(e) && estRetenu(e) && !e.jourSpecial);
   const envois: Envoi[] = [];
 
@@ -47,7 +50,7 @@ export async function GET(req: NextRequest) {
   for (const e of comps.filter((e) => e.ouverture === T && e.decision === DECISION_OUI))
     envois.push({
       cle: `ouverture:${e.id}`,
-      emails: actifs,
+      emails: comptesConcernes(e, joueurs, elig),
       msg: { title: `🏁 Inscriptions ouvertes : ${e.nom}`, body: e.limite ? `Réponds avant le ${dateCourte(e.limite)}.` : "Donne ta réponse dans l'appli.", url: lienReponse(e), tag: `ins-${e.id}` },
     });
 
@@ -55,7 +58,7 @@ export async function GET(req: NextRequest) {
   for (const e of comps.filter((e) => e.limite === ajouterJours(T, 3)))
     envois.push({
       cle: `rappel3:${e.id}`,
-      emails: sansReponse(e, evs, parts, joueurs),
+      emails: sansReponse(e, evs, parts, joueurs, elig),
       msg: { title: `⏰ Plus que 3 jours pour répondre`, body: `${e.nom} : on attend ta réponse avant le ${dateCourte(e.limite)}.`, url: lienReponse(e), tag: `ins-${e.id}` },
     });
 
@@ -112,6 +115,12 @@ export async function GET(req: NextRequest) {
   const bilan: { cle: string; envoyes: number }[] = [];
   for (const e of envois) {
     if (faits.has(e.cle) || !e.emails.size) continue;
+    // A copy goes to the mailbox (Courrier) of each person, even without notifications on the phone.
+    try {
+      await deposer(db, e.emails, { type: /^(ins|dec|taches)/.test(e.msg.tag || "") ? "relance" : "notification", titre: e.msg.title, texte: e.msg.body, lien: e.msg.url });
+    } catch {
+      /* the push is still sent */
+    }
     try {
       const r = await pousser(db, abonnes, e.emails, e.msg);
       await db.from("push_journal").insert({ cle: e.cle, nb: r.envoyes });
