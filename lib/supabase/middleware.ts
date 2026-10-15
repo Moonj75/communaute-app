@@ -32,7 +32,8 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    // Arriving on the app without being signed in: the visitor welcome poster (with « Espace membres »).
+    url.pathname = path === "/" ? "/club" : "/login";
     url.search = "";
     const redir = NextResponse.redirect(url);
     // Remember where the person wanted to go (e.g. a form link from WhatsApp) to bring them back after login.
