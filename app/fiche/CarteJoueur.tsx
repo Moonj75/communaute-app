@@ -53,10 +53,15 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
     <article className="fx">
       <div className="fx-carte">
         <span className="fx-coin a" aria-hidden="true" /><span className="fx-coin b" aria-hidden="true" />
+        {/* Club crest at the top left of the card, with the card's name. */}
+        <div className="fx-club">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/crest.png" alt="SC Lions d'Eugies" width={40} height={40} />
+          <span>SC Lions d&apos;Eugies<small>Carte joueur · saison 2026–2027</small></span>
+        </div>
         <header className="fx-tete">
           <Photo notionId={f.notion_id} url={photoUrl} path={f.photo_path || null} initiales={initiales(full)} nom={full} />
           <div className="fx-id">
-            <span className="fx-k">Carte joueur · LEAW</span>
             <h2 className="fx-nom">
               <span className="perso">{f.prenom}</span> {f.nom}
             </h2>
