@@ -318,6 +318,15 @@ export function phase(e: Evenement, today = aujourdhui()): Phase {
   return "close";
 }
 
+/**
+ * Is this player concerned by the event's form? (staff can keep a form for a list of players;
+ * the others see it greyed and count as « Non »). No list = every active player.
+ */
+export function concerne(elig: Map<string, string[]> | undefined | null, evId: string, joueurId: string) {
+  const l = elig?.get(evId);
+  return !l || l.includes(joueurId);
+}
+
 /** Can this answer still be changed by the player? */
 export function modifiable(e: Evenement, p: Participation | null | undefined, today = aujourdhui()) {
   if (p?.valide) return false;
