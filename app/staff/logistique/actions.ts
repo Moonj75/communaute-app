@@ -39,7 +39,7 @@ export async function sauverFiche(id: string, valeurs: Record<string, Valeur>, m
     return {
       ok: true,
       statut: action === "publier" ? "Prête" : action === "depublier" ? "Brouillon" : undefined,
-      message: action === "publier" ? "🚀 Fiche publiée : les joueurs la voient dans le calendrier." : action === "depublier" ? "Fiche repassée en brouillon (cachée aux joueurs)." : "💾 Enregistré dans Notion.",
+      message: action === "publier" ? "✅ Tout est au vert : fiche enregistrée dans Notion et visible par les joueurs." : action === "depublier" ? "💾 Enregistré dans Notion. Fiche cachée aux joueurs tant que tout n'est pas au vert." : "💾 Enregistré dans Notion.",
     };
   } catch (e) {
     return { ok: false, message: e instanceof NotionErreur ? e.message : "Enregistrement impossible, réessaie." };
