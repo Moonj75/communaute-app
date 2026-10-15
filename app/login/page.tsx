@@ -34,7 +34,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </section>
           <Link className="decouvrir" href="/club">
             <span aria-hidden="true">🦁</span>
-            <span><b>Découvrir le club</b><small>Infos, calendrier et entraînements, sans connexion</small></span>
+            <span><b>Découvrir le club</b><small>Infos et prochains entraînements, sans connexion</small></span>
             <span aria-hidden="true">→</span>
           </Link>
         </div>
