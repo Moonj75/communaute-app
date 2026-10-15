@@ -24,7 +24,11 @@ export default async function Courrier() {
   const parCompte = new Map<string, string[]>();
   for (const j of joueurs) if (j.actif && j.email) parCompte.set(j.email.toLowerCase(), [...(parCompte.get(j.email.toLowerCase()) || []), j.nom]);
   const comptes = [...parCompte.entries()].map(([email, noms]) => ({ email, nom: noms.join(" & ") })).sort((a, b) => a.nom.localeCompare(b.nom));
-  const nonLus = recus.filter((m) => !m.lu).length;
+  // Messages and club notifications (relances + notifications) in two parts, each with its unread count.
+  const msgs = recus.filter((m) => m.type === "message");
+  const notifs = recus.filter((m) => m.type !== "message");
+  const nonLusMsg = msgs.filter((m) => !m.lu).length;
+  const nonLusNotif = notifs.filter((m) => !m.lu).length;
   const nonLusStaff = staff.filter((m) => !m.lu).length;
 
   return (
@@ -36,7 +40,8 @@ export default async function Courrier() {
         <Blocs
           page="Courrier"
           blocs={[
-            { id: "recus", titre: "Reçus", ic: "📬", badge: nonLus || null, contenu: <section className="panel"><div className="bd"><Liste messages={recus} vide="Ta boîte est vide pour l'instant." repondre={admin ? null : "staff"} /></div></section> },
+            { id: "messages", titre: "Messages", ic: "✉️", badge: nonLusMsg || null, contenu: <section className="panel"><div className="bd"><Liste messages={msgs} vide="Aucun message pour l'instant." repondre={admin ? null : "staff"} /></div></section> },
+            { id: "notifications", titre: "Notifications", ic: "🔔", badge: nonLusNotif || null, contenu: <section className="panel"><div className="bd"><Liste messages={notifs} vide="Aucune notification pour l'instant." repondre={null} /></div></section> },
             ...(admin ? [{ id: "staff", titre: "Pour le staff", ic: "🛡️", badge: nonLusStaff || null, contenu: <section className="panel"><div className="bd"><Liste messages={staff} vide="Aucun message de joueur." repondre="auteur" comptes={comptes} /></div></section> }] : []),
             { id: "ecrire", titre: admin ? "Écrire à un joueur" : "Écrire au staff", ic: "✍️", contenu: <section className="panel"><div className="bd">{admin ? <Ecrire mode="admin" comptes={comptes} /> : <Ecrire mode="staff" />}</div></section> },
             { id: "envoyes", titre: "Envoyés", ic: "📤", badge: envoyes.length || null, contenu: <section className="panel"><div className="bd"><Liste messages={envoyes} vide="Aucun message envoyé." repondre={null} /></div></section> },
