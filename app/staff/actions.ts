@@ -73,3 +73,26 @@ export async function ajouterTache(_prev: Retour | null, fd: FormData): Promise<
     return erreur(e);
   }
 }
+
+/**
+ * Players concerned by a competition's form. Every active player ticked (or none) = default
+ * (no list); otherwise only the ticked players can answer, the others count as « Non ».
+ */
+export async function enregistrerConcernes(evId: string, ids: string[], tousActifs: number): Promise<Retour> {
+  try {
+    await exigerAdmin();
+    const { supabase } = await getSessionProfil();
+    const propres = [...new Set(ids.filter((x) => typeof x === "string" && x.length < 80))];
+    const { error: e1 } = await supabase.from("formulaire_joueurs").delete().eq("evenement_id", evId);
+    if (e1) return { ok: false, message: "La table « formulaire_joueurs » n'existe pas encore : lance le fichier SQL de l'étape 10 dans Supabase." };
+    if (propres.length && propres.length < tousActifs) {
+      const { error } = await supabase.from("formulaire_joueurs").insert(propres.map((j) => ({ evenement_id: evId, joueur_id: j })));
+      if (error) return { ok: false, message: "Enregistrement impossible, réessaie." };
+    }
+    revalidatePath("/staff/inscriptions");
+    revalidatePath("/inscriptions");
+    return { ok: true, message: propres.length && propres.length < tousActifs ? `✓ Formulaire réservé à ${propres.length} joueur(s). Les autres comptent « Non ».` : "✓ Formulaire ouvert à tous les joueurs actifs." };
+  } catch (e) {
+    return erreur(e);
+  }
+}
