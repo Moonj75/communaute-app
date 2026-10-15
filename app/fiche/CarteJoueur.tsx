@@ -46,8 +46,9 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
   // Enough items for the band to be full while it scrolls (the list is repeated if short).
   const tour = titres.length ? Array.from({ length: Math.max(1, Math.ceil(6 / titres.length)) }, () => titres).flat() : [];
   const duree = Math.max(16, tour.reduce((n, t) => n + t.length, 0) * 0.28);
-  // The player's category (Open, Vétérans, Femmes, U20…) — not the division (Elite, A, B…). None → Open.
-  const cat = places?.categorie?.nom || "Open";
+  // The player's age category, from the « Catégorie » column of Notion (Open, Vétéran, Femme, U20, U16, U12);
+  // otherwise the FISTF category where he is ranked; otherwise Open.
+  const cat = f.categorie || places?.categorie?.nom || "Open";
   const kCat = couleurCategorie(cat);
   const kIc = places?.categorie ? couleurCategorie(places.categorie.nom) : undefined;
   return (
