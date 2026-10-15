@@ -4,7 +4,8 @@ import Header from "@/components/Header";
 import { displayName, getVue, estInactif } from "@/lib/profil";
 import { essayer, lireCalendrier, lireParticipations } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
-import { compteARebours, dateCourte, dateMoyenne, estLoin, indexReponses, modifiable, moisCourt, phase, surDeuxJours } from "@/lib/club-types";
+import { lireEligibles } from "@/lib/eligibles";
+import { concerne, compteARebours, dateCourte, dateMoyenne, estLoin, indexReponses, modifiable, moisCourt, phase, surDeuxJours } from "@/lib/club-types";
 import Formulaire from "./Formulaire";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
   if (estInactif(profil)) redirect("/");
   const sp = await searchParams;
   const admin = profil?.role === "admin" && !apercu;
-  const [cal, parts, maFamille] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email)]);
+  const [cal, parts, maFamille, elig] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email), lireEligibles(supabase)]);
   // Staff can open the form for any player (link « Répondre pour… » from the dashboard).
   const famille = admin && sp.j && !maFamille.some((j) => j.notionId === sp.j) ? await chargerJoueurs(supabase, null) : maFamille;
   const actifs = famille.filter((j) => j.actif || (admin && j.notionId === sp.j));
@@ -48,7 +49,9 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
   const p = indexReponses(parts.data || [], cal.data || [], famille).get(ev.id)?.get(joueur.notionId);
   const prenom = joueur.nom.split(" ")[0];
   const ph = phase(ev);
-  const ouvert = modifiable(ev, p) || admin;
+  // Form kept for other players: greyed for this one (counts as « Non »). Staff can still answer for anyone.
+  const nonConcerne = !concerne(elig, ev.id, joueur.notionId);
+  const ouvert = (modifiable(ev, p) && !nonConcerne) || admin;
   const jusquau = ph === "confirmation" ? (ev.validation ? `jusqu'au ${dateCourte(ev.validation)}` : null) : ev.limite ? `jusqu'au ${dateCourte(ev.limite)}` : null;
 
   return (
@@ -88,8 +91,10 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
         ) : (
           <section className="verrou">
             <span className="verrou-ic" aria-hidden="true">🔒</span>
-            <h3>{p?.valide ? "Réponse validée définitivement" : ph === "avant" ? "Les réponses ne sont pas encore ouvertes" : "Les réponses sont closes"}</h3>
-            {p?.statut && p.statut !== "En attente" ? (
+            <h3>{nonConcerne ? "Ce formulaire est réservé à d'autres joueurs" : p?.valide ? "Réponse validée définitivement" : ph === "avant" ? "Les réponses ne sont pas encore ouvertes" : "Les réponses sont closes"}</h3>
+            {nonConcerne ? (
+              <p className="muted">Le staff a choisi les joueurs concernés par cette compétition. Pour toi, elle compte comme « Non ».</p>
+            ) : p?.statut && p.statut !== "En attente" ? (
               <ul className="recap">
                 <li><span>Réponse</span><b>{p.statut}</b></li>
                 {p.jours ? <li><span>Jours</span><b>{p.jours}</b></li> : null}
