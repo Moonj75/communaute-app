@@ -3687,3 +3687,39 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
 /* Small screens: the descriptions under the staff pages go away. */
 @media (max-height: 760px) { .mt-t small { display: none; } .mt-l { padding: 4px 8px; } }
 @media (max-height: 600px) { .menu-tiroir { padding-top: 6px; } .mt-l { padding: 3px 8px; font-size: 13.5px; } .mt-ic { height: 24px; } .mt-tete .feuille-av { width: 30px; height: 30px; } }
+
+/* ---- Tableau de bord · Priorités 4 mois : l'évènement choisi en cyan fluo (le vert fluo = validé, réservé) ---- */
+.tb-pc.on, .list .row.on {
+  --fluo: #00e5ff;
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--fluo) 22%, var(--surface)), var(--surface) 70%) !important;
+  border-color: var(--fluo) !important;
+  box-shadow: 0 0 0 3px var(--fluo), 0 0 18px 4px color-mix(in srgb, var(--fluo) 70%, transparent), 0 0 42px 8px color-mix(in srgb, var(--fluo) 35%, transparent) !important;
+  transform: scale(1.03);
+  animation: fluo-pulse 1.8s ease-in-out infinite;
+}
+.tb-pc.on .tb-nm { color: #0090a8; }
+.tb-pc.on::after { content: "▶ Sélectionné"; position: absolute; top: -10px; right: 10px; padding: 2px 8px; border-radius: 99px; background: var(--fluo); color: #00262c; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 0 10px var(--fluo); }
+/* The others step back so the chosen one stands out. */
+.tb-pg:has(.tb-pc.on) .tb-pc:not(.on), .scroller:has(.row.on) .row:not(.on) { opacity: .5; filter: saturate(.6); }
+.tb-pg:has(.tb-pc.on) .tb-pc:not(.on):hover { opacity: .85; filter: none; }
+@keyframes fluo-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--fluo), 0 0 14px 3px color-mix(in srgb, var(--fluo) 60%, transparent), 0 0 32px 6px color-mix(in srgb, var(--fluo) 25%, transparent); }
+  50% { box-shadow: 0 0 0 3px var(--fluo), 0 0 24px 7px color-mix(in srgb, var(--fluo) 85%, transparent), 0 0 56px 12px color-mix(in srgb, var(--fluo) 45%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .tb-pc.on, .list .row.on { animation: none; } }
+.tb-pg { padding: 18px 16px 16px; gap: 14px; }
+/* The top frame (key figures of the chosen competition) wears the same cyan fluo border as the chosen card. */
+.tb-kpis.tb-bande {
+  --fluo: #00e5ff;
+  border: 3px solid var(--fluo) !important;
+  border-radius: 16px;
+  box-shadow: 0 0 18px 4px color-mix(in srgb, var(--fluo) 70%, transparent), 0 0 42px 8px color-mix(in srgb, var(--fluo) 35%, transparent) !important;
+  animation: fluo-pulse-cadre 1.8s ease-in-out infinite;
+}
+.tb-kpis.tb-bande .tb-ksel .tb-knom { color: #0090a8; }
+@keyframes fluo-pulse-cadre {
+  0%, 100% { box-shadow: 0 0 14px 3px color-mix(in srgb, var(--fluo) 60%, transparent), 0 0 32px 6px color-mix(in srgb, var(--fluo) 25%, transparent); }
+  50% { box-shadow: 0 0 24px 7px color-mix(in srgb, var(--fluo) 85%, transparent), 0 0 56px 12px color-mix(in srgb, var(--fluo) 45%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .tb-kpis.tb-bande { animation: none; } }
