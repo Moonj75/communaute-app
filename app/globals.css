@@ -3723,3 +3723,39 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
   50% { box-shadow: 0 0 24px 7px color-mix(in srgb, var(--fluo) 85%, transparent), 0 0 56px 12px color-mix(in srgb, var(--fluo) 45%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) { .tb-kpis.tb-bande { animation: none; } }
+
+/* ---- Tableau de bord · Toutes les compétitions : la ligne s'agrandit au survol (ou au 1er tap) ---- */
+.cp-liste { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; max-height: max(320px, var(--ecran-dispo, 520px)); }
+.cp-l { border-radius: 12px; border: 1px solid var(--line); background: var(--surface); transition: box-shadow .2s, transform .2s, border-color .2s; }
+.cp-l.past { opacity: .6; }
+.cp-tete { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 50px minmax(0, 1fr) 18px; gap: 12px; align-items: center; padding: 8px 12px; }
+.cp-tete:focus-visible { outline: 3px solid #00e5ff; outline-offset: 2px; border-radius: 12px; }
+.cp-fl { font-size: 22px; color: var(--muted); transition: transform .2s; }
+.cp-plus { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; }
+.cp-in { overflow: hidden; padding: 0 12px; }
+.cp-l.ouvert .cp-plus { grid-template-rows: 1fr; }
+.cp-l.ouvert .cp-in { padding: 0 12px 12px; }
+.cp-l.ouvert .cp-fl { transform: rotate(90deg); }
+@media (hover: hover) and (pointer: fine) {
+  .cp-l:hover { border-color: #00e5ff; box-shadow: 0 0 0 2px #00e5ff, 0 12px 26px -14px rgba(0,0,0,.45); transform: scale(1.01); position: relative; z-index: 2; }
+  .cp-l:hover .cp-plus { grid-template-rows: 1fr; }
+  .cp-l:hover .cp-in { padding: 0 12px 12px; }
+  .cp-l:hover .cp-fl { color: #0090a8; }
+}
+.cp-quand { margin: 2px 0 8px; font-weight: 700; font-size: 13.5px; text-transform: capitalize; }
+.cp-chiffres { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.cp-chiffres span { display: flex; flex-direction: column; align-items: center; padding: 6px 4px; border-radius: 10px; background: var(--sunk); font-size: 11px; font-weight: 700; color: var(--muted); }
+.cp-chiffres b { font-family: var(--font-display); font-style: italic; font-size: 22px; line-height: 1.1; }
+.cp-chiffres .o b { color: var(--yes); } .cp-chiffres .m b { color: #f08a00; } .cp-chiffres .n b { color: var(--no); } .cp-chiffres .p b { color: var(--fg); }
+.cp-infos { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0; font-size: 12.5px; color: var(--t-second, var(--muted)); }
+.cp-act { display: flex; flex-wrap: wrap; gap: 8px; }
+.cp-act .btn { font-size: 13px; }
+/* The competition chosen in the dashboard: same cyan fluo as elsewhere. */
+.cp-l.on { border-color: #00e5ff; box-shadow: 0 0 0 3px #00e5ff, 0 0 16px 3px rgba(0,229,255,.5); }
+.scroller:has(.cp-l.on) .cp-l:not(.on):not(:hover) { opacity: .75; }
+.cp-l, .cp-tete { font-family: var(--font-body); text-transform: none; letter-spacing: normal; font-weight: 400; }
+.cp-tete .row-main b { font-size: 15px; font-weight: 800; }
+.cp-tete .row-main small { font-size: 12px; }
+.cp-chiffres span { text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.cp-infos span, .cp-quand { text-transform: none; letter-spacing: 0; }
+.cp-quand::first-letter { text-transform: uppercase; }
