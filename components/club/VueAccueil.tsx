@@ -81,6 +81,8 @@ export default function VueAccueil(p: {
         </Link>
       ) : null}
 
+      {/* The 5 ranking tiles, grouped, narrower and centred, a little apart from the competition above. */}
+      <div className="acc-cl" aria-label="Classements">
       {/* My places: national, international (Open), international in my category. */}
       <div className="acc-ligne l3">
         <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-national)" } as React.CSSProperties}>
@@ -113,6 +115,7 @@ export default function VueAccueil(p: {
           <b className="acc-v num">{rang(equipe?.rang)}</b>
           <span className="acc-s">{equipe ? `Eugies ${equipe.prenom || "Team A"}${autresEq.length ? ` · ${autresEq.map((e) => `${e.prenom} ${e.rang}e`).join(" · ")}` : ""}` : "pas encore classé"}</span>
         </a>
+      </div>
       </div>
 
       <a className="acc-c acc-entr" href="#bloc-entrainements" style={{ "--k": "var(--n-temps)" } as React.CSSProperties}>
