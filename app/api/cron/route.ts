@@ -5,13 +5,14 @@ import { pousser, pushPret, type Abonnement, type MessagePush } from "@/lib/push
 import { comptesActifs, comptesConcernes, inscritsOui, sansReponse } from "@/lib/audiences";
 import { lireEligibles } from "@/lib/eligibles";
 import { deposer } from "@/lib/courrier";
+import { fusionner, remplir, type CleModele, type ModeleEnregistre } from "@/lib/modeles-notifs";
 import type { JoueurLite } from "@/lib/club-types";
 import { ajouterJours, ajouterMois, aujourdhui, dateCourte, estCompetition, estRetenu, indexReponses, lienReponse, DECISION_OUI } from "@/lib/club-types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-type Envoi = { cle: string; emails: Set<string>; msg: MessagePush };
+type Envoi = { cle: string; emails: Set<string>; msg: MessagePush; modele?: CleModele };
 
 /**
  * Daily automatic notifications (Vercel Cron, see vercel.json).
@@ -25,14 +26,28 @@ export async function GET(req: NextRequest) {
   if (!db) return NextResponse.json({ info: "SUPABASE_SECRET_KEY absente : rien envoyé" });
 
   const T = aujourdhui();
-  const [evs, parts, taches, rj, rm, ra] = await Promise.all([
+  const [evs, parts, taches, rj, rm, ra, rmod] = await Promise.all([
     lireCalendrier().catch(() => []),
     lireParticipations().catch(() => []),
     lireTaches().catch(() => []),
     db.from("joueurs").select("notion_id,prenom,nom,email,actif"),
     db.from("membres").select("email,role,actif"),
     db.from("push_abonnements").select("endpoint,email,p256dh,auth"),
+    db.from("notif_modeles").select("cle,titre,texte,actif"),
   ]);
+  // Texts written by the staff (Staff → Notifications), otherwise the default ones.
+  const modeles = new Map(fusionner(((rmod.data || []) as ModeleEnregistre[])).map((m) => [m.cle, m]));
+  const msgDe = (cle: CleModele, mots: Record<string, string | null | undefined>, url: string, tag: string): MessagePush => {
+    const m = modeles.get(cle)!;
+    return { title: remplir(m.titre, mots), body: remplir(m.texte, mots), url, tag };
+  };
+  const motsEv = (e: { nom: string; limite?: string | null; validation?: string | null; date?: string | null; lieu?: string | null }) => ({
+    competition: e.nom,
+    limite: e.limite ? dateCourte(e.limite) : "",
+    validation: e.validation ? dateCourte(e.validation) : "",
+    date: e.date ? dateCourte(e.date) : "",
+    lieu: e.lieu || "",
+  });
   const joueurs: JoueurLite[] = ((rj.data || []) as { notion_id: string; prenom: string | null; nom: string; email: string | null; actif: boolean }[]).map((j) => ({
     notionId: j.notion_id,
     nom: [j.prenom, j.nom].filter(Boolean).join(" "),
@@ -51,7 +66,7 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `ouverture:${e.id}`,
       emails: comptesConcernes(e, joueurs, elig),
-      msg: { title: `🏁 Inscriptions ouvertes : ${e.nom}`, body: e.limite ? `Réponds avant le ${dateCourte(e.limite)}.` : "Donne ta réponse dans l'appli.", url: lienReponse(e), tag: `ins-${e.id}` },
+      msg: msgDe("ouverture", motsEv(e), lienReponse(e), `ins-${e.id}`),
     });
 
   // 2. Deadline in 3 days → those who have not answered yet.
@@ -59,7 +74,7 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `rappel3:${e.id}`,
       emails: sansReponse(e, evs, parts, joueurs, elig),
-      msg: { title: `⏰ Plus que 3 jours pour répondre`, body: `${e.nom} : on attend ta réponse avant le ${dateCourte(e.limite)}.`, url: lienReponse(e), tag: `ins-${e.id}` },
+      msg: msgDe("rappel3", motsEv(e), lienReponse(e), `ins-${e.id}`),
     });
 
   // 2b. Confirmation period starts (day after the answer deadline) → answered but not validated yet.
@@ -73,7 +88,7 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `confirmation:${e.id}`,
       emails,
-      msg: { title: `🔒 Confirme ta participation : ${e.nom}`, body: `Valide définitivement ta réponse avant le ${dateCourte(e.validation)}.`, url: lienReponse(e), tag: `ins-${e.id}` },
+      msg: msgDe("confirmation", motsEv(e), lienReponse(e), `ins-${e.id}`),
     });
   }
 
@@ -82,7 +97,7 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `veille:${e.id}`,
       emails: inscritsOui(e, evs, parts, joueurs),
-      msg: { title: `📍 C'est demain : ${e.nom}`, body: `${e.lieu ? e.lieu + " · " : ""}Prépare ton matériel. Allez les Lions ! 🦁`, url: `/calendrier?e=${e.id}`, tag: `veille-${e.id}` },
+      msg: msgDe("veille", motsEv(e), `/calendrier?e=${e.id}`, `veille-${e.id}`),
     });
 
   // 4. Staff: tasks due today (+ overdue count).
@@ -93,12 +108,10 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `taches:${T}`,
       emails: staff,
-      msg: {
-        title: dues.length ? `✅ ${dues.length} tâche${dues.length > 1 ? "s" : ""} pour aujourd'hui` : `⚠️ ${retard} tâche${retard > 1 ? "s" : ""} en retard`,
-        body: [dues.slice(0, 3).map((t) => t.titre).join(" · "), retard ? `${retard} en retard` : ""].filter(Boolean).join(" — "),
-        url: "/staff/planning",
-        tag: "taches",
-      },
+      msg: dues.length
+        ? msgDe("taches", { n: String(dues.length), liste: dues.slice(0, 3).map((t) => t.titre).join(" · "), retard: retard ? `— ${retard} en retard` : "" }, "/staff/planning", "taches")
+        : msgDe("taches_retard", { n: String(retard) }, "/staff/planning", "taches"),
+      modele: dues.length ? "taches" : "taches_retard",
     });
 
   // 5. Staff: participation decision due (8 months before).
@@ -106,7 +119,7 @@ export async function GET(req: NextRequest) {
     envois.push({
       cle: `decision:${e.id}`,
       emails: staff,
-      msg: { title: `🗳️ Décision à prendre : ${e.nom}`, body: `Compétition le ${dateCourte(e.date)}. Le club y va ?`, url: `/staff/planning?e=${e.id}`, tag: `dec-${e.id}` },
+      msg: msgDe("decision", motsEv(e), `/staff/planning?e=${e.id}`, `dec-${e.id}`),
     });
 
   // Send once per key (the job may run twice).
@@ -115,6 +128,9 @@ export async function GET(req: NextRequest) {
   const bilan: { cle: string; envoyes: number }[] = [];
   for (const e of envois) {
     if (faits.has(e.cle) || !e.emails.size) continue;
+    // A message switched off by the staff is not sent.
+    const cleModele = (e.modele || e.cle.split(":")[0]) as CleModele;
+    if (modeles.get(cleModele)?.actif === false) continue;
     // A copy goes to the mailbox (Courrier) of each person, even without notifications on the phone.
     try {
       await deposer(db, e.emails, { type: /^(ins|dec|taches)/.test(e.msg.tag || "") ? "relance" : "notification", titre: e.msg.title, texte: e.msg.body, lien: e.msg.url });
