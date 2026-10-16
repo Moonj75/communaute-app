@@ -3762,3 +3762,9 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
 /* Qui vient · réponses : the answer curve sits right under the people, a little apart. */
 .tb-rythme { margin-top: 12px; }
 .tb-rythme .rythme-box { padding-top: 8px; }
+
+/* ---- Classements : page d'attente (lignes qui scintillent) ---- */
+.cl-attente { display: flex; flex-direction: column; gap: 8px; padding-top: calc(var(--haut-fixe, 140px) + 12px); }
+.cl-att-t { height: 34px; width: 55%; border-radius: 10px; background: color-mix(in srgb, #5c78ff 25%, var(--sunk)); }
+.cl-att-l { height: 34px; border-radius: 8px; background: linear-gradient(90deg, var(--sunk) 0%, color-mix(in srgb, #5c78ff 14%, var(--surface)) 50%, var(--sunk) 100%); background-size: 200% 100%; animation: cl-att 1.2s ease-in-out infinite; }
+@keyframes cl-att { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
