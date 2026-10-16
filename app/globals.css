@@ -3660,3 +3660,30 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
 .nm-verif { border: 2px solid #ffa83a; border-radius: 12px; padding: 12px; background: rgba(255,168,58,.1); display: flex; flex-direction: column; gap: 10px; }
 .nm-verif p { margin: 0; }
 @media (max-width: 760px) { .nm-ed { grid-template-columns: 1fr; } .nm-apercu { order: -1; } }
+
+/* ---- Accueil : les 5 cases de classement groupées, plus étroites et centrées, détachées du haut et du bas ---- */
+.acc-cl { width: min(92%, 520px); margin: 12px auto 0; display: flex; flex-direction: column; gap: 7px; }
+.acc-cl .acc-ligne { gap: 7px; }
+.acc-cl .acc-c { padding: 7px 4px 6px; border-radius: 12px; }
+.acc-cl .acc-c::before { height: 3px; }
+.acc-cl .acc-l { font-size: 9.5px; letter-spacing: .05em; }
+.acc-cl .acc-v { font-size: clamp(20px, 5.6vw, 27px); }
+.acc-cl .acc-s { font-size: 10.5px; }
+.vg > .acc-entr { margin-top: 12px; }
+
+/* ---- Menu de gauche plus compact : tout le menu staff tient sur l'écran ---- */
+.menu-tiroir { padding: 10px 8px 12px; }
+.mt-tete { padding: 2px 4px 8px; margin-bottom: 4px; gap: 8px; }
+.mt-tete .feuille-av { width: 34px; height: 34px; font-size: 17px; }
+.mt-tete b { font-size: 14px; }
+.mt-liste { gap: 1px; }
+.mt-l { gap: 10px; padding: 5px 8px; border-radius: 10px; font-size: 14px; }
+.mt-ic { width: 28px; height: 26px; border-radius: 8px; }
+.mt-ic svg { width: 16px; height: 16px; }
+.mt-t { line-height: 1.15; }
+.mt-t small { font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mt-sec { margin: 6px 6px 2px; font-size: 10.5px; }
+.mt-sortie { margin-top: 4px; padding-top: 4px; }
+/* Small screens: the descriptions under the staff pages go away. */
+@media (max-height: 760px) { .mt-t small { display: none; } .mt-l { padding: 4px 8px; } }
+@media (max-height: 600px) { .menu-tiroir { padding-top: 6px; } .mt-l { padding: 3px 8px; font-size: 13.5px; } .mt-ic { height: 24px; } .mt-tete .feuille-av { width: 30px; height: 30px; } }
