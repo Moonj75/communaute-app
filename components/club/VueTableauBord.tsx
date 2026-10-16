@@ -9,6 +9,7 @@ import Jalons from "./Jalons";
 import CopierLien from "./CopierLien";
 import Blocs from "@/components/Blocs";
 import ChoixJoueurs from "./ChoixJoueurs";
+import LigneCompet from "./LigneCompet";
 
 type Props = {
   fiches?: Map<string, FicheLogistiqueT>;
@@ -153,31 +154,6 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
             </div>
           </section>
         </>) : <>{chiffres}<p className="vide">Aucune compétition dans les 4 prochains mois.</p></> },
-        { id: "liste", titre: "Compétitions", ic: "🏁", badge: suivis.length || null, contenu: (
-        <section className="panel list">
-          <div className="hd"><h2>Compétitions</h2><span className="muted small">{N} joueurs actifs</span></div>
-          <div className="scroller">
-            {suivis.length ? suivis.map((x) => {
-              const k = compte(x);
-              const past = x.date! < today;
-              return (
-                <Link key={x.id} href={`/staff/inscriptions?e=${x.id}`} scroll={false} className={`row${x.id === sel?.id ? " on" : ""}${past ? " past" : ""}`}>
-                  <span className="row-d"><b className="num">{Number(x.date!.slice(8))}</b><small>{moisCourt(x.date!)}</small></span>
-                  <span className="row-main">
-                    <b>{x.nom}</b>
-                    <span className="bar3" aria-label={`${k.o.length} oui, ${k.p.length} peut-être, ${k.n.length} non`}>
-                      <i className="o" style={{ width: `${pct(k.o.length, N)}%` }} />
-                      <i className="m" style={{ width: `${pct(k.p.length, N)}%` }} />
-                      <i className="n" style={{ width: `${pct(k.n.length, N)}%` }} />
-                    </span>
-                    <small>{k.o.length} oui · {k.att.length} en attente · {compteARebours(x.date, today)}</small>
-                  </span>
-                </Link>
-              );
-            }) : <p className="muted bd">Aucune compétition retenue à venir. Décide dans le planning.</p>}
-          </div>
-        </section>
-        ) },
 
         { id: "detail", titre: sel ? sel.nom : "Détail", ic: "📊", badge: c ? `${c.o.length} oui` : null, contenu: sel && c ? (<>
           <section className="panel detail">
@@ -254,7 +230,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
           </div></section>
         ) : <p className="vide">Choisis une compétition.</p> },
 
-        { id: "inscrits", titre: "Logistique des inscrits", ic: "🚗", badge: rows.length || null, contenu: sel && c ? (
+        { id: "inscrits", titre: "Transport des inscrits", ic: "🚗", badge: rows.length || null, contenu: sel && c ? (
           <section className="panel"><div className="bd">
               {rows.length ? (
                 <>
@@ -299,6 +275,8 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
           </div></section>
         ) : <p className="vide">Choisis une compétition.</p> },
 
+        { id: "logistique", titre: "Fiche logistique", ic: "🧳", badge: fiche ? (fiche.statut === "Prête" ? "✓" : "…") : null, contenu: sel ? <FicheLogistique f={fiche} ev={sel} noms={noms} staff /> : <p className="vide">Choisis une compétition.</p> },
+
         { id: "rythme", titre: "Rythme des réponses", ic: "📈", contenu: sel && c ? (
           <section className="panel">
             {points.length ? (
@@ -310,8 +288,6 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
             {!points.length ? <p className="vide">Pas encore de réponse.</p> : null}
           </section>
         ) : <p className="vide">Choisis une compétition.</p> },
-
-        { id: "logistique", titre: "Logistique", ic: "🧳", badge: fiche ? (fiche.statut === "Prête" ? "✓" : "…") : null, contenu: sel ? <FicheLogistique f={fiche} ev={sel} noms={noms} staff /> : <p className="vide">Choisis une compétition.</p> },
 
         { id: "matrice", titre: "Par joueur", ic: "🧮", contenu: cols.length ? (
         <section className="panel">
@@ -354,6 +330,29 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
           </div>
         </section>
         ) : <p className="vide">Aucune compétition à venir.</p> },
+
+        { id: "liste", titre: "Toutes les compétitions", ic: "🏁", badge: suivis.length || null, contenu: (
+        <section className="panel list">
+          <div className="hd"><h2>Toutes les compétitions</h2><span className="muted small">Survole pour le détail · clic = fiche de l&apos;évènement</span></div>
+          <div className="scroller cp-liste">
+            {suivis.length ? suivis.map((x) => {
+              const k = compte(x);
+              const f = fiches?.get(x.id);
+              return (
+                <LigneCompet key={x.id} x={{
+                  id: x.id, nom: x.nom, jour: String(Number(x.date!.slice(8))), mois: moisCourt(x.date!), dateLongue: dateMoyenne(x.date), rebours: compteARebours(x.date, today),
+                  lieu: x.lieu, limite: x.limite ? dateCourte(x.limite) : null, validation: x.validation ? dateCourte(x.validation) : null,
+                  oui: k.o.length, peutEtre: k.p.length, non: k.n.length, attente: k.att.length, total: N, objectif: objectifDe(x) || null,
+                  fiche: f ? (f.statut === "Prête" ? "Fiche logistique prête" : "Fiche logistique en cours") : "Pas encore de fiche logistique",
+                  passe: x.date! < today, choisie: x.id === sel?.id,
+                  hrefFiche: `/calendrier?e=${x.id}&m=${x.date!.slice(0, 7)}#bloc-mois`, hrefTableau: `/staff/inscriptions?e=${x.id}#bloc-prio`,
+                }} />
+              );
+            }) : <p className="muted bd">Aucune compétition retenue à venir. Décide dans le planning.</p>}
+          </div>
+        </section>
+        ) },
+
       ]} />
     </>
   );
