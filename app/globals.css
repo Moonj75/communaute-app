@@ -3759,3 +3759,6 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
 .cp-chiffres span { text-transform: none; letter-spacing: 0; white-space: nowrap; }
 .cp-infos span, .cp-quand { text-transform: none; letter-spacing: 0; }
 .cp-quand::first-letter { text-transform: uppercase; }
+/* Qui vient · réponses : the answer curve sits right under the people, a little apart. */
+.tb-rythme { margin-top: 12px; }
+.tb-rythme .rythme-box { padding-top: 8px; }
