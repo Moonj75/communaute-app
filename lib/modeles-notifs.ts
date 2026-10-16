@@ -2,9 +2,9 @@
  * Texts of the automatic messages (sent every morning). The staff can change them in
  * Staff → Notifications → Envois automatiques; what they save replaces these defaults.
  * Words between braces are filled in at sending time: {competition}, {limite}, {validation},
- * {date}, {lieu}, {n}, {liste}, {retard}.
+ * {date}, {lieu}, {n}, {liste}, {detail}.
  */
-export type CleModele = "ouverture" | "rappel3" | "confirmation" | "veille" | "taches" | "taches_retard" | "decision";
+export type CleModele = "ouverture" | "rappel3" | "confirmation" | "veille" | "taches" | "decision";
 
 export type Modele = {
   cle: CleModele;
@@ -62,22 +62,13 @@ export const MODELES_DEFAUT: Modele[] = [
     actif: true, mots: ["competition", "lieu", "date"], exemple: EX_COMP,
   },
   {
-    cle: "taches", ic: "✅", libelle: "Tâches du jour",
-    quand: "Le jour de l'échéance d'une ou plusieurs tâches",
+    cle: "taches", ic: "🔥", libelle: "Tâches urgentes (chaque jour)",
+    quand: "Chaque matin, s'il y a des tâches en retard, du jour ou à faire dans les 3 jours",
     pourQui: "Le staff (administrateurs)",
     rangement: "Relances",
-    titre: "✅ {n} tâche(s) pour aujourd'hui",
-    texte: "{liste} {retard}",
-    actif: true, mots: ["n", "liste", "retard"], exemple: { n: "2", liste: "Réserver le minibus · Imprimer les licences", retard: "— 1 en retard" },
-  },
-  {
-    cle: "taches_retard", ic: "⚠️", libelle: "Tâches en retard (le lundi)",
-    quand: "Chaque lundi, s'il reste des tâches en retard et aucune pour le jour même",
-    pourQui: "Le staff (administrateurs)",
-    rangement: "Relances",
-    titre: "⚠️ {n} tâche(s) en retard",
-    texte: "Ouvre le planning pour les terminer ou changer leur date.",
-    actif: true, mots: ["n"], exemple: { n: "3" },
+    titre: "🔥 {n} tâche(s) urgente(s)",
+    texte: "{detail} — {liste}",
+    actif: true, mots: ["n", "detail", "liste"], exemple: { n: "3", detail: "1 en retard · 1 aujourd'hui · 1 dans les 3 jours", liste: "Réserver le minibus · Imprimer les licences · Payer l'inscription" },
   },
   {
     cle: "decision", ic: "🗳️", libelle: "Décision à prendre (8 mois avant)",
