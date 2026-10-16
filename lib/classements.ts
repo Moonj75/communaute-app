@@ -1,4 +1,6 @@
 import "server-only";
+import { revalidateTag } from "next/cache";
+import { TAG_CLASSEMENTS } from "./classements-lire";
 import { createHash } from "node:crypto";
 import * as XLSX from "xlsx";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -203,6 +205,8 @@ export async function enregistrerLot(db: SupabaseClient, lot: Lot, par: string, 
     if (error) throw new Error(error.message);
   }
   await db.from("classements_imports").upsert({ source: lot.source, mois: lot.mois, libelle: lot.libelle, empreinte: lot.empreinte, nb: lignes.length, importe_le: new Date().toISOString(), par });
+  // New ranking: the kept copy is thrown away, the next visit reads the fresh one.
+  try { revalidateTag(TAG_CLASSEMENTS); } catch { /* outside a request (script): nothing to empty */ }
   return {
     source: lot.source,
     mois: lot.mois,
