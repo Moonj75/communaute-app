@@ -17,7 +17,7 @@ const LIBELLES: Record<string, string> = {
   rappel3: "⏰ Rappel J-3",
   confirmation: "🔒 Période de confirmation",
   veille: "📍 Veille de compétition",
-  taches: "✅ Tâches",
+  taches: "🔥 Tâches urgentes",
   decision: "🗳️ Décision à prendre",
 };
 

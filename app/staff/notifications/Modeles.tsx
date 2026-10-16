@@ -13,7 +13,7 @@ const NOMS_MOTS: Record<string, string> = {
   lieu: "lieu",
   n: "nombre",
   liste: "liste des tâches",
-  retard: "nb en retard",
+  detail: "résumé (retard / aujourd'hui / bientôt)",
 };
 
 /**
