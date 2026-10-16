@@ -8,6 +8,8 @@ import { comptesActifs, inscritsOui, sansReponse } from "@/lib/audiences";
 import { lireEligibles } from "@/lib/eligibles";
 import { deposer } from "@/lib/courrier";
 import { pushPret } from "@/lib/push";
+import { revalidatePath } from "next/cache";
+import { MODELES_DEFAUT } from "@/lib/modeles-notifs";
 
 export type RetourEnvoi = { ok: boolean; message: string };
 
@@ -52,4 +54,27 @@ export async function envoyerManuel(_prev: RetourEnvoi | null, fd: FormData): Pr
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Envoi impossible." };
   }
+}
+
+/** Saves the text of an automatic message (Staff → Notifications → Envois automatiques). */
+export async function enregistrerModele(cle: string, titre: string, texte: string, actif: boolean): Promise<RetourEnvoi> {
+  const { supabase, profil, user } = await getSessionProfil();
+  if (profil?.role !== "admin") return { ok: false, message: "Réservé aux administrateurs." };
+  if (!MODELES_DEFAUT.some((m) => m.cle === cle)) return { ok: false, message: "Message inconnu." };
+  const t = titre.trim().slice(0, 120);
+  if (!t) return { ok: false, message: "Le titre ne peut pas être vide." };
+  const { error } = await supabase.from("notif_modeles").upsert({ cle, titre: t, texte: texte.trim().slice(0, 400), actif, maj_le: new Date().toISOString(), maj_par: user?.email || null });
+  if (error) return { ok: false, message: /notif_modeles/.test(error.message) ? "Lance d'abord le script Supabase « etape11 »." : error.message };
+  revalidatePath("/staff/notifications");
+  return { ok: true, message: actif ? "Enregistré ✓ Ce texte sera utilisé dès le prochain envoi." : "Enregistré ✓ Ce message est coupé : il ne partira plus." };
+}
+
+/** Back to the original text. */
+export async function retablirModele(cle: string): Promise<RetourEnvoi> {
+  const { supabase, profil } = await getSessionProfil();
+  if (profil?.role !== "admin") return { ok: false, message: "Réservé aux administrateurs." };
+  const { error } = await supabase.from("notif_modeles").delete().eq("cle", cle);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/staff/notifications");
+  return { ok: true, message: "Texte d'origine rétabli ✓" };
 }

@@ -7,6 +7,8 @@ import { essayer, lireCalendrier } from "@/lib/club";
 import { aujourdhui, dateCourte, estCompetition, estRetenu } from "@/lib/club-types";
 import FormEnvoi from "./FormEnvoi";
 import Cles from "./Cles";
+import Modeles from "./Modeles";
+import { MODELES_DEFAUT, fusionner, type ModeleEnregistre } from "@/lib/modeles-notifs";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,7 @@ const LIBELLES: Record<string, string> = {
   rappel3: "⏰ Rappel J-3",
   confirmation: "🔒 Période de confirmation",
   veille: "📍 Veille de compétition",
-  taches: "✅ Tâches du jour",
+  taches: "✅ Tâches",
   decision: "🗳️ Décision à prendre",
 };
 
@@ -26,18 +28,23 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   const sp = await searchParams;
   const T = aujourdhui();
 
-  const [subsR, membresR, journalR, cal] = await Promise.all([
+  const [subsR, membresR, journalR, cal, modR] = await Promise.all([
     supabase.from("push_abonnements").select("email,appareil,created_at"),
     supabase.from("membres").select("email,prenom,nom"),
     supabase.from("push_journal").select("cle,envoye_le,nb").order("envoye_le", { ascending: false }).limit(15),
     essayer(lireCalendrier),
+    supabase.from("notif_modeles").select("cle,titre,texte,actif"),
   ]);
+  const modeles = fusionner(((modR.data || []) as ModeleEnregistre[]));
   const tablesOk = !subsR.error;
   const subs = (subsR.data || []) as { email: string; appareil: string | null; created_at: string }[];
   const noms = new Map(((membresR.data || []) as { email: string; prenom: string | null; nom: string }[]).map((m) => [m.email, [m.prenom, m.nom].filter(Boolean).join(" ")]));
   const parPersonne = new Map<string, string[]>();
   subs.forEach((s) => parPersonne.set(s.email, [...(parPersonne.get(s.email) || []), s.appareil || "Appareil"]));
   const evs = (cal.data || []).filter((e) => e.date && e.date >= T && estCompetition(e) && estRetenu(e) && !e.jourSpecial).slice(0, 8);
+  // The next competition gives real words to the previews.
+  const p = evs[0];
+  const exemple = p ? { competition: p.nom, limite: p.limite ? dateCourte(p.limite) : "", validation: p.validation ? dateCourte(p.validation) : "", date: dateCourte(p.date), lieu: p.lieu || "" } : null;
   const journal = (journalR.data || []) as { cle: string; envoye_le: string; nb: number }[];
 
   const checks = [
@@ -67,7 +74,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
               contenu: (
                 <section className="panel">
                   <div className="bd">
-                    <FormEnvoi evenements={evs.map((e) => ({ id: e.id, nom: `${e.nom} — ${dateCourte(e.date)}` }))} cible={sp.cible} />
+                    <FormEnvoi evenements={evs.map((e) => ({ id: e.id, nom: `${e.nom} — ${dateCourte(e.date)}`, court: e.nom }))} cible={sp.cible} />
                   </div>
                 </section>
               ),
@@ -101,17 +108,13 @@ export default async function NotificationsPage({ searchParams }: { searchParams
               id: "auto",
               titre: "Envois automatiques",
               ic: "🤖",
+              badge: modeles.filter((m) => m.actif).length,
               contenu: (
                 <section className="panel">
                   <div className="bd">
-                    <ul className="auto-l">
-                      <li>🏁 <b>Ouverture des inscriptions</b> → tous les joueurs actifs</li>
-                      <li>⏰ <b>3 jours avant la date limite</b> → ceux qui n&apos;ont pas répondu</li>
-                      <li>🔒 <b>Début de la période de confirmation</b> → ceux qui ont répondu mais pas encore validé</li>
-                      <li>📍 <b>La veille d&apos;une compétition</b> → ceux qui ont répondu « Oui »</li>
-                      <li>✅ <b>Tâches du jour</b> (+ retards le lundi) → le staff</li>
-                      <li>🗳️ <b>Décision à prendre (8 mois avant)</b> → le staff</li>
-                    </ul>
+                    <p className="muted small nm-intro">Chaque matin vers 9 h, l&apos;appli envoie ces messages toute seule. Touche une bande pour voir le message, le modifier ou le couper.</p>
+                    {modR.error ? <p className="notice err">Pour modifier les textes, lance d&apos;abord le script Supabase « etape11 ».</p> : null}
+                    <Modeles modeles={modeles} defauts={MODELES_DEFAUT} exemple={exemple} />
                     <p className="mini-t">Derniers envois</p>
                     {journal.length ? (
                       <table className="t">
