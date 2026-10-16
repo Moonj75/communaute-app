@@ -100,19 +100,21 @@ export async function GET(req: NextRequest) {
       msg: msgDe("veille", motsEv(e), `/calendrier?e=${e.id}`, `veille-${e.id}`),
     });
 
-  // 4. Staff: tasks due today (+ overdue count).
-  const ouvertes = taches.filter((t) => t.statut !== "Fait");
-  const dues = ouvertes.filter((t) => t.echeance === T);
-  const retard = ouvertes.filter((t) => t.echeance && t.echeance < T).length;
-  if (dues.length || (retard && new Date(T + "T12:00:00Z").getUTCDay() === 1))
+  // 4. Staff: every morning, the urgent tasks — late, due today, or due within 3 days.
+  const ouvertes = taches.filter((t) => t.statut !== "Fait" && t.echeance && t.echeance <= ajouterJours(T, 3));
+  const urgentes = ouvertes.sort((a, b) => (a.echeance! < b.echeance! ? -1 : a.echeance! > b.echeance! ? 1 : 0));
+  if (urgentes.length) {
+    const retard = urgentes.filter((t) => t.echeance! < T).length;
+    const jour = urgentes.filter((t) => t.echeance === T).length;
+    const bientot = urgentes.length - retard - jour;
+    const detail = [retard ? `${retard} en retard` : "", jour ? `${jour} aujourd'hui` : "", bientot ? `${bientot} dans les 3 jours` : ""].filter(Boolean).join(" · ");
+    const liste = urgentes.slice(0, 4).map((t) => t.titre).join(" · ") + (urgentes.length > 4 ? ` (+${urgentes.length - 4})` : "");
     envois.push({
       cle: `taches:${T}`,
       emails: staff,
-      msg: dues.length
-        ? msgDe("taches", { n: String(dues.length), liste: dues.slice(0, 3).map((t) => t.titre).join(" · "), retard: retard ? `— ${retard} en retard` : "" }, "/staff/planning", "taches")
-        : msgDe("taches_retard", { n: String(retard) }, "/staff/planning", "taches"),
-      modele: dues.length ? "taches" : "taches_retard",
+      msg: msgDe("taches", { n: String(urgentes.length), detail, liste }, "/staff/planning", "taches"),
     });
+  }
 
   // 5. Staff: participation decision due (8 months before).
   for (const e of comps.filter((e) => !e.decision && ajouterMois(e.date!, -8) === T))
