@@ -219,16 +219,24 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
 
         </>) : <p className="vide">Choisis une compétition.</p> },
 
-        { id: "qui", titre: "Qui vient", ic: "👥", badge: c ? `${c.o.length}/${N}` : null, contenu: sel && c ? (
+        { id: "qui", titre: "Qui vient · réponses", ic: "👥", badge: c ? `${c.o.length}/${N}` : null, contenu: sel && c ? (<>
           <section className="panel"><div className="bd">
               <div className="three">
                 <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}</span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className={`chip o${c.m.get(j.notionId)?.valide ? " valide" : ""}`}><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}</span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
                 <div className="box b-p"><span className="bh">En attente ({c.att.length})</span><div className="chips">{c.att.length ? c.att.map((j) => <Link key={j.notionId} className="chip chip-lien" href={lienReponse(sel, j.notionId)} title={`Répondre pour ${j.nom}`}><i>{initiales(j.nom)}</i>{j.nom} ✎</Link>) : <span className="muted small">Tout le monde a répondu 🎉</span>}</div></div>
                 <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <span key={j.notionId} className={`chip ${c.p.includes(j) ? "m" : "n"}`}><i>{initiales(j.nom)}</i>{j.nom}</span>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
               </div>
-
           </div></section>
-        ) : <p className="vide">Choisis une compétition.</p> },
+          {/* How the answers came in, under the people (formerly its own page « Rythme des réponses »). */}
+          <section className="panel tb-rythme">
+            {points.length ? (
+              <div className="rythme-box">
+                <div className="legend"><b>📈 Rythme des réponses</b><span><i style={{ background: "var(--fg)" }} />Réponses</span><span><i style={{ background: "var(--yes)" }} />Oui</span>{objectif ? <span><i style={{ background: "var(--accent)" }} />Objectif ({objectif})</span> : null}</div>
+                <Rythme points={points} debut={points.map((x) => x.t).sort()[0]} fin={sel.date! < today ? sel.date! : today} objectif={objectif} max={N} />
+              </div>
+            ) : <p className="vide">📈 Pas encore de réponse : la courbe apparaîtra ici.</p>}
+          </section>
+        </>) : <p className="vide">Choisis une compétition.</p> },
 
         { id: "inscrits", titre: "Transport des inscrits", ic: "🚗", badge: rows.length || null, contenu: sel && c ? (
           <section className="panel"><div className="bd">
@@ -276,18 +284,6 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
         ) : <p className="vide">Choisis une compétition.</p> },
 
         { id: "logistique", titre: "Fiche logistique", ic: "🧳", badge: fiche ? (fiche.statut === "Prête" ? "✓" : "…") : null, contenu: sel ? <FicheLogistique f={fiche} ev={sel} noms={noms} staff /> : <p className="vide">Choisis une compétition.</p> },
-
-        { id: "rythme", titre: "Rythme des réponses", ic: "📈", contenu: sel && c ? (
-          <section className="panel">
-            {points.length ? (
-              <div className="rythme-box">
-                <div className="legend"><b>Rythme des réponses</b><span><i style={{ background: "var(--fg)" }} />Réponses</span><span><i style={{ background: "var(--yes)" }} />Oui</span>{objectif ? <span><i style={{ background: "var(--accent)" }} />Objectif ({objectif})</span> : null}</div>
-                <Rythme points={points} debut={points.map((x) => x.t).sort()[0]} fin={sel.date! < today ? sel.date! : today} objectif={objectif} max={N} />
-              </div>
-            ) : null}
-            {!points.length ? <p className="vide">Pas encore de réponse.</p> : null}
-          </section>
-        ) : <p className="vide">Choisis une compétition.</p> },
 
         { id: "matrice", titre: "Par joueur", ic: "🧮", contenu: cols.length ? (
         <section className="panel">
