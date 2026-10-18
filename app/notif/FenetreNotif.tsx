@@ -54,7 +54,9 @@ export default function FenetreNotif() {
   const titre = m?.titre || titreUrl || "Message du club";
   const texte = m?.texte || sp.get("texte") || "";
   const lienBrut = m?.lien || sp.get("lien") || "";
-  const lien = lienBrut && !lienBrut.startsWith("/courrier") && !lienBrut.startsWith("/notif") && lienBrut !== "/" ? lienBrut : "";
+  // Only a page of the app (« /… »): a link to another site, slipped into an address, is ignored.
+  const interne = lienBrut.startsWith("/") && !lienBrut.startsWith("//") && !lienBrut.includes("\\");
+  const lien = interne && !lienBrut.startsWith("/courrier") && !lienBrut.startsWith("/notif") && lienBrut !== "/" ? lienBrut : "";
   const quand = m ? new Date(m.cree_le).toLocaleString("fr-BE", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Brussels" }) : "À l'instant";
 
   return (
