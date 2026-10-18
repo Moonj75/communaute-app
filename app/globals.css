@@ -3763,8 +3763,57 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
 .tb-rythme { margin-top: 12px; }
 .tb-rythme .rythme-box { padding-top: 8px; }
 
-/* ---- Classements : page d'attente (lignes qui scintillent) ---- */
-.cl-attente { display: flex; flex-direction: column; gap: 8px; padding-top: calc(var(--haut-fixe, 140px) + 12px); }
-.cl-att-t { height: 34px; width: 55%; border-radius: 10px; background: color-mix(in srgb, #5c78ff 25%, var(--sunk)); }
-.cl-att-l { height: 34px; border-radius: 8px; background: linear-gradient(90deg, var(--sunk) 0%, color-mix(in srgb, #5c78ff 14%, var(--surface)) 50%, var(--sunk) 100%); background-size: 200% 100%; animation: cl-att 1.2s ease-in-out infinite; }
-@keyframes cl-att { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* ---- Courrier : fenêtre ouverte depuis une notification du téléphone ---- */
+.fm-fond { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: rgba(8, 6, 4, .62); backdrop-filter: blur(6px); animation: fm-fond .25s ease; }
+.fm { --fc: #f5c400; --fd: #e0a800; width: min(100%, 460px); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; overflow: hidden; border-radius: 22px; background: var(--surface); color: var(--fg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--fc) 50%, transparent), 0 30px 60px -20px rgba(0,0,0,.7), 0 0 40px -6px color-mix(in srgb, var(--fc) 55%, transparent); animation: fm-in .35s cubic-bezier(.2, .9, .3, 1.2); }
+.fm.g-relance { --fc: #ffa83a; --fd: #e07b00; }
+.fm.g-notif { --fc: #f5c400; --fd: #c99a00; }
+.fm.g-msg { --fc: #4d8dff; --fd: #1f4fb5; }
+.fm-tete { position: relative; display: flex; align-items: center; gap: 10px; padding: 16px 18px; background: linear-gradient(135deg, var(--fc), var(--fd)); color: #fff; }
+.fm.g-notif .fm-tete { color: #1a1400; }
+.fm-tete::after { content: ""; position: absolute; inset: auto 0 0 0; height: 4px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.55) 0 10px, transparent 10px 20px); opacity: .5; }
+.fm-ic { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: rgba(255,255,255,.25); font-size: 24px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.fm-genre { flex: 1; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; }
+.fm-x { width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(0,0,0,.18); color: inherit; font-size: 16px; cursor: pointer; }
+.fm-corps { padding: 18px 20px 6px; overflow-y: auto; }
+.fm-titre { margin: 0 0 10px; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: clamp(22px, 6vw, 28px); line-height: 1.1; color: var(--t-titre, var(--fg)); }
+.fm-meta { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 13px; color: var(--muted); }
+.fm-meta img { border-radius: 50%; }
+.fm-quand { display: inline-block; } .fm-quand::first-letter { text-transform: uppercase; }
+.fm-texte { padding: 14px 16px; border-radius: 14px; background: var(--sunk); border-left: 4px solid var(--fc); font-size: 15.5px; line-height: 1.5; }
+.fm-texte p { margin: 0 0 8px; } .fm-texte p:last-child { margin: 0; }
+.fm-pied { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 20px 20px; }
+.fm-pied .btn { flex: 1 1 auto; justify-content: center; text-align: center; }
+.fm-go { flex: 1 1 100% !important; font-size: 16px; padding: 14px 16px; }
+@keyframes fm-fond { from { opacity: 0; } }
+@keyframes fm-in { from { opacity: 0; transform: translateY(30px) scale(.94); } }
+@media (prefers-reduced-motion: reduce) { .fm, .fm-fond { animation: none; } }
+
+/* ---- Courrier · Journal (staff) ---- */
+.jr-barre { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.jr-filtres { display: flex; flex-wrap: wrap; gap: 6px; }
+.jr-conf { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 700; font-size: 13.5px; }
+.jr-oui { background: #c4120a; color: #fff; }
+.jr-l { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.jr-e { --jc: #f5c400; border: 1px solid var(--line); border-left: 5px solid var(--jc); border-radius: 12px; background: var(--surface); }
+.jr-e.t-relance { --jc: #ffa83a; } .jr-e.t-message { --jc: #4d8dff; }
+.jr-e.lu { opacity: .72; }
+.jr-e.on { opacity: 1; box-shadow: 0 10px 22px -16px rgba(0,0,0,.5); }
+.jr-tete { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; font-family: var(--font-body); }
+.jr-ic { font-size: 20px; }
+.jr-t { display: flex; flex-direction: column; min-width: 0; }
+.jr-t small { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jr-t b { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--t-titre, var(--fg)); }
+.jr-lus { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: 12px; font-weight: 800; }
+.jr-bar { width: 54px; height: 5px; border-radius: 9px; background: var(--sunk); overflow: hidden; }
+.jr-bar i { display: block; height: 100%; background: #4d8dff; }
+.jr-corps { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.jr-corps .pre { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--sunk); white-space: pre-wrap; }
+.jr-k { margin: 0; font-size: 10.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.jr-dest { display: flex; flex-wrap: wrap; gap: 5px; }
+.jr-d { padding: 3px 9px; border-radius: 99px; background: var(--sunk); font-size: 12.5px; color: var(--muted); }
+.jr-d.lu { background: color-mix(in srgb, #4d8dff 16%, var(--surface)); color: var(--fg); font-weight: 700; }
+.jr-act { display: flex; gap: 8px; flex-wrap: wrap; }
+.cr-menage { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.cr-eff { margin-left: 6px; }
