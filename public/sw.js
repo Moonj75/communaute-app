@@ -1,5 +1,5 @@
 /* SC Lions d'Eugies — service worker : notifications + page hors ligne. */
-const CACHE = "lions-v3"; // change this number to wipe old copies kept by phones and browsers
+const CACHE = "lions-v4"; // change this number to wipe old copies kept by phones and browsers
 const OFFLINE = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -36,7 +36,7 @@ self.addEventListener("push", (event) => {
       badge: "/icon-maskable-192.png",
       tag: data.tag || undefined,
       renotify: Boolean(data.tag),
-      data: { url: data.url || "/", title: titre, body: data.body || "" },
+      data: { url: data.url || "/", title: titre, body: data.body || "", tag: data.tag || "" },
       lang: "fr",
     }),
   );
@@ -44,10 +44,13 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  // The app opens on the Courrier with this message shown in a window (details + the right link).
+  // The app opens straight on a window with this message (details + the right link).
   const d = event.notification.data || {};
-  const p = new URLSearchParams({ ouvrir: d.title || event.notification.title || "", texte: d.body || "", lien: d.url || "/" });
-  const url = new URL("/courrier?" + p.toString(), self.location.origin).href;
+  const tag = d.tag || "";
+  const type = /^msg-/.test(tag) ? "message" : /^(ins|dec|taches)/.test(tag) ? "relance" : "notification";
+  // A light page made for this (/notif): it appears at once, the details come in behind.
+  const p = new URLSearchParams({ titre: d.title || event.notification.title || "", texte: d.body || "", lien: d.url || "/", type });
+  const url = new URL("/notif?" + p.toString(), self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
       for (const w of wins) {
