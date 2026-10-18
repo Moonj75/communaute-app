@@ -2,10 +2,13 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import Blocs from "@/components/Blocs";
 import { displayName, getVue } from "@/lib/profil";
-import { lireCourrier } from "@/lib/courrier";
+import { lireCourrier, lireJournal } from "@/lib/courrier";
+import Journal from "./Journal";
 import { chargerJoueurs } from "@/lib/donnees";
 import Liste from "./Liste";
 import Ecrire from "./Ecrire";
+import Fenetre from "./Fenetre";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Courrier · SC Lions d'Eugies" };
@@ -16,7 +19,7 @@ export default async function Courrier() {
   if (!user) redirect("/login");
   const moi = (user.email || "").toLowerCase();
   const admin = profil?.role === "admin" && !apercu;
-  const [{ messages, erreur }, joueurs] = await Promise.all([lireCourrier(supabase), admin ? chargerJoueurs(supabase) : Promise.resolve([])]);
+  const [{ messages, erreur }, joueurs, journal] = await Promise.all([lireCourrier(supabase, moi, admin), admin ? chargerJoueurs(supabase) : Promise.resolve([]), admin ? lireJournal(supabase) : Promise.resolve({ envois: [], erreur: null })]);
   const recus = messages.filter((m) => m.a_email === moi);
   const envoyes = messages.filter((m) => m.de_email === moi);
   const staff = admin ? messages.filter((m) => m.pour_staff) : [];
@@ -40,13 +43,16 @@ export default async function Courrier() {
         <Blocs
           page="Courrier"
           blocs={[
-            { id: "messages", titre: "Messages", ic: "✉️", badge: nonLusMsg || null, contenu: <section className="panel"><div className="bd"><Liste messages={msgs} vide="Aucun message pour l'instant." repondre={admin ? null : "staff"} /></div></section> },
-            { id: "notifications", titre: "Notifications", ic: "🔔", badge: nonLusNotif || null, contenu: <section className="panel"><div className="bd"><Liste messages={notifs} vide="Aucune notification pour l'instant." repondre={null} /></div></section> },
-            ...(admin ? [{ id: "staff", titre: "Pour le staff", ic: "🛡️", badge: nonLusStaff || null, contenu: <section className="panel"><div className="bd"><Liste messages={staff} vide="Aucun message de joueur." repondre="auteur" comptes={comptes} /></div></section> }] : []),
+            { id: "messages", titre: "Messages", ic: "✉️", badge: nonLusMsg || null, contenu: <section className="panel"><div className="bd"><Liste messages={msgs} vide="Aucun message pour l'instant." repondre={admin ? null : "staff"} effacable={admin} /></div></section> },
+            { id: "notifications", titre: "Notifications", ic: "🔔", badge: nonLusNotif || null, contenu: <section className="panel"><div className="bd"><Liste messages={notifs} vide="Aucune notification pour l'instant." repondre={null} effacable={admin} /></div></section> },
+            ...(admin ? [{ id: "staff", titre: "Pour le staff", ic: "🛡️", badge: nonLusStaff || null, contenu: <section className="panel"><div className="bd"><Liste messages={staff} vide="Aucun message de joueur." repondre="auteur" comptes={comptes} effacable /></div></section> }] : []),
             { id: "ecrire", titre: admin ? "Écrire à un joueur" : "Écrire au staff", ic: "✍️", contenu: <section className="panel"><div className="bd">{admin ? <Ecrire mode="admin" comptes={comptes} /> : <Ecrire mode="staff" />}</div></section> },
+            ...(admin ? [{ id: "journal", titre: "Journal", ic: "📒", badge: journal.envois.length || null, contenu: <section className="panel"><div className="hd"><h2>Journal du courrier</h2><span className="muted small">Tout ce que le club a envoyé · qui l&apos;a lu</span></div><div className="bd">{journal.erreur ? <p className="notice err">Lance le script Supabase « etape12 » pour voir le journal complet.</p> : null}<Journal envois={journal.envois} noms={comptes.map((c) => [c.email, c.nom] as [string, string])} /></div></section> }] : []),
             { id: "envoyes", titre: "Envoyés", ic: "📤", badge: envoyes.length || null, contenu: <section className="panel"><div className="bd"><Liste messages={envoyes} vide="Aucun message envoyé." repondre={null} /></div></section> },
           ]}
         />
+        {/* Window over the page when the app is opened from a phone notification. */}
+        <Suspense fallback={null}><Fenetre messages={[...recus, ...staff]} /></Suspense>
       </main>
     </>
   );

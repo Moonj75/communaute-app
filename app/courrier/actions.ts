@@ -59,3 +59,21 @@ export async function envoyerMessage(_p: EtatMessage, fd: FormData): Promise<Eta
   revalidatePath("/courrier");
   return { ok: true, message: pourStaff ? "✓ Message envoyé au staff du club." : `✓ Message envoyé à ${a.length} destinataire(s).` };
 }
+
+/** Staff: erase messages / notifications (one, a whole sending, or everything already read). */
+export async function effacerMessages(ids: string[]): Promise<EtatMessage> {
+  const { supabase, profil } = await getSessionProfil();
+  if (profil?.role !== "admin") return { ok: false, message: "Réservé aux administrateurs." };
+  const liste = ids.filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 2000);
+  if (!liste.length) return { ok: false, message: "Rien à effacer." };
+  let n = 0;
+  for (let i = 0; i < liste.length; i += 200) {
+    const { data, error } = await supabase.from("messages").delete().in("id", liste.slice(i, i + 200)).select("id");
+    if (error) return { ok: false, message: error.message };
+    n += (data || []).length;
+  }
+  // Nothing erased although allowed: the database rule of step 12 is missing.
+  if (!n) return { ok: false, message: "Rien n'a été effacé : lance d'abord le script Supabase « etape12 »." };
+  revalidatePath("/", "layout");
+  return { ok: true, message: `🗑️ ${n} élément(s) effacé(s).` };
+}
