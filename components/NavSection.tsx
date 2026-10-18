@@ -70,7 +70,7 @@ export default function NavSection({ pages, actuel, couleur, className = "" }: {
   const fleche = (p: PageSection | null, droite: boolean) => {
     const label = p ? `${droite ? "Suivant" : "Précédent"} : ${p.titre}` : droite ? "Pas de page suivante" : "Pas de page précédente";
     const cls = `ns-fl${droite ? " d" : ""}`;
-    if (p?.href) return <Link href={p.href} className={cls} aria-label={label} title={p.titre}><Chevron d={droite} /></Link>;
+    if (p?.href) return <Link href={p.href} prefetch className={cls} aria-label={label} title={p.titre}><Chevron d={droite} /></Link>;
     return (
       <button type="button" className={cls} disabled={!p} onClick={() => p?.onClick?.()} aria-label={label} title={p?.titre}>
         <Chevron d={droite} />
@@ -98,7 +98,7 @@ export default function NavSection({ pages, actuel, couleur, className = "" }: {
             );
             const cls = `ns-p${on ? " on" : ""}${p.special ? " sp" : ""}`;
             return p.href ? (
-              <Link key={p.id} href={p.href} className={cls} aria-current={on ? "page" : undefined} title={p.titre}>{dedans}</Link>
+              <Link key={p.id} href={p.href} prefetch className={cls} aria-current={on ? "page" : undefined} title={p.titre}>{dedans}</Link>
             ) : (
               <button key={p.id} type="button" className={cls} aria-current={on ? "page" : undefined} title={p.titre} onClick={() => p.onClick?.()}>{dedans}</button>
             );

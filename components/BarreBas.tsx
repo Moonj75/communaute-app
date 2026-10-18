@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Icone from "./Icone";
 import NavSection from "./NavSection";
@@ -40,6 +40,16 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
     : JOUEUR;
 
   useEffect(() => setOuvert(false), [path]);
+  // The rankings are prepared in the background a moment after the app opens, so the
+  // « Classements » section shows at once when it is chosen (they only change once a month).
+  const router = useRouter();
+  useEffect(() => {
+    // Kept ready: prepared again every 4 minutes (a prepared page stays fresh for 5).
+    const preparer = () => ["/club/classements", "/club/classements?l=FBFTS-Clubs", "/club/classements?l=WR-Open"].forEach((h) => router.prefetch(h));
+    const t = window.setTimeout(preparer, 1500);
+    const iv = window.setInterval(preparer, 4 * 60 * 1000);
+    return () => { window.clearTimeout(t); window.clearInterval(iv); };
+  }, [router]);
   // The menu closes by itself after a few seconds without being touched.
   const minuteur = useRef<number | null>(null);
   const relancer = () => {
@@ -89,7 +99,7 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
         </div>
         <div className="mt-liste">
           {items.map((i) => (
-            <Link key={i.href} href={i.href} className={`mt-l d-${i.c}${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>
+            <Link key={i.href} href={i.href} prefetch={i.href.startsWith("/club/classements") ? true : undefined} className={`mt-l d-${i.c}${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>
               <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
               <span className="mt-t">{i.label}</span>
             </Link>
