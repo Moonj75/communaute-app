@@ -3821,3 +3821,4 @@ button.cl-aller { border: 0; cursor: pointer; transition: opacity .25s ease, tra
 .fm-page { background: radial-gradient(circle at 50% 30%, rgba(245,196,0,.18), transparent 55%), linear-gradient(180deg, #1c1715, #0b0a0a); }
 .fm-page::before { content: ""; position: fixed; inset: 0; background: url(/crest.png) center 18% / min(70vw, 360px) no-repeat; opacity: .07; pointer-events: none; }
 .fm-page .fm { position: relative; z-index: 1; }
+.sv { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; } .sv p { margin: 0; }
