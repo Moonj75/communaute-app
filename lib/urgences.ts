@@ -15,7 +15,7 @@ export function urgences(evs: Evenement[], parts: Participation[], famille: Joue
   const l: Urgence[] = [];
   // Unread mail first (relances, notifications, messages from the staff).
   for (const m of nonLus.slice(0, 3))
-    l.push({ ic: m.type === "relance" ? "⏰" : m.type === "notification" ? "🔔" : "📬", txt: m.titre, quoi: m.titre, detail: m.type === "message" ? `Nouveau message${m.de_nom ? ` de ${m.de_nom}` : ""}` : m.type === "relance" ? "Relance du club" : "Notification du club", href: `/courrier?m=${m.id}`, niveau: "haut" });
+    l.push({ ic: m.type === "relance" ? "⏰" : m.type === "notification" ? "🔔" : "📬", txt: m.titre, quoi: m.titre, detail: m.type === "message" ? `Nouveau message${m.de_nom ? ` de ${m.de_nom}` : ""}` : m.type === "relance" ? "Relance du club" : "Notification du club", href: `/notif?m=${m.id}&type=${m.type}&titre=${encodeURIComponent(m.titre)}`, niveau: "haut" });
   if (nonLus.length > 3) l.push({ ic: "📬", txt: `${nonLus.length - 3} autres messages non lus`, quoi: `${nonLus.length - 3} autres messages`, detail: "Courrier non lu", href: "/courrier", niveau: "moyen" });
   const idx = indexReponses(parts, evs, famille);
   const comp = evs.filter((e) => e.date && e.date >= today && estCompetition(e) && estRetenu(e) && !e.jourSpecial);
