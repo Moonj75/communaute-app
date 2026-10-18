@@ -129,6 +129,16 @@ export default async function AdminPage() {
         </section>
         ) },
 
+        { id: "sauvegarde", titre: "Sauvegarde", ic: "💾", contenu: (
+        <section className="panel">
+          <div className="hd"><h2>Sauvegarde des données de l&apos;appli</h2></div>
+          <div className="bd sv">
+            <p>Un fichier avec tout ce qui n&apos;est <b>pas</b> dans Notion : comptes, courrier, demandes de contact, joueurs concernés par les formulaires, textes des notifications.</p>
+            <a className="btn primary" href="/api/sauvegarde" download>💾 Télécharger la sauvegarde</a>
+            <p className="muted small">À faire une fois par mois et à garder sur ton ordinateur (ou une clé USB). Les joueurs, le calendrier et les tâches sont dans Notion : Notion → Paramètres → Exporter tout l&apos;espace de travail. Les classements se réimportent depuis la FBFTS et la FISTF.</p>
+          </div>
+        </section>
+        ) },
         { id: "ajouter", titre: "Ajouter un membre", ic: "➕", contenu: (
         <section className="panel" style={{ borderTop: "3px solid var(--accent)" }}>
           <div className="hd">
