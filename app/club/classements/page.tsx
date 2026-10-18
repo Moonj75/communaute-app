@@ -102,13 +102,13 @@ export default async function Classements({ searchParams }: { searchParams: Prom
           <p>
             🇧🇪 FBFTS {imp("fbfts") ? `(${libelleMois(imp("fbfts")!.mois, true)})` : ""} · <LogoFistf /> FISTF {imp("fistf") ? `(${libelleMois(imp("fistf")!.mois, true)})` : ""} — mis à jour
             automatiquement le 1<sup>er</sup> de chaque mois.
-            {profil?.role === "admin" && !apercu ? <> · <Link href="/staff/classements">⚙️ Mettre à jour / importer un fichier</Link></> : null}
+            
           </p>
         </section>
         {/* Independent page: the rankings alone, with their own bottom bar (no parts of the home page). */}
         <Blocs
           page="Classements"
-          actions={profil?.role === "admin" && !apercu ? <Link className="rf-btn" href="/staff/classements" title="Mettre à jour / importer un classement"><span className="rf-e" aria-hidden="true">⚙️</span> <span className="rf-t">Mise à jour</span></Link> : null}
+          
           blocs={[{ id: "complet", titre: def.titre, ic: def.source === "fistf" ? <LogoFistf taille={22} /> : def.ic, contenu: complet }]}
           // Bottom bar: the rankings of the section, one thumbnail each; arrows go from one ranking to the next.
           pages={visiteur ? [
