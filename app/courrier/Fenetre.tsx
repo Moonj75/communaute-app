@@ -70,7 +70,9 @@ export default function Fenetre({ messages }: { messages: Message[] }) {
   const titre = m?.titre || ouvrir || "Message";
   const texte = m ? m.texte : sp.get("texte");
   const lienBrut = m?.lien || sp.get("lien") || "";
-  const lien = lienBrut && !lienBrut.startsWith("/courrier") && lienBrut !== "/" ? lienBrut : "";
+  // Only a page of the app (« /… »): a link to another site, slipped into an address, is ignored.
+  const interne = lienBrut.startsWith("/") && !lienBrut.startsWith("//") && !lienBrut.includes("\\");
+  const lien = interne && !lienBrut.startsWith("/courrier") && lienBrut !== "/" ? lienBrut : "";
   const g = GENRES[m?.type || (titre.startsWith("📬") ? "message" : "notification")];
   const quand = m ? new Date(m.cree_le).toLocaleString("fr-BE", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Brussels" }) : "À l'instant";
   const de = m?.de_nom || "SC Lions d'Eugies";
