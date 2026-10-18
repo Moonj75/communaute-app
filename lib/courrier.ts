@@ -31,9 +31,12 @@ export async function lireNonLus(db: SupabaseClient, email: string, admin: boole
   }
 }
 
-/** Everything this account may read (RLS), newest first. */
-export async function lireCourrier(db: SupabaseClient) {
-  const { data, error } = await db.from("messages").select(COLS).order("cree_le", { ascending: false }).limit(200);
+/** This account's mail: received, written, and (staff) the messages sent to the staff. Newest first. */
+export async function lireCourrier(db: SupabaseClient, email = "", admin = false) {
+  const e = email.toLowerCase();
+  let q = db.from("messages").select(COLS).order("cree_le", { ascending: false }).limit(200);
+  if (e) q = q.or(`a_email.eq.${e},de_email.eq.${e}${admin ? ",pour_staff.eq.true" : ""}`);
+  const { data, error } = await q;
   return { messages: (data || []) as Message[], erreur: error ? error.message : null };
 }
 
@@ -51,4 +54,22 @@ export async function deposer(db: SupabaseClient, emails: Iterable<string>, m: {
   if (!lignes.length) return 0;
   const { error } = await db.from("messages").insert(lignes);
   return error ? 0 : lignes.length;
+}
+
+/** One sending in the staff's journal: the same message dropped into several mailboxes. */
+export type Envoi = { cle: string; ids: string[]; cree_le: string; type: TypeMessage; titre: string; texte: string | null; lien: string | null; de_nom: string | null; pour_staff: boolean; destinataires: { email: string; lu: boolean }[] };
+
+/** Staff journal: every message and notification of the club, grouped by sending (same title, same minute). */
+export async function lireJournal(db: SupabaseClient) {
+  const { data, error } = await db.from("messages").select(COLS).order("cree_le", { ascending: false }).limit(2000);
+  if (error) return { envois: [] as Envoi[], erreur: error.message };
+  const groupes = new Map<string, Envoi>();
+  for (const m of (data || []) as Message[]) {
+    const cle = `${m.type}|${m.titre}|${m.de_email || ""}|${m.pour_staff}|${m.cree_le.slice(0, 16)}`;
+    const g = groupes.get(cle) || { cle, ids: [], cree_le: m.cree_le, type: m.type, titre: m.titre, texte: m.texte, lien: m.lien, de_nom: m.de_nom, pour_staff: m.pour_staff, destinataires: [] };
+    g.ids.push(m.id);
+    g.destinataires.push({ email: m.pour_staff ? "staff" : m.a_email || "?", lu: m.lu });
+    groupes.set(cle, g);
+  }
+  return { envois: [...groupes.values()], erreur: null };
 }
