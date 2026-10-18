@@ -4,7 +4,8 @@ import { revalidateTag } from "next/cache";
 import { estInactif, getVue } from "@/lib/profil";
 import { enregistrerReponse, lireCalendrier, lireParticipations, NotionErreur, TAGS } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
-import { indexReponses, libelleTally, modifiable } from "@/lib/club-types";
+import { concerne, indexReponses, libelleTally, modifiable } from "@/lib/club-types";
+import { lireEligibles } from "@/lib/eligibles";
 
 export type RetourReponse = { ok: boolean; message?: string; statut?: string; definitif?: boolean };
 
@@ -36,6 +37,7 @@ export async function envoyerReponse(_p: RetourReponse | null, fd: FormData): Pr
     const [evs, parts] = await Promise.all([lireCalendrier(), lireParticipations()]);
     const ev = evs.find((e) => e.id === evId);
     if (!ev) return { ok: false, message: "Évènement introuvable." };
+    if (!admin && !concerne(await lireEligibles(supabase), ev.id, joueur.notionId)) return { ok: false, message: "Ce formulaire est réservé à d'autres joueurs." };
     const existant = indexReponses(parts, evs, famille).get(ev.id)?.get(joueur.notionId);
     if (existant?.valide && !admin) return { ok: false, message: "Ta réponse est déjà validée définitivement : elle ne peut plus être modifiée." };
     if (!modifiable(ev, existant) && !admin) return { ok: false, message: "Les réponses sont closes pour cet évènement." };
