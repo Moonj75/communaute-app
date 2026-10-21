@@ -4,14 +4,22 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { nomsParDefaut, type Brouillon, type EtapeConfig, type JoueurCompet } from "@/lib/internes";
 import { enregistrerBrouillon, lancer } from "./actions";
+import { ajouterJoueurRapide } from "@/app/admin/actions";
 
 /**
  * First stage: the staff picks the players from the club's list and puts each one in a group
  * (or lets the app share them out). Then « Lancer » creates every match.
  */
-export default function Repartition({ id, etape, joueurs, brouillon }: { id: string; etape: EtapeConfig; joueurs: (JoueurCompet & { actif: boolean })[]; brouillon?: Brouillon | null }) {
+export default function Repartition({ id, etape, joueurs: joueursClub, brouillon }: { id: string; etape: EtapeConfig; joueurs: (JoueurCompet & { actif: boolean })[]; brouillon?: Brouillon | null }) {
   const router = useRouter();
   const ko = etape.format === "elimination";
+  // The club's list, plus the players created here (they appear at once).
+  const [nouveaux, setNouveaux] = useState<(JoueurCompet & { actif: boolean })[]>([]);
+  const joueurs = useMemo(() => [...joueursClub, ...nouveaux.filter((n) => !joueursClub.some((j) => j.id === n.id))], [joueursClub, nouveaux]);
+  const [np, setNp] = useState("");
+  const [nn, setNn] = useState("");
+  const [nActif, setNActif] = useState(true);
+  const [creation, setCreation] = useState(false);
   // Starts again from the saved preparation, if any.
   const [nb, setNb] = useState(brouillon?.nb || (ko ? 1 : Math.max(1, etape.groupes)));
   const [noms, setNoms] = useState<string[]>(brouillon?.noms?.length ? brouillon.noms : etape.nomsGroupes.length ? etape.nomsGroupes : nomsParDefaut(etape.groupes, false));
@@ -94,6 +102,28 @@ export default function Repartition({ id, etape, joueurs, brouillon }: { id: str
         <button type="button" className={`rp-seg${voirTous ? " on" : ""}`} onClick={() => setVoirTous(true)}>📚 Liste étendue : actifs + non actifs <span className="num">{joueurs.length}</span></button>
       </div>
       <input className="input rp-cherche" type="search" value={cherche} onChange={(e) => setCherche(e.target.value)} placeholder="🔎 Chercher un joueur…" aria-label="Chercher un joueur" />
+
+      <details className="rp-nouveau">
+        <summary>➕ Le joueur n&apos;est pas dans la liste ? Le créer ici</summary>
+        <div className="as-ligne">
+          <label className="f as-court">Prénom<input className="input" value={np} maxLength={80} onChange={(e) => setNp(e.target.value)} /></label>
+          <label className="f">Nom<input className="input" value={nn} maxLength={120} onChange={(e) => setNn(e.target.value)} /></label>
+          <label className="rp-tous"><input type="checkbox" checked={nActif} onChange={(e) => setNActif(e.target.checked)} /> Actif</label>
+          <button type="button" className="btn primary" disabled={creation || !nn.trim()} onClick={async () => {
+            setCreation(true);
+            const r = await ajouterJoueurRapide(np, nn, nActif);
+            setCreation(false);
+            setInfo({ ok: r.ok, message: r.message });
+            if (r.ok && r.joueur) {
+              setNouveaux((l) => [...l, r.joueur!]);
+              if (!r.joueur.actif) setVoirTous(true);
+              mettre(r.joueur.id, 0);
+              setNp(""); setNn("");
+            }
+          }}>{creation ? "…" : "Créer et ajouter"}</button>
+        </div>
+        <p className="muted small">Il est créé dans la liste des joueurs (Notion), sans e-mail, et placé tout de suite dans la 1re poule : change sa poule si besoin.</p>
+      </details>
 
       <div className="rp-grille">
         <ul className="rp-liste" aria-label="Joueurs du club">
