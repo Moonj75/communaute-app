@@ -4276,3 +4276,144 @@ table.t.ci-cl tr.ci-coupe2 td { border-bottom: 2px dashed #0d9488 !important; }
 .md-titre { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 18px; }
 .md-bas { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 12px; background: var(--surface); box-shadow: 0 -6px 16px -10px rgba(0,0,0,.4); z-index: 5; }
 .as-et > .as-aide, .as-et > .as-bar { flex: none; }
+
+/* =====================================================================
+   Championnat interne : bande fixe (titre, étapes, poules, page) + tout sur un écran
+   ===================================================================== */
+.ci { gap: 8px; }
+.ci-bande { display: flex; flex-direction: column; gap: 6px; padding: 6px 0 8px !important; }
+.ci-bande-l1 { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; min-width: 0; }
+.ci-bande-t { font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 15px; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ci-bande .ci-etapes { padding: 1px; gap: 5px; }
+.ci-bande .ci-et { padding: 3px 10px 3px 3px; font-size: 12.5px; gap: 6px; border-width: 1.5px; }
+.ci-bande .ci-et-n { width: 20px; height: 20px; font-size: 11px; }
+.ci-et.barr .ci-et-n { background: #0d9488; color: #fff; }
+.ci-regles { position: relative; margin-left: auto; font-size: 12px; }
+.ci-regles summary { list-style: none; cursor: pointer; padding: 3px 10px; border-radius: 99px; background: var(--sunk); color: var(--muted); font-weight: 700; white-space: nowrap; }
+.ci-regles summary::-webkit-details-marker { display: none; }
+.ci-regles summary::after { content: " ⓘ"; }
+.ci-regles[open] summary { background: color-mix(in srgb, #f05ad8 14%, var(--surface)); color: var(--fg); }
+.ci-regles p { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: min(420px, 86vw); margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 14px 30px -14px rgba(0,0,0,.5); color: var(--fg); line-height: 1.45; }
+.ci-bande-l2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.ci-bande .og-tabs { gap: 6px; flex: 1 1 auto; min-width: 0; }
+.ci-bande .og-tab { min-width: 0; padding: 5px 12px; border-radius: 12px; }
+.ci-bande .og-tab b { font-size: 14px; display: inline-flex; align-items: center; gap: 5px; }
+.ci-bande .og-tab small { font-size: 10.5px; }
+.og-moi { font-style: normal; color: #00b8d0; font-size: 10px; }
+.og-seul { display: flex; flex-direction: column; min-width: 0; }
+.og-seul b { font-family: var(--font-display); font-style: italic; font-size: 15px; text-transform: uppercase; }
+.og-seul small { font-size: 11px; color: var(--muted); }
+.ci-vues { flex: none; display: inline-flex; padding: 3px; border-radius: 99px; background: var(--sunk); box-shadow: inset 0 1px 2px rgba(0,0,0,.12); }
+.ci-vues button { all: unset; cursor: pointer; padding: 6px 12px; border-radius: 99px; font-weight: 800; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.ci-vues button.on { background: linear-gradient(180deg, #f77fe6, #c235b6); color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.3); box-shadow: 0 2px 0 #7a1872, 0 4px 10px -4px rgba(194,53,182,.6); }
+@media (min-width: 900px) { .ci-vues { display: none; } }
+
+/* L'écran d'une poule : exactement la place entre la bande fixe et la barre du bas. */
+.ci-ecran {
+  --ecran-h: calc(100dvh - var(--haut-fixe) - var(--sous-bande, 0px) - var(--dock-h) - 44px - env(safe-area-inset-bottom));
+  height: max(330px, var(--ecran-h)); margin: 0 !important; display: flex; flex-direction: column;
+}
+.ci-ecran::before { display: none; }
+.ci-ecran > .bd { flex: 1; min-height: 0; padding: 10px 12px !important; }
+.ci-ecran .ci-duo { height: 100%; align-items: stretch; }
+.ci-ecran .ci-duo-cl, .ci-ecran .ci-duo-mx { min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin; }
+.ci-ecran .ci-duo-cl > .scroll-x { flex: none; overflow: visible; }
+.ci-ecran .ci-leg { margin: 0; flex: none; }
+/* Classement : lignes à la hauteur de l'écran ; colonnes de chiffres toutes de la même largeur. */
+.ci-ecran { --rh: clamp(22px, calc((var(--ecran-h) - 96px) / (var(--n) + 1)), 46px); }
+.ci-ecran table.t.ci-cl tbody td, .ci-ecran table.t.ci-cl thead th { height: var(--rh); padding-top: 0 !important; padding-bottom: 0 !important; }
+.ci-ecran table.t.ci-cl thead th { position: static !important; }
+table.t.ci-cl { table-layout: fixed; width: 100%; }
+table.t.ci-cl th:nth-child(1), table.t.ci-cl td:nth-child(1) { width: 2.5em; }
+table.t.ci-cl th.c-evo, table.t.ci-cl td.c-evo { width: 2.5em; }
+table.t.ci-cl th:nth-child(n+4), table.t.ci-cl td:nth-child(n+4) { width: 2.6em; text-align: center; padding-left: 0 !important; padding-right: 0 !important; }
+table.t.ci-cl td:nth-child(3) { white-space: normal !important; line-height: 1.12; overflow-wrap: normal; }
+table.t.ci-cl td:nth-child(3) b { max-width: none !important; white-space: normal !important; display: inline !important; }
+/* Grille des matchs : la place restante, partagée entre les joueurs. */
+.ci-ecran { --gh: clamp(20px, calc((var(--ecran-h) - 178px) / var(--n)), 46px); }
+.ci-ecran .ig-t td { height: var(--gh) !important; }
+.ci-ecran .ig-t th.ig-lig { height: var(--gh); padding-top: 0; padding-bottom: 0; }
+.ci-ecran .ig-vedette { min-height: 0; padding-top: 6px; padding-bottom: 6px; }
+/* Téléphone : deux pages (Classement / Matchs), chacune sur tout l'écran. */
+@media (max-width: 899px) {
+  .ci-2v.v-cl .ci-duo-mx, .ci-2v.v-mx .ci-duo-cl { display: none !important; }
+  .ci-ecran { --rh: clamp(24px, calc((var(--ecran-h) - 110px) / (var(--n) + 1)), 52px); --gh: clamp(22px, calc((var(--ecran-h) - 190px) / var(--n)), 50px); }
+  .ci-ecran .ci-duo-mx { padding-left: 0; border-left: 0; }
+  .ci-ecran > .bd { padding: 8px !important; }
+}
+@media (max-width: 600px) {
+  .ci-bande { gap: 5px; padding: 4px 0 6px !important; }
+  .ci-bande-l1 { flex-wrap: nowrap; }
+  .ci-bande-t { display: none; }
+  .ci-bande .ci-etapes { flex: 1 1 auto; min-width: 0; }
+  .ci-bande .ci-et { font-size: 12px; padding: 2px 9px 2px 2px; }
+  .ci-regles { flex: none; }
+  .ci-regles summary { padding: 3px 8px; font-size: 11px; }
+  .ci-bande .og-tab { padding: 5px 11px; border-width: 1.5px; }
+  .ci-bande .og-tab small { display: none; }
+  .ci-bande .og-tab b { font-size: 13px; }
+  .ci-vues button { padding: 5px 9px; font-size: 11.5px; }
+}
+/* Grille : score validé = vert fluo ; en attente de validation = orange. */
+.ig-t td.ig-m.ok { background: color-mix(in srgb, #39ff14 30%, var(--surface)) !important; border: 1.5px solid #22d10a !important; box-shadow: 0 0 8px -2px rgba(57,255,20,.7); color: #0b3d00; }
+.ig-t td.ig-m.att { background: color-mix(in srgb, #ff9f1c 30%, var(--surface)) !important; border: 1.5px dashed #f08a00 !important; }
+.ig-t td.ig-m.att.desac { border-style: solid !important; border-color: #e06c00 !important; }
+.ig-t td.ig-m.ok.hl, .ig-t td.ig-m.att.hl { outline: 3px solid #f05ad8; }
+.ig-att { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px; font-size: 12px; }
+.ig-leg { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-weight: 700; }
+.ig-leg i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.ig-leg i.ok { background: color-mix(in srgb, #39ff14 45%, var(--surface)); border: 1.5px solid #22d10a; }
+.ig-leg i.att { background: color-mix(in srgb, #ff9f1c 40%, var(--surface)); border: 1.5px dashed #f08a00; }
+.ig-att-l { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 5px; flex: 1 1 100%; max-height: 64px; overflow-y: auto; }
+.ig-att-b { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; background: color-mix(in srgb, #ff9f1c 22%, var(--surface)); border: 1.5px dashed #f08a00; white-space: nowrap; }
+.ig-att-b.desac { border-style: solid; }
+.ig-att-b b { padding: 0 6px; border-radius: 6px; background: #111; color: #fff; }
+.ig-att-vide { color: #1f9e0b; font-weight: 700; }
+.ci-ecran { --gh: clamp(20px, calc((var(--ecran-h) - 214px) / var(--n)), 46px); }
+@media (max-width: 899px) { .ci-ecran { --gh: clamp(22px, calc((var(--ecran-h) - 226px) / var(--n)), 50px); } }
+/* L'écran de la poule reste calé sous la bande fixe : rien ne glisse dessous. */
+.ci-ecran { position: sticky; top: calc(var(--haut-fixe) + var(--sous-bande, 0px) + 4px); }
+@media (max-width: 899px) {
+  .ci-ecran .ig-vedette { gap: 6px; padding: 5px 8px; margin-bottom: 4px; border-radius: 12px; }
+  .ci-ecran .ig-v-j b { font-size: 14px !important; line-height: 1.05; }
+  .ci-ecran .ig-v-s { padding: 3px 9px; }
+  .ci-ecran .ig-v-s b { font-size: 18px; }
+  .ci-ecran .ig-t thead tr { height: 50px; }
+  .ci-ecran .ig-col-nom { bottom: 30px; font-size: 12px; padding: 2px 8px; }
+  .ci-ecran .ig-t thead th.ig-col .ig-n { min-width: 22px; height: 22px; font-size: 11.5px; }
+  .ci-ecran .ig-t th.ig-lig { font-size: 10.5px; line-height: 1.05; }
+  .ci-ecran .ig-coin { font-size: 9px; }
+  .ci-ecran { --gh: clamp(22px, calc((var(--ecran-h) - 170px) / var(--n)), 50px); }
+}
+.ci-ecran { --ecran-h: var(--ecran-js, calc(100dvh - var(--haut-fixe) - var(--sous-bande, 0px) - var(--dock-h) - 44px - env(safe-area-inset-bottom))); }
+/* Page d'une poule : pas de défilement en trop sous l'écran (tout tient entre la bande et la barre du bas). */
+body:has(.og .ci-ecran) { padding-bottom: 0 !important; }
+main.wrap:has(.og .ci-ecran) { padding-bottom: 0; margin-bottom: 0; }
+@media (max-width: 899px) {
+  .ci-ecran .ig-t th.ig-lig { font-size: 10px; line-height: 1; }
+  .ci-ecran .ig-t { border-spacing: 2px; }
+  .ci-ecran .ig-t thead tr { height: 44px; }
+  .ci-ecran .ig-col-nom { bottom: 26px; }
+  .ci-ecran .ig-att { margin-top: 4px; }
+  .ci-ecran .ig-att-l { max-height: 52px; }
+}
+/* Onglets des poules sur une seule ligne (nom · matchs) pour gagner de la hauteur. */
+.ci-bande .og-tab { flex-direction: row; align-items: baseline; gap: 8px; padding: 6px 12px; }
+.ci-bande .og-tab small { white-space: nowrap; }
+@media (min-width: 900px) {
+  .ci-ecran .ig-t { border-spacing: 2px; }
+  .ci-ecran .ig-t thead tr { height: 52px; }
+  .ci-ecran .ig-col-nom { bottom: 32px; font-size: 13px; padding: 3px 9px; }
+  .ci-ecran .ig-t th.ig-lig { font-size: 12px; line-height: 1.1; }
+  .ci-ecran .ig-vedette { margin-bottom: 4px; }
+  .ci-ecran { --gh: clamp(18px, calc((var(--ecran-h) - 200px) / var(--n)), 46px); }
+}
+.ci-ecran { height: max(220px, var(--ecran-h)); }
+@media (min-width: 900px) { .ci-ecran .ig-att-l { flex: 1 1 auto; } }
+@media (max-width: 899px) { .ci-ecran { --rh: clamp(21px, calc((var(--ecran-h) - 100px) / (var(--n) + 1)), 52px); } }
+/* Scores en attente : une seule ligne qu'on fait glisser (la grille garde sa place). */
+.ig-att { flex-wrap: nowrap; }
+.ig-att .ig-leg { flex: none; }
+.ig-att-l, .ci-ecran .ig-att-l { flex: 1 1 auto !important; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; max-height: none !important; scrollbar-width: thin; padding-bottom: 2px; }
+.ig-att-vide { white-space: nowrap; }
+@media (min-width: 900px) { .ci-ecran { --gh: clamp(18px, calc((var(--ecran-h) - 212px) / var(--n)), 46px); } }
