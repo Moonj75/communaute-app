@@ -5,10 +5,12 @@ import { displayName, getSessionProfil } from "@/lib/profil";
 import { lireCompet } from "@/lib/internes-db";
 import { chargerJoueurs } from "@/lib/donnees";
 import { decrireEtape, TYPES } from "@/lib/internes";
+import { dateMoyenne } from "@/lib/club-types";
 import VueCompet from "@/components/internes/VueCompet";
 import Repartition from "../Repartition";
 import Boutons from "./Boutons";
 import Ajouter from "./Ajouter";
+import Modifier from "./Modifier";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +29,18 @@ export default async function GererCompet({ params, searchParams }: { params: Pr
   const dansEtape = new Set(groupes.filter((g) => g.etape === c.etape).flatMap((g) => g.joueurs.map((j) => j.id)));
   const groupesEnCours = c.statut === "en_cours" && c.etapes[c.etape]?.format === "poules" ? groupes.filter((g) => g.etape === c.etape).map((g) => ({ id: g.id, nom: g.nom })) : [];
 
+  // Groups already made, per stage (to rename them), and their sizes (play-off preview).
+  const groupesFaits: Record<number, { id: string; nom: string }[]> = {};
+  const tailles: Record<number, number[]> = {};
+  for (const g of [...groupes].sort((a, b) => a.etape - b.etape || a.ordre - b.ordre)) {
+    (groupesFaits[g.etape] ||= []).push({ id: g.id, nom: g.nom });
+    (tailles[g.etape] ||= []).push(g.joueurs.length);
+  }
+
   const etapes = (
     <section className="panel"><div className="bd">
-      <ol className="ci-plan">{c.etapes.map((e, i) => <li key={i} className={i === c.etape && c.statut === "en_cours" ? "on" : undefined}><b>{e.nom}</b> <span className="muted small">{decrireEtape(e, i === c.etapes.length - 1)}</span></li>)}</ol>
+      <ol className="ci-plan">{c.etapes.map((e, i) => <li key={i} className={i === c.etape && c.statut === "en_cours" ? "on" : undefined}><b>{e.nom}</b> <span className="muted small">{e.debut || e.fin ? `${e.debut ? dateMoyenne(e.debut) : "…"} → ${e.fin ? dateMoyenne(e.fin) : "…"} · ` : ""}{decrireEtape(e, i === c.etapes.length - 1, c.etapes[i + 1])}</span></li>)}</ol>
+      <Modifier c={c} groupesFaits={groupesFaits} tailles={tailles} />
       <Boutons id={c.id} enCours={c.statut === "en_cours"} etape={c.etapes[c.etape]?.nom || ""} />
       {groupesEnCours.length ? <Ajouter id={c.id} groupes={groupesEnCours} joueurs={joueurs.filter((j) => !dansEtape.has(j.id))} /> : null}
     </div></section>
