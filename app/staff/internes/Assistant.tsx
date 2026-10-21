@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+
+const CLE_BROUILLON = "lions-compet-brouillon";
 import { decrireEtape, LIGUES, nomsParDefaut, nomsTableaux, type EtapeConfig, type TypeCompet } from "@/lib/internes";
 import { creerCompetition } from "./actions";
 
@@ -34,6 +36,25 @@ export default function Assistant() {
   const [etapes, setEtapes] = useState<EtapeConfig[]>(MODELES.championnat);
   const [info, setInfo] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [repris, setRepris] = useState(false);
+  const pret = useRef(false);
+
+  // The form is kept in this browser while it is filled in: leaving the page loses nothing.
+  useEffect(() => {
+    try {
+      const b = JSON.parse(localStorage.getItem(CLE_BROUILLON) || "null");
+      if (b && b.etapes?.length) { setType(b.type); setNom(b.nom); setSaison(b.saison); setPts(b.pts); setEtapes(b.etapes); setRepris(true); }
+    } catch { /* nothing saved */ }
+    pret.current = true;
+  }, []);
+  useEffect(() => {
+    if (!pret.current) return;
+    try { localStorage.setItem(CLE_BROUILLON, JSON.stringify({ type, nom, saison, pts, etapes })); } catch { /* storage unavailable */ }
+  }, [type, nom, saison, pts, etapes]);
+  const recommencer = () => {
+    try { localStorage.removeItem(CLE_BROUILLON); } catch { /* storage unavailable */ }
+    setRepris(false); setType("championnat"); setEtapes(MODELES.championnat); setPts([3, 1, 0]); setSaison(saisonActuelle()); setNom(`Championnat du club ${saisonActuelle()}`);
+  };
 
   const choisirType = (t: TypeCompet) => {
     setType(t);
@@ -57,12 +78,14 @@ export default function Assistant() {
   const envoyer = () =>
     start(async () => {
       setInfo(null);
+      try { localStorage.removeItem(CLE_BROUILLON); } catch { /* storage unavailable */ }
       const r = await creerCompetition({ type, nom, saison, pts, etapes });
       if (r && !r.ok) setInfo(r.message);
     });
 
   return (
     <div className="as">
+      {repris ? <p className="rp-sauve">💾 Brouillon repris là où tu t&apos;étais arrêté. <button type="button" className="mo-lien" onClick={recommencer}>Recommencer à zéro</button></p> : <p className="rp-sauve">💾 Ce formulaire est gardé au fur et à mesure : tu peux quitter et revenir.</p>}
       <div className="as-types">
         {(["championnat", "coupe"] as const).map((t) => (
           <button key={t} type="button" className={`as-type${type === t ? " on" : ""}`} onClick={() => choisirType(t)}>

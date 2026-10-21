@@ -1,27 +1,45 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
-import { nomsParDefaut, type EtapeConfig, type JoueurCompet } from "@/lib/internes";
-import { lancer } from "./actions";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { nomsParDefaut, type Brouillon, type EtapeConfig, type JoueurCompet } from "@/lib/internes";
+import { enregistrerBrouillon, lancer } from "./actions";
 
 /**
  * First stage: the staff picks the players from the club's list and puts each one in a group
  * (or lets the app share them out). Then « Lancer » creates every match.
  */
-export default function Repartition({ id, etape, joueurs }: { id: string; etape: EtapeConfig; joueurs: (JoueurCompet & { actif: boolean })[] }) {
+export default function Repartition({ id, etape, joueurs, brouillon }: { id: string; etape: EtapeConfig; joueurs: (JoueurCompet & { actif: boolean })[]; brouillon?: Brouillon | null }) {
   const router = useRouter();
   const ko = etape.format === "elimination";
-  const [nb, setNb] = useState(ko ? 1 : Math.max(1, etape.groupes));
-  const [noms, setNoms] = useState<string[]>(etape.nomsGroupes.length ? etape.nomsGroupes : nomsParDefaut(etape.groupes, false));
+  // Starts again from the saved preparation, if any.
+  const [nb, setNb] = useState(brouillon?.nb || (ko ? 1 : Math.max(1, etape.groupes)));
+  const [noms, setNoms] = useState<string[]>(brouillon?.noms?.length ? brouillon.noms : etape.nomsGroupes.length ? etape.nomsGroupes : nomsParDefaut(etape.groupes, false));
   /** Player → group index (-1 = not playing). */
-  const [place, setPlace] = useState<Record<string, number>>({});
-  const [ordre, setOrdre] = useState<string[]>([]);
+  const [place, setPlace] = useState<Record<string, number>>(brouillon?.place || {});
+  const [ordre, setOrdre] = useState<string[]>(brouillon?.ordre || []);
+  const [sauve, setSauve] = useState<string>(brouillon?.le ? "✓ Préparation reprise" : "");
+  const premier = useRef(true);
+
+  // Saved by itself a moment after each change.
+  useEffect(() => {
+    if (premier.current) { premier.current = false; return; }
+    setSauve("Enregistrement…");
+    const t = window.setTimeout(async () => {
+      const r = await enregistrerBrouillon(id, { nb, noms, place, ordre });
+      setSauve(r.ok ? `✓ Enregistré à ${new Date().toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" })}` : `⚠️ ${r.message}`);
+    }, 1200);
+    return () => window.clearTimeout(t);
+  }, [id, nb, noms, place, ordre]);
   const [voirTous, setVoirTous] = useState(false);
+  const [cherche, setCherche] = useState("");
   const [info, setInfo] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, start] = useTransition();
 
-  const liste = joueurs.filter((j) => voirTous || j.actif);
+  const sansAccent = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const nbActifs = joueurs.filter((j) => j.actif).length;
+  // Chosen players always stay visible, even a non-active one when the extended list is closed again.
+  const liste = joueurs.filter((j) => (voirTous || j.actif || (place[j.id] ?? -1) >= 0) && (!cherche || sansAccent(j.nom).includes(sansAccent(cherche))));
   const nomsG = Array.from({ length: nb }, (_, i) => noms[i] || nomsParDefaut(nb, false)[i]);
   const groupes = useMemo(
     () => nomsG.map((n, gi) => ({ nom: n, joueurs: ordre.filter((pid) => place[pid] === gi).map((pid) => joueurs.find((j) => j.id === pid)!).filter(Boolean).map((j) => ({ id: j.id, nom: j.nom })) })),
@@ -68,8 +86,14 @@ export default function Repartition({ id, etape, joueurs }: { id: string; etape:
       <div className="rp-outils">
         <button type="button" className="btn" onClick={toutActifs}>👥 Prendre tous les joueurs actifs</button>
         <button type="button" className="btn" disabled={choisis.length < 2} onClick={melanger}>🎲 Répartir au hasard</button>
-        <label className="rp-tous"><input type="checkbox" checked={voirTous} onChange={(e) => setVoirTous(e.target.checked)} /> Montrer aussi les non actifs</label>
+
       </div>
+
+      <div className="rp-liste-choix" role="radiogroup" aria-label="Quels joueurs montrer">
+        <button type="button" className={`rp-seg${!voirTous ? " on" : ""}`} onClick={() => setVoirTous(false)}>Joueurs actifs <span className="num">{nbActifs}</span></button>
+        <button type="button" className={`rp-seg${voirTous ? " on" : ""}`} onClick={() => setVoirTous(true)}>📚 Liste étendue : actifs + non actifs <span className="num">{joueurs.length}</span></button>
+      </div>
+      <input className="input rp-cherche" type="search" value={cherche} onChange={(e) => setCherche(e.target.value)} placeholder="🔎 Chercher un joueur…" aria-label="Chercher un joueur" />
 
       <div className="rp-grille">
         <ul className="rp-liste" aria-label="Joueurs du club">
@@ -99,6 +123,7 @@ export default function Repartition({ id, etape, joueurs }: { id: string; etape:
         </div>
       </div>
 
+      <p className="rp-sauve" aria-live="polite">💾 {sauve || "Ta préparation est enregistrée au fur et à mesure : tu peux quitter et revenir."}</p>
       <button type="button" className="btn primary rp-go" disabled={pending || choisis.length < 2} onClick={go}>{pending ? "Création des matchs…" : `🚀 Lancer avec ${choisis.length} joueurs`}</button>
       {info ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
     </div>
