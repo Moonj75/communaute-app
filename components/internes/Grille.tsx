@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { etatSaisie, type JoueurCompet, type Match } from "@/lib/internes";
 import { saisirScore } from "@/app/staff/internes/actions";
 
@@ -14,7 +14,20 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
   const router = useRouter();
   const [ouvert, setOuvert] = useState<string | null>(null);
   /** The match chosen (tap) or under the mouse: its two players and its box light up. */
-  const [sel, setSel] = useState<{ r: string; c: string } | null>(null);
+  // Always one match in the spotlight: the last score entered (none yet: one picked at random, after loading).
+  const ordreJ = new Map(joueurs.map((j, i) => [j.id, i]));
+  const cellule = (m: Match) => {
+    const ia = ordreJ.get(m.a || "") ?? 0, ib = ordreJ.get(m.b || "") ?? 0;
+    return ia < ib ? { r: m.a!, c: m.b! } : { r: m.b!, c: m.a! };
+  };
+  const valides = matchs.filter((m) => m.a && m.b && ordreJ.has(m.a) && ordreJ.has(m.b));
+  const dernier = valides.filter((m) => m.joue).sort((x, y) => (y.maj_le || "").localeCompare(x.maj_le || ""))[0];
+  const [sel, setSel] = useState<{ r: string; c: string } | null>(() => (dernier ? cellule(dernier) : valides[0] ? cellule(valides[0]) : null));
+  useEffect(() => {
+    if (!dernier && valides.length) setSel(cellule(valides[Math.floor(Math.random() * valides.length)]));
+    // only once, when the table appears
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [survol, setSurvol] = useState<{ r: string; c: string } | null>(null);
   const vise = survol || sel;
   // Row player: lit on his row; column player: lit on his column (never in the barred half).
@@ -93,7 +106,7 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
                     <td key={c.id} className={`ig-m${res}${editable ? " edit" : ""}${ouvert === cle ? " on" : ""}${vise && vise.r === r.id && vise.c === c.id ? " hl" : ""}${vise && ((i === iR && j > i && j < iC) || (j === iC && i < iR && j > i)) ? " trace" : ""}`}
                       onMouseEnter={() => setSurvol({ r: r.id, c: c.id })} onMouseLeave={() => setSurvol(null)}>
                       {ouvert === cle ? <span className="ig-btn"><span className="num">✎</span></span> : (
-                        <button type="button" className="ig-btn" onClick={() => { const meme = sel && sel.r === r.id && sel.c === c.id; setSel(meme && !editable ? null : { r: r.id, c: c.id }); if (editable) ouvrir(m, r.id); }} aria-label={`${r.nom} contre ${c.nom}`}>
+                        <button type="button" className="ig-btn" onClick={() => { setSel({ r: r.id, c: c.id }); if (editable) ouvrir(m, r.id); }} aria-label={`${r.nom} contre ${c.nom}`}>
                           {m.joue ? <span className="num">{a}–{b}</span> : etatSaisie(m) === "desaccord" ? <span className="ig-prop" title="Les deux joueurs ont mis des scores différents">⚠️</span> : etatSaisie(m) !== "aucun" ? <span className="ig-prop" title="Un joueur a mis le score, l'autre doit confirmer">⏳</span> : <span className="ig-pas">{editable ? "+" : "·"}</span>}
                         </button>
                       )}
