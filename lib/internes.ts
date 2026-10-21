@@ -41,7 +41,11 @@ export type Competition = {
   etapes: EtapeConfig[];
   champion: string | null;
   cree_le: string;
+  /** Starting groups being prepared (saved as the staff goes along). */
+  brouillon?: Brouillon | null;
 };
+
+export type Brouillon = { nb: number; noms: string[]; place: Record<string, number>; ordre: string[]; le?: string };
 
 export type JoueurCompet = { id: string; nom: string };
 
