@@ -4062,3 +4062,15 @@ table.t.ci-cl tr.moi td:nth-child(3) b { text-decoration: underline 3px #00e5ff;
 .rp-cherche { max-width: 360px; }
 .aj { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
 .rp-sauve { margin: 0; font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.af-actif span { display: flex; gap: 8px; align-items: center; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.rp-nouveau { padding: 8px 12px; border-radius: 12px; border: 1px dashed #f05ad8; background: color-mix(in srgb, #f05ad8 5%, var(--surface)); }
+.rp-nouveau summary { cursor: pointer; font-weight: 700; font-size: 13.5px; }
+.rp-nouveau[open] summary { margin-bottom: 8px; }
+/* Cross table: the chosen match lights up with its two players */
+.ig-t th.hl .ig-n { background: #f05ad8; color: #fff; }
+.ig-t th.ig-lig.hl { color: #c235b6 !important; }
+.ig-t th.ig-lig.hl, .ig-t th.ig-col.hl { background: color-mix(in srgb, #f05ad8 16%, transparent); border-radius: 8px; }
+.ig-t th.ig-col.hl .ig-nom { color: #c235b6; font-weight: 800; }
+.ig-t td.hl { outline: 3px solid #f05ad8; outline-offset: 1px; box-shadow: 0 0 14px 2px rgba(240,90,216,.55); position: relative; z-index: 1; transform: scale(1.06); transition: transform .15s; }
+.ig-btn { cursor: pointer; }
+.ig-fond { backdrop-filter: none; background: rgba(8,6,4,.35); }
