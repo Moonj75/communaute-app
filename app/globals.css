@@ -4015,3 +4015,42 @@ table.t.ci-cl { width: 100%; }
 .as-f.on { border-color: #f05ad8; background: color-mix(in srgb, #f05ad8 10%, var(--surface)); }
 .as-aide { flex: 1 1 200px; }
 @media (max-width: 520px) { .as-forme { grid-template-columns: 1fr; } }
+/* Leagues of the final stage */
+.ci-g.lg-diamond { border-top: 5px solid #7fd8ff; background-image: linear-gradient(180deg, rgba(127,216,255,.14), transparent 120px); }
+.ci-g.lg-diamond .hd h2::before { content: "💎 "; }
+.ci-g.lg-gold { border-top: 5px solid #e0a800; background-image: linear-gradient(180deg, rgba(224,168,0,.12), transparent 120px); }
+.ci-g.lg-gold .hd h2::before { content: "🥇 "; }
+.ci-g.lg-silver { border-top: 5px solid #a8b0bb; background-image: linear-gradient(180deg, rgba(168,176,187,.16), transparent 120px); }
+.ci-g.lg-silver .hd h2::before { content: "🥈 "; }
+.ci-g.lg-bronze { border-top: 5px solid #c07a3a; background-image: linear-gradient(180deg, rgba(192,122,58,.14), transparent 120px); }
+.ci-g.lg-bronze .hd h2::before { content: "🥉 "; }
+.ci-g.lg-fair { border-top: 5px solid #2ec5d3; }
+.ci-g.lg-fair .hd h2::before { content: "🤝 "; }
+.as-forme { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.as-f:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 700px) { .as-forme { grid-template-columns: 1fr; } }
+/* ---- Classement des compétitions du club : 1er en or brillant, zone du haut, flèches ---- */
+table.t.ci-cl tbody tr td { transition: background .2s; }
+table.t.ci-cl tr.ci-1er td { background: linear-gradient(90deg, rgba(255,215,64,.38), rgba(255,215,64,.12)) !important; border-top: 2px solid #e0a800; border-bottom: 2px solid #e0a800; }
+table.t.ci-cl tr.ci-1er td:first-child { border-left: 2px solid #e0a800; border-radius: 10px 0 0 10px; }
+table.t.ci-cl tr.ci-1er td:last-child { border-right: 2px solid #e0a800; border-radius: 0 10px 10px 0; }
+table.t.ci-cl tr.ci-haut td { background: color-mix(in srgb, #a46bff 13%, var(--surface)) !important; }
+table.t.ci-cl tr.ci-haut td:first-child { box-shadow: inset 4px 0 0 #a46bff; }
+table.t.ci-cl tr.ci-coupe td { border-bottom: 2px dashed #a46bff !important; }
+table.t.ci-cl tr.ci-1er.ci-coupe td { border-bottom: 2px solid #e0a800 !important; }
+.ci-couronne { font-size: 16px; filter: drop-shadow(0 0 4px rgba(255,200,0,.8)); }
+.ci-brille {
+  background: linear-gradient(100deg, #8a5a00 0%, #e0a800 30%, #fff6c2 45%, #e0a800 60%, #8a5a00 100%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  animation: ci-brille 2.8s linear infinite; font-weight: 900;
+}
+@keyframes ci-brille { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+@media (prefers-reduced-motion: reduce) { .ci-brille { animation: none; } }
+table.t.ci-cl .c-evo { width: 30px; padding-left: 0 !important; padding-right: 2px !important; text-align: center; }
+.ci-up { color: #1a9e3f; font-weight: 900; font-size: 12px; white-space: nowrap; }
+.ci-down { color: #c8150b; font-weight: 900; font-size: 12px; white-space: nowrap; }
+.ci-leg { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; font-size: 11.5px; color: var(--muted); }
+.ci-leg-1 { padding: 1px 8px; border-radius: 99px; background: rgba(255,215,64,.35); color: var(--fg); font-weight: 700; }
+.ci-leg-h { padding: 1px 8px; border-radius: 99px; background: color-mix(in srgb, #a46bff 18%, var(--surface)); color: var(--fg); font-weight: 700; }
+table.t.ci-cl tr.moi.ci-1er td, table.t.ci-cl tr.moi.ci-haut td { font-weight: 700; }
+table.t.ci-cl tr.moi td:nth-child(3) b { text-decoration: underline 3px #00e5ff; text-underline-offset: 4px; }
