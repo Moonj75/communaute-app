@@ -46,7 +46,12 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
       {!gs.length ? <p className="vide">Cette étape n&apos;a pas encore commencé.</p> : null}
 
       {e?.format === "elimination" && gs[0] ? (
-        <section className="panel ci-g"><div className="bd"><TableauFinal joueurs={gs[0].joueurs} matchs={ms} editable={editable && c.statut === "en_cours"} moi={moi} /></div></section>
+        gs.map((g, gi) => (
+          <section key={g.id} className={`panel ci-g${gs.length > 1 ? (gi === 0 ? " niv-haut" : gi === gs.length - 1 ? " niv-bas" : "") : ""}`}>
+            {gs.length > 1 ? <div className="hd"><h2>{g.nom}</h2><span className="muted small">{g.joueurs.length} joueurs</span></div> : null}
+            <div className="bd"><TableauFinal joueurs={g.joueurs} matchs={ms.filter((m) => m.groupe_id === g.id)} editable={editable && c.statut === "en_cours"} moi={moi} /></div>
+          </section>
+        ))
       ) : (
         gs.map((g, gi) => {
           const lignes = classement(g.joueurs, ms.filter((m) => m.groupe_id === g.id), c);

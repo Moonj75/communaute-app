@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { JoueurCompet, Match } from "@/lib/internes";
+import { etatSaisie, type JoueurCompet, type Match } from "@/lib/internes";
 import { saisirScore } from "@/app/staff/internes/actions";
 
 const court = (n: string) => {
@@ -75,7 +75,7 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
                     <td key={c.id} className={`ig-m${res}${editable ? " edit" : ""}${ouvert === cle ? " on" : ""}`}>
                       {ouvert === cle ? <span className="ig-btn"><span className="num">✎</span></span> : (
                         <button type="button" className="ig-btn" disabled={!editable} onClick={() => ouvrir(m, r.id)} aria-label={`${r.nom} contre ${c.nom}`}>
-                          {m.joue ? <span className="num">{a}–{b}</span> : <span className="ig-pas">{editable ? "+" : "·"}</span>}
+                          {m.joue ? <span className="num">{a}–{b}</span> : etatSaisie(m) === "desaccord" ? <span className="ig-prop" title="Les deux joueurs ont mis des scores différents">⚠️</span> : etatSaisie(m) !== "aucun" ? <span className="ig-prop" title="Un joueur a mis le score, l'autre doit confirmer">⏳</span> : <span className="ig-pas">{editable ? "+" : "·"}</span>}
                         </button>
                       )}
                     </td>
@@ -100,6 +100,17 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
               </span>
               <span className="ig-j">{autre.nom}</span>
             </div>
+            {/* Scores typed by the players themselves (waiting, or different). */}
+            {[mo.prop_a ? { qui: mo.a, p: mo.prop_a } : null, mo.prop_b ? { qui: mo.b, p: mo.prop_b } : null].filter(Boolean).map((x) => {
+              const auteur = joueurs.find((j) => j.id === x!.qui)?.nom || "?";
+              const [vl, va] = mo.a === ligne ? [x!.p.a, x!.p.b] : [x!.p.b, x!.p.a];
+              return (
+                <p key={x!.qui} className="ig-propo">
+                  <span>Score mis par <b>{auteur}</b> : <b className="num">{vl}–{va}</b></span>
+                  <button type="button" className="btn" onClick={() => { setX(String(vl)); setY(String(va)); }}>Reprendre</button>
+                </p>
+              );
+            })}
             <span className="ig-btns">
               <button type="button" className="btn primary" disabled={pending} onClick={() => valider(mo, ligne)}>{pending ? "…" : "✓ Valider"}</button>
               {mo.joue ? <button type="button" className="btn" disabled={pending} onClick={() => valider(mo, ligne, true)}>🗑️ Effacer</button> : null}
