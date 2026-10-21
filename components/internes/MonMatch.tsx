@@ -37,7 +37,7 @@ export default function MonMatch({ m, joueurId, joueurNom }: { m: AJouer; joueur
     <li className={`mo e-${etat}`}>
       <div className="mo-ligne">
         <span className="mo-t"><span className="mm-vs">contre</span> <b>{m.contre}</b></span>
-        {etat === "aucun" && !ouvert ? <button type="button" className="btn mo-btn" onClick={() => setOuvert(true)}>✍️ Mettre le score</button> : null}
+        {etat === "aucun" && !ouvert ? <button type="button" className="mo-btn" onClick={() => setOuvert(true)}><span className="mo-btn-ic" aria-hidden="true">⚽</span><span className="mo-btn-t">Mettre le score</span><span className="mo-btn-fl" aria-hidden="true">›</span></button> : null}
         {etat === "attente" ? <span className="mo-et">⏳ Ton score : <b className="num">{m.moi!.m}–{m.moi!.s}</b> · en attente de {m.contre.split(" ")[0]}</span> : null}
         {etat === "desaccord" ? <span className="mo-et">⚠️ Toi <b className="num">{m.moi!.m}–{m.moi!.s}</b> · lui <b className="num">{m.lui!.m}–{m.lui!.s}</b> : le staff va trancher</span> : null}
       </div>

@@ -74,7 +74,7 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
           <thead>
             <tr>
               <th className="ig-coin"><span className="num">{joues}/{matchs.length}</span> joués</th>
-              {joueurs.map((j, c) => <th key={j.id} className={`ig-col${moi.includes(j.id) ? " moi" : ""}${colVisee(j.id) ? " hl" : ""}`} title={j.nom}><span className="ig-n">{c + 1}</span></th>)}
+              {joueurs.map((j, c) => <th key={j.id} className={`ig-col${moi.includes(j.id) ? " moi" : ""}${colVisee(j.id) ? " hl" : ""}`} title={j.nom}>{colVisee(j.id) ? <span className={`ig-col-nom${c >= joueurs.length / 2 ? " d" : ""}`}>{j.nom}</span> : null}<span className="ig-n">{c + 1}</span></th>)}
             </tr>
           </thead>
           <tbody>
