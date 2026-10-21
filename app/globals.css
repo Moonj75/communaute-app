@@ -4106,3 +4106,43 @@ table.t.ci-cl tr.moi td:nth-child(3) b { text-decoration: underline 3px #00e5ff;
 
 .ig-t th.ig-lig { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 520px) { .ig-t th.ig-lig { width: 27%; font-size: 11.5px; } .ig-t th.ig-lig .ig-n { min-width: 16px; height: 16px; } .ig-coin { font-size: 9.5px; } }
+
+/* ===== Cross table v2: numbers on top, full names on the rows, the match in the spotlight ===== */
+.ig-t thead th.ig-col { vertical-align: middle; padding: 2px 0 6px; }
+.ig-t thead th.ig-col .ig-n { min-width: 26px; height: 26px; border-radius: 8px; font-size: 13px; }
+.ig-t th.ig-lig { width: 38%; padding-right: 8px; }
+.ig-lig-nom { font-weight: 700; }
+@media (max-width: 520px) { .ig-t th.ig-lig { width: 36%; font-size: 12px; } }
+.ig-vedette {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px;
+  min-height: 62px; margin-bottom: 10px; padding: 10px 14px; border-radius: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #fff), var(--sunk));
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(0,0,0,.06), 0 8px 18px -14px rgba(0,0,0,.45);
+  transition: border-color .2s, box-shadow .2s;
+}
+.ig-vedette.on { border-color: color-mix(in srgb, #f05ad8 55%, var(--line)); box-shadow: inset 0 1px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(0,0,0,.06), 0 10px 24px -12px rgba(240,90,216,.55); }
+.ig-v-aide { grid-column: 1 / -1; text-align: center; color: var(--muted); font-size: 13px; }
+.ig-v-j { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ig-v-j.d { justify-content: flex-end; text-align: right; }
+.ig-v-j b {
+  font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: clamp(15px, 4.2vw, 21px); line-height: 1.1;
+  color: var(--t-titre, var(--fg)); overflow-wrap: anywhere;
+  /* Relief: light from above, shadow below */
+  text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 2px 0 rgba(0,0,0,.08), 0 3px 6px rgba(0,0,0,.18);
+}
+.ig-v-j.gagne b { color: #a3209a; }
+.ig-v-j .ig-n { flex: none; background: #f05ad8; color: #fff; min-width: 24px; height: 24px; }
+.ig-v-s { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 12px; background: var(--night, #1c1715); color: #fff; box-shadow: inset 0 -3px 0 rgba(0,0,0,.35), 0 4px 10px -4px rgba(0,0,0,.5); }
+.ig-v-s b { font-family: var(--font-display); font-style: italic; font-size: clamp(20px, 5.5vw, 28px); line-height: 1; }
+.ig-v-s i { opacity: .6; font-style: normal; }
+.ig-v-s.a-jouer { background: var(--sunk); color: var(--muted); box-shadow: none; }
+.ig-v-s small { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ig-v-j b { text-shadow: 0 2px 0 rgba(0,0,0,.6), 0 3px 8px rgba(0,0,0,.5); } }
+/* Grille v2b: full names on the rows (fixed layout takes the width of the first row: the corner). */
+.ig-t th.ig-coin { width: 34%; white-space: normal; line-height: 1.2; }
+.ig-t th.ig-lig { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
+.ig-t th.ig-lig { display: table-cell; }
+.ig-lig-in { display: flex; align-items: center; gap: 6px; }
+.ig-lig-nom { overflow-wrap: anywhere; hyphens: auto; }
+@media (max-width: 520px) { .ig-t th.ig-coin { width: 33%; } .ig-t th.ig-lig { font-size: 11.5px; } .ig-lig-in { gap: 4px; } }
