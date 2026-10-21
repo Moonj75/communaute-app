@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { classement, decrireEtape, TYPES, type Competition, type Groupe, type Match } from "@/lib/internes";
+import { classement, evolutions, decrireEtape, TYPES, type Competition, type Groupe, type Match } from "@/lib/internes";
 import { dateMoyenne } from "@/lib/club-types";
 import Grille from "./Grille";
 import TableauFinal from "./TableauFinal";
@@ -54,28 +54,42 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
         ))
       ) : (
         gs.map((g, gi) => {
-          const lignes = classement(g.joueurs, ms.filter((m) => m.groupe_id === g.id), c);
+          const mg = ms.filter((m) => m.groupe_id === g.id);
+          const lignes = classement(g.joueurs, mg, c);
+          const evo = evolutions(g.joueurs, mg, c);
+          const commence = mg.some((m) => m.joue);
+          // Who goes up: the qualified ones, or the top half when the best go on together.
+          const derniereEtape = k >= c.etapes.length - 1 || e?.passage === "fin";
+          const monte = derniereEtape ? 0 : e?.passage === "qualifies" ? e.qualifies : Math.ceil(g.joueurs.length / 2);
+          const ligue = /diamond/i.test(g.nom) ? " lg-diamond" : /gold/i.test(g.nom) ? " lg-gold" : /silver/i.test(g.nom) ? " lg-silver" : /bronze/i.test(g.nom) ? " lg-bronze" : /fair play/i.test(g.nom) ? " lg-fair" : "";
           const niveau = k > 0 && c.etapes[k - 1]?.passage === "niveaux" && gs.length > 1 ? (gi === 0 ? "haut" : gi === gs.length - 1 ? "bas" : "milieu") : "";
           return (
-            <section key={g.id} className={`panel ci-g${niveau ? ` niv-${niveau}` : ""}`}>
+            <section key={g.id} className={`panel ci-g${niveau && !ligue ? ` niv-${niveau}` : ""}${ligue}`}>
               <div className="hd"><h2>{g.nom}</h2><span className="muted small">{g.joueurs.length} joueurs</span></div>
               <div className="bd">
                 <div className="scroll-x">
                   <table className="t ci-cl">
-                    <thead><tr><th>#</th><th>Joueur</th><th title="Joués">J</th><th title="Gagnés">G</th><th title="Nuls">N</th><th title="Perdus">P</th><th className="c-bp" title="Buts pour">BP</th><th className="c-bc" title="Buts contre">BC</th><th title="Différence">Diff</th><th title="Points">Pts</th></tr></thead>
+                    <thead><tr><th>#</th><th className="c-evo" aria-label="Évolution"></th><th>Joueur</th><th title="Joués">J</th><th title="Gagnés">G</th><th title="Nuls">N</th><th title="Perdus">P</th><th className="c-bp" title="Buts pour">BP</th><th className="c-bc" title="Buts contre">BC</th><th title="Différence">Diff</th><th title="Points">Pts</th></tr></thead>
                     <tbody>
-                      {lignes.map((l) => (
-                        <tr key={l.id} className={`${moi.includes(l.id) ? "moi " : ""}${passeOn && l.rang <= passeOn ? "qualif" : ""}`}>
-                          <td className="num">{l.rang}</td>
-                          <td><b>{l.nom}</b></td>
+                      {lignes.map((l) => {
+                        const d = evo.get(l.id) || 0;
+                        const premier = commence && l.rang === 1;
+                        const haut = commence && !premier && monte > 0 && l.rang <= monte;
+                        return (
+                        <tr key={l.id} className={`${moi.includes(l.id) ? "moi " : ""}${passeOn && l.rang <= passeOn ? "qualif " : ""}${premier ? "ci-1er " : ""}${haut ? "ci-haut " : ""}${monte && l.rang === monte ? "ci-coupe" : ""}`}>
+                          <td className="num ci-rg">{premier ? <span className="ci-couronne" aria-label="1er">👑</span> : l.rang}</td>
+                          <td className="c-evo">{d > 0 ? <span className="ci-up" title={`${d} place${d > 1 ? "s" : ""} gagnée${d > 1 ? "s" : ""}`}>▲{d}</span> : d < 0 ? <span className="ci-down" title={`${-d} place${d < -1 ? "s" : ""} perdue${d < -1 ? "s" : ""}`}>▼{-d}</span> : null}</td>
+                          <td>{premier ? <b className="ci-brille">{l.nom}</b> : <b>{l.nom}</b>}</td>
                           <td className="num">{l.j}</td><td className="num">{l.g}</td><td className="num">{l.n}</td><td className="num">{l.p}</td>
                           <td className="num c-bp">{l.bp}</td><td className="num c-bc">{l.bc}</td><td className="num">{l.diff > 0 ? `+${l.diff}` : l.diff}</td>
                           <td className="num ci-pts">{l.pts}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
+                {monte && commence ? <p className="ci-leg"><span className="ci-leg-1">👑 1er</span><span className="ci-leg-h">{e?.passage === "qualifies" ? "Qualifiés" : "Montent dans la poule du haut"}</span><span><b className="ci-up">▲</b>/<b className="ci-down">▼</b> places gagnées ou perdues au dernier match</span></p> : null}
                 <p className="mini-t">Matchs</p>
                 <Grille joueurs={g.joueurs} matchs={ms.filter((m) => m.groupe_id === g.id)} editable={editable && c.statut === "en_cours" && k === c.etape} moi={moi} />
               </div>
