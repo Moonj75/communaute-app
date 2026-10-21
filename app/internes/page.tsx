@@ -60,7 +60,8 @@ export default async function CompetitionsClub({ searchParams }: { searchParams:
       <Header subtitle="Compétitions du club" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
         <section className="hello"><span className="kicker">Au club</span><h2>Compétitions du club</h2><p>Le championnat et la coupe des Lions : classements, matchs et résultats.</p></section>
-        <Blocs page="Compétitions du club" blocs={[mes, ...parts]} />
+        {/* Everyone sees the standings and the matches; « Mes matchs » only for those who play. */}
+        <Blocs page="Compétitions du club" blocs={sits.length ? [mes, ...parts] : parts} />
       </main>
     </>
   );
