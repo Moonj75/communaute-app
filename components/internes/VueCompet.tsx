@@ -2,6 +2,7 @@ import Link from "next/link";
 import { classement, evolutions, decrireEtape, TYPES, type Competition, type Groupe, type Match } from "@/lib/internes";
 import { dateMoyenne } from "@/lib/club-types";
 import Grille from "./Grille";
+import Onglets from "./Onglets";
 import TableauFinal from "./TableauFinal";
 
 /**
@@ -53,7 +54,9 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
           </section>
         ))
       ) : (
-        gs.map((g, gi) => {
+        <Onglets
+          cle={`${c.id}-${k}`}
+          onglets={gs.map((g, gi) => {
           const mg = ms.filter((m) => m.groupe_id === g.id);
           const lignes = classement(g.joueurs, mg, c);
           const evo = evolutions(g.joueurs, mg, c);
@@ -63,10 +66,19 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
           const monte = derniereEtape ? 0 : e?.passage === "qualifies" ? e.qualifies : Math.ceil(g.joueurs.length / 2);
           const ligue = /diamond/i.test(g.nom) ? " lg-diamond" : /gold/i.test(g.nom) ? " lg-gold" : /silver/i.test(g.nom) ? " lg-silver" : /bronze/i.test(g.nom) ? " lg-bronze" : /fair play/i.test(g.nom) ? " lg-fair" : "";
           const niveau = k > 0 && c.etapes[k - 1]?.passage === "niveaux" && gs.length > 1 ? (gi === 0 ? "haut" : gi === gs.length - 1 ? "bas" : "milieu") : "";
-          return (
-            <section key={g.id} className={`panel ci-g${niveau && !ligue ? ` niv-${niveau}` : ""}${ligue}`}>
-              <div className="hd"><h2>{g.nom}</h2><span className="muted small">{g.joueurs.length} joueurs</span></div>
-              <div className="bd">
+          const joues = mg.filter((m) => m.joue).length;
+          return {
+            id: g.id,
+            nom: g.nom,
+            info: `${g.joueurs.length} joueurs · ${joues}/${mg.length} matchs`,
+            classe: ligue || (niveau ? ` niv-${niveau}` : ""),
+            moi: g.joueurs.some((j) => moi.includes(j.id)),
+            contenu: (
+            <section className={`panel ci-g${niveau && !ligue ? ` niv-${niveau}` : ""}${ligue}`}>
+              <div className="hd"><h2>{g.nom}</h2><span className="muted small">{g.joueurs.length} joueurs · {joues}/{mg.length} matchs joués</span></div>
+              <div className="bd ci-duo">
+                <div className="ci-duo-cl">
+                <p className="mini-t">Classement</p>
                 <div className="scroll-x">
                   <table className="t ci-cl">
                     <thead><tr><th>#</th><th className="c-evo" aria-label="Évolution"></th><th>Joueur</th><th title="Joués">J</th><th title="Gagnés">G</th><th title="Nuls">N</th><th title="Perdus">P</th><th className="c-bp" title="Buts pour">BP</th><th className="c-bc" title="Buts contre">BC</th><th title="Différence">Diff</th><th title="Points">Pts</th></tr></thead>
@@ -89,13 +101,18 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
                     </tbody>
                   </table>
                 </div>
-                {monte && commence ? <p className="ci-leg"><span className="ci-leg-1">👑 1er</span><span className="ci-leg-h">{e?.passage === "qualifies" ? "Qualifiés" : "Montent dans la poule du haut"}</span><span><b className="ci-up">▲</b>/<b className="ci-down">▼</b> places gagnées ou perdues au dernier match</span></p> : null}
+                {monte && commence ? <p className="ci-leg"><span className="ci-leg-1">👑 1er</span><span className="ci-leg-h">{e?.passage === "qualifies" ? "Qualifiés" : "Montent dans la poule du haut"}</span><span><b className="ci-up">▲</b>/<b className="ci-down">▼</b> places au dernier match</span></p> : null}
+                </div>
+                <div className="ci-duo-mx">
                 <p className="mini-t">Matchs</p>
-                <Grille joueurs={g.joueurs} matchs={ms.filter((m) => m.groupe_id === g.id)} editable={editable && c.statut === "en_cours" && k === c.etape} moi={moi} />
+                <Grille joueurs={g.joueurs} matchs={mg} editable={editable && c.statut === "en_cours" && k === c.etape} moi={moi} />
+                </div>
               </div>
             </section>
-          );
-        })
+            ),
+          };
+        })}
+        />
       )}
     </div>
   );

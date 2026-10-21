@@ -22,7 +22,11 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
   const [sel, setSel] = useState<{ r: string; c: string } | null>(null);
   const [survol, setSurvol] = useState<{ r: string; c: string } | null>(null);
   const vise = survol || sel;
-  const estVise = (id: string) => Boolean(vise && (vise.r === id || vise.c === id));
+  // Row player: lit on his row; column player: lit on his column (never in the barred half).
+  const ligneVisee = (id: string) => Boolean(vise && vise.r === id);
+  const colVisee = (id: string) => Boolean(vise && vise.c === id);
+  const iR = vise ? joueurs.findIndex((j) => j.id === vise.r) : -1;
+  const iC = vise ? joueurs.findIndex((j) => j.id === vise.c) : -1;
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [info, setInfo] = useState<{ ok: boolean; message: string } | null>(null);
@@ -61,13 +65,13 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
           <thead>
             <tr>
               <th className="ig-coin"><span className="num">{joues}/{matchs.length}</span> joués</th>
-              {joueurs.map((j, c) => <th key={j.id} className={`ig-col${moi.includes(j.id) ? " moi" : ""}${estVise(j.id) ? " hl" : ""}`} title={j.nom}><span className="ig-n">{c + 1}</span><span className="ig-nom">{court(j.nom)}</span></th>)}
+              {joueurs.map((j, c) => <th key={j.id} className={`ig-col${moi.includes(j.id) ? " moi" : ""}${colVisee(j.id) ? " hl" : ""}`} title={j.nom}><span className="ig-n">{c + 1}</span><span className="ig-nom">{court(j.nom)}</span></th>)}
             </tr>
           </thead>
           <tbody>
             {joueurs.map((r, i) => (
               <tr key={r.id} className={moi.includes(r.id) ? "moi" : undefined}>
-                <th className={`ig-lig${estVise(r.id) ? " hl" : ""}`} title={r.nom}><span className="ig-n">{i + 1}</span> {court(r.nom)}</th>
+                <th className={`ig-lig${ligneVisee(r.id) ? " hl" : ""}`} title={r.nom}><span className="ig-n">{i + 1}</span> {court(r.nom)}</th>
                 {joueurs.map((c, j) => {
                   if (i === j) return <td key={c.id} className="ig-diag" aria-hidden="true" />;
                   if (j < i) return <td key={c.id} className="ig-barre" aria-hidden="true" />;
@@ -77,7 +81,7 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
                   const res = !m.joue ? "" : a! > b! ? " v" : a! < b! ? " d" : " n";
                   const cle = `${m.id}|${r.id}`;
                   return (
-                    <td key={c.id} className={`ig-m${res}${editable ? " edit" : ""}${ouvert === cle ? " on" : ""}${vise && vise.r === r.id && vise.c === c.id ? " hl" : ""}`}
+                    <td key={c.id} className={`ig-m${res}${editable ? " edit" : ""}${ouvert === cle ? " on" : ""}${vise && vise.r === r.id && vise.c === c.id ? " hl" : ""}${vise && ((i === iR && j > i && j < iC) || (j === iC && i < iR && j > i)) ? " trace" : ""}`}
                       onMouseEnter={() => setSurvol({ r: r.id, c: c.id })} onMouseLeave={() => setSurvol(null)}>
                       {ouvert === cle ? <span className="ig-btn"><span className="num">✎</span></span> : (
                         <button type="button" className="ig-btn" onClick={() => { const meme = sel && sel.r === r.id && sel.c === c.id; setSel(meme && !editable ? null : { r: r.id, c: c.id }); if (editable) ouvrir(m, r.id); }} aria-label={`${r.nom} contre ${c.nom}`}>
