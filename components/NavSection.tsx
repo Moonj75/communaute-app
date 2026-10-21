@@ -23,6 +23,8 @@ const COULEURS: [string, string][] = [
   ["/staff/logistique", "rose"],
   ["/staff/notifications", "orange"],
   ["/staff/classements", "canard"],
+  ["/staff/internes", "magenta"],
+  ["/internes", "magenta"],
   ["/admin", "bronze"],
   ["/club/classements", "indigo"],
   ["/calendrier", "canard"],

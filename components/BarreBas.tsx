@@ -15,6 +15,7 @@ const JOUEUR: Item[] = [
   { href: "/club/classements", label: "Classements", ic: "podium", opt: true, desc: "Belges et mondiaux", c: "indigo" },
   { href: "/fiche", label: "Ma fiche", ic: "joueur", c: "violet" },
   { href: "/courrier", label: "Courrier", ic: "mail", c: "or" },
+  { href: "/internes", label: "Compétitions du club", ic: "coupe", c: "magenta" },
 ];
 const STAFF: Item[] = [
   { href: "/staff/inscriptions", label: "Tableau de bord", ic: "tableau", desc: "Inscriptions, relances, logistique", c: "bleu" },
@@ -22,6 +23,7 @@ const STAFF: Item[] = [
   { href: "/staff/logistique", label: "Fiches logistiques", ic: "valise", desc: "Remplir et publier", c: "rose" },
   { href: "/staff/notifications", label: "Notifications", ic: "cloche", desc: "Prévenir les joueurs", c: "orange" },
   { href: "/staff/classements", label: "Mise à jour des classements", ic: "maj", desc: "FBFTS + FISTF, import manuel", c: "canard" },
+  { href: "/staff/internes", label: "Compétitions internes", ic: "coupe", desc: "Championnat et coupe du club", c: "magenta" },
   { href: "/admin", label: "Joueurs & accès", ic: "dossier", desc: "Synchro Notion, comptes", c: "bronze" },
 ];
 
