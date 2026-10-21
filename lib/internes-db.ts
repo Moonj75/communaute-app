@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  classement, etapeFinie, gagnant, nbLigues, nomsLigues, nomsParDefaut, nomsTableaux, ordreGeneral, paires, repartir, tableauInitial,
+  classement, decoupeBarrage, etapeFinie, gagnant, issueBarrage, vueBarrage, nbLigues, nomsLigues, nomsParDefaut, nomsTableaux, ordreGeneral, paires, repartir, tableauInitial,
   type Competition, type Groupe, type JoueurCompet, type Match,
 } from "./internes";
 
@@ -26,6 +26,21 @@ export async function lireCompet(db: SupabaseClient, id: string) {
 export async function creerEtape(db: SupabaseClient, c: Competition, k: number, groupes: { nom: string; joueurs: JoueurCompet[] }[]) {
   const e = c.etapes[k];
   if (!e) throw new Error("Étape inconnue.");
+  if (e.format === "barrage") {
+    // One play-off group per group of the stage before; players in their order (best first): best against worst.
+    for (let i = 0; i < groupes.length; i++) {
+      const js = groupes[i].joueurs;
+      if (!js.length) continue;
+      const ins = await db.from("ci_groupes").insert({ competition_id: c.id, etape: k, nom: groupes[i].nom, ordre: i, joueurs: js }).select("id").single();
+      if (ins.error) throw new Error(ins.error.message);
+      const rows = Array.from({ length: Math.floor(js.length / 2) }, (_, p) => ({ competition_id: c.id, etape: k, groupe_id: ins.data.id, tour: 0, place: p, a: js[p].id, b: js[js.length - 1 - p].id, joue: false }));
+      if (rows.length) {
+        const r = await db.from("ci_matchs").insert(rows);
+        if (r.error) throw new Error(r.error.message);
+      }
+    }
+    return;
+  }
   if (e.format === "elimination") {
     // One knockout table per level (main table, table B…), players in seed order (best first).
     for (let i = 0; i < groupes.length; i++) {
@@ -99,8 +114,13 @@ export async function suite(db: SupabaseClient, id: string, force = false): Prom
     return `🏆 ${champion} remporte la compétition !${vainqueurs.length > 1 ? ` (${gs.slice(1).map((g, i) => `${g.nom} : ${vainqueurs[i + 1]}`).join(" · ")})` : ""}`;
   }
 
-  if (!force && !etapeFinie(ms)) return null;
-  const derniere = k >= c.etapes.length - 1 || e.passage === "fin";
+  // Play-off stage over: winners up, losers down, then the next stage.
+  let issue: { haut: JoueurCompet[]; bas: JoueurCompet[] } | null = null;
+  if (e.format === "barrage") {
+    issue = issueBarrage(vueBarrage(c, groupes, matchs, k), force);
+    if (!issue) return null;
+  } else if (!force && !etapeFinie(ms)) return null;
+  const derniere = !issue && (k >= c.etapes.length - 1 || e.passage === "fin");
   if (derniere) {
     const premiers = classement(gs.sort((a, b) => a.ordre - b.ordre)[0]?.joueurs || [], ms.filter((m) => m.groupe_id === gs[0]?.id), c);
     const champion = premiers[0]?.nom || null;
@@ -108,9 +128,20 @@ export async function suite(db: SupabaseClient, id: string, force = false): Prom
     return `🏆 Étape terminée : ${champion} remporte la compétition !`;
   }
   const suivante = c.etapes[k + 1];
-  const ordre = ordreGeneral(gs, ms, c, e.passage, e.qualifies);
+  if (!suivante) return null;
+  const ordre = issue ? [...issue.haut, ...issue.bas] : ordreGeneral(gs, ms, c, e.passage, e.qualifies);
   let nouveaux: { nom: string; joueurs: JoueurCompet[] }[];
-  if (suivante.format === "elimination") {
+  if (suivante.format === "barrage") {
+    // Play-off: in each group, the ones between the « haut » first and the « bas » last.
+    nouveaux = gs.sort((a, b) => a.ordre - b.ordre).map((g) => {
+      const d = decoupeBarrage(classement(g.joueurs, ms.filter((m) => m.groupe_id === g.id), c), suivante.haut ?? 0, suivante.bas ?? 0);
+      return { nom: `Barrage · ${g.nom}`, joueurs: d.milieu.map((l) => ({ id: l.id, nom: l.nom })) };
+    });
+  } else if (issue && suivante.format === "poules" && !suivante.taille && suivante.groupes === 2) {
+    // After a play-off: the upper division and the lower division, exactly.
+    const noms = suivante.nomsGroupes.length >= 2 ? suivante.nomsGroupes : ["Division du haut", "Division du bas"];
+    nouveaux = [{ nom: noms[0] || "Division du haut", joueurs: issue.haut }, { nom: noms[1] || "Division du bas", joueurs: issue.bas }];
+  } else if (suivante.format === "elimination") {
     // One table, or one per level: the best in the main table, the next ones in table B…
     const blocs = repartir(ordre, Math.max(1, suivante.groupes), "blocs");
     const noms = suivante.nomsGroupes.length >= blocs.length ? suivante.nomsGroupes : nomsTableaux(blocs.length);
@@ -121,12 +152,19 @@ export async function suite(db: SupabaseClient, id: string, force = false): Prom
     const defaut = nomsLigues(blocs.length);
     nouveaux = blocs.map((j, i) => ({ nom: suivante.nomsGroupes[i] || defaut[i], joueurs: j }));
   } else {
-    const blocs = repartir(ordre, suivante.groupes, e.passage === "niveaux" ? "blocs" : "serpentin");
-    const noms = suivante.nomsGroupes.length >= blocs.length ? suivante.nomsGroupes : nomsParDefaut(blocs.length, e.passage === "niveaux");
+    const niveaux = Boolean(issue) || e.passage === "niveaux";
+    const blocs = repartir(ordre, suivante.groupes, niveaux ? "blocs" : "serpentin");
+    const noms = suivante.nomsGroupes.length >= blocs.length ? suivante.nomsGroupes : nomsParDefaut(blocs.length, niveaux);
     nouveaux = blocs.map((j, i) => ({ nom: noms[i] || `Poule ${i + 1}`, joueurs: j }));
   }
   await creerEtape(db, c, k + 1, nouveaux);
   await db.from("ci_competitions").update({ etape: k + 1 }).eq("id", id);
+  // A play-off stage without any play-off match (nobody in the middle zone): straight to the next stage.
+  if (suivante.format === "barrage" && !nouveaux.some((g) => g.joueurs.length >= 2)) {
+    const ensuite = await suite(db, id, true);
+    return `✅ « ${e.nom} » est terminée : pas de barrage à jouer.${ensuite ? ` ${ensuite}` : ""}`;
+  }
+  if (suivante.format === "barrage") return `✅ « ${e.nom} » est terminée : les matchs de barrage sont prêts.`;
   return `✅ « ${e.nom} » est terminée : « ${suivante.nom} » est prête, avec ses poules et ses matchs.`;
 }
 

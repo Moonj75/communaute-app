@@ -1,7 +1,12 @@
 /* Club competitions (championnat, coupe): types and the engine (standings, matches, next stage).
  * Pure functions: no database here, so they work on the server and in the browser alike. */
 
-export type FormatEtape = "poules" | "elimination";
+export type FormatEtape =
+  | "poules"
+  | "elimination"
+  // Optional stage between two group stages: the first « haut » of each group go up, the last « bas » go down,
+  // the ones in between play a play-off match (5th against 6th…): the winner goes up, the loser goes down.
+  | "barrage";
 /** What happens at the end of a stage. */
 export type Passage =
   | "niveaux" // everybody goes on: the best together, the next ones together (strong group / weaker group…)
@@ -22,6 +27,9 @@ export type EtapeConfig = {
   qualifies: number;
   /** Leagues: players per mini-group (e.g. 4). The number of groups then follows the number of players. */
   taille?: number | null;
+  /** Play-off stage: places per group going straight to the upper / lower division. */
+  haut?: number | null;
+  bas?: number | null;
 };
 
 export type TypeCompet = "championnat" | "coupe";
@@ -247,7 +255,14 @@ export function etapeFinie(matchs: Match[]) {
 }
 
 /** Short text describing a stage (for the admin). */
-export function decrireEtape(e: EtapeConfig, derniere: boolean) {
+export function decrireEtape(e: EtapeConfig, derniere: boolean, suivante?: EtapeConfig | null) {
+  if (e.format === "barrage") {
+    const h = e.haut ?? 0, b = e.bas ?? 0;
+    return `Barrage : les ${h} premiers de chaque poule montent directement, les ${b} derniers descendent directement, les autres jouent un match de barrage (le ${h + 1}e contre le suivant…) : le gagnant monte, le perdant descend`;
+  }
+  if (!derniere && suivante?.format === "barrage") {
+    return `${e.groupes} poule${e.groupes > 1 ? "s" : ""} · puis barrage (montée directe, barrage, descente directe)`;
+  }
   const f = e.format === "elimination"
     ? `Élimination directe${e.groupes > 1 ? ` · ${e.groupes} tableaux (les meilleurs ensemble, les suivants ensemble)` : ""}`
     : e.taille
@@ -255,6 +270,106 @@ export function decrireEtape(e: EtapeConfig, derniere: boolean) {
       : `${e.groupes} poule${e.groupes > 1 ? "s" : ""}`;
   const p = derniere || e.passage === "fin" ? "dernière étape" : e.passage === "niveaux" ? "puis les forts ensemble, les suivants ensemble" : `puis les ${e.qualifies} premiers de chaque poule passent`;
   return `${f} · ${p}`;
+}
+
+/* ------------------------------------------------------------------ play-off (barrage) */
+
+/**
+ * Splits the standings of a group for a play-off stage: straight up, play-off, straight down.
+ * The play-off players meet best against worst (5th–6th; with four: 5th–8th and 6th–7th).
+ */
+export function decoupeBarrage(cl: Ligne[], haut: number, bas: number) {
+  const n = cl.length;
+  const h = Math.max(0, Math.min(haut, n));
+  const b = Math.max(0, Math.min(bas, n - h));
+  const milieu = cl.slice(h, n - b);
+  const duels: [Ligne, Ligne][] = [];
+  for (let i = 0; i < Math.floor(milieu.length / 2); i++) duels.push([milieu[i], milieu[milieu.length - 1 - i]]);
+  // An odd number: the one left alone (the middle of the play-off zone) goes up.
+  const seul = milieu.length % 2 ? milieu[Math.floor(milieu.length / 2)] : null;
+  return { haut: cl.slice(0, h), milieu, duels, seul, bas: cl.slice(n - b) };
+}
+
+/** The group stage just before a play-off stage, cut group by group (for the screens and the next stage). */
+export function vueBarrage(c: Competition, groupes: Groupe[], matchs: Match[], kBarrage: number) {
+  const e = c.etapes[kBarrage];
+  const avant = groupes.filter((g) => g.etape === kBarrage - 1).sort((a, b) => a.ordre - b.ordre);
+  const msB = matchs.filter((m) => m.etape === kBarrage);
+  return avant.map((g, gi) => {
+    const cl = classement(g.joueurs, matchs.filter((m) => m.groupe_id === g.id), c);
+    const d = decoupeBarrage(cl, e?.haut ?? 0, e?.bas ?? 0);
+    const duels = d.duels.map(([x, y]) => {
+      const m = msB.find((m) => (m.a === x.id && m.b === y.id) || (m.a === y.id && m.b === x.id)) || null;
+      const w = m ? gagnant(m) : null;
+      return { x, y, match: m, gagnant: w, perdant: w ? (w === x.id ? y.id : x.id) : null };
+    });
+    return { groupe: g, gi, cl, ...d, duelsJoues: duels };
+  });
+}
+
+/**
+ * End of a play-off stage: who goes up and who goes down, best first.
+ * force = the stage is closed although a play-off was not played: the better placed one goes up.
+ */
+export function issueBarrage(vue: ReturnType<typeof vueBarrage>, force = false): { haut: JoueurCompet[]; bas: JoueurCompet[] } | null {
+  type L = Ligne & { gi: number };
+  const tri = (l: L[]) => l.sort((x, y) => x.rang - y.rang || y.pts - x.pts || y.diff - x.diff || y.bp - x.bp || x.gi - y.gi).map((l) => ({ id: l.id, nom: l.nom }));
+  const directsH: L[] = [], gagnants: L[] = [], perdants: L[] = [], directsB: L[] = [];
+  for (const v of vue) {
+    v.haut.forEach((l) => directsH.push({ ...l, gi: v.gi }));
+    if (v.seul) gagnants.push({ ...v.seul, gi: v.gi });
+    for (const d of v.duelsJoues) {
+      let w = d.gagnant;
+      if (!w) { if (!force) return null; w = d.x.id; }
+      const [g, p] = w === d.x.id ? [d.x, d.y] : [d.y, d.x];
+      gagnants.push({ ...g, gi: v.gi });
+      perdants.push({ ...p, gi: v.gi });
+    }
+    v.bas.forEach((l) => directsB.push({ ...l, gi: v.gi }));
+  }
+  return { haut: [...tri(directsH), ...tri(gagnants)], bas: [...tri(perdants), ...tri(directsB)] };
+}
+
+/* ------------------------------------------------------------------ dates */
+
+/** The day after a date (YYYY-MM-DD). */
+export function lendemain(d: string) {
+  const x = new Date(`${d}T12:00:00Z`);
+  x.setUTCDate(x.getUTCDate() + 1);
+  return x.toISOString().slice(0, 10);
+}
+
+/**
+ * Keeps the dates in order after a change: a stage never ends before it starts,
+ * and the next stage always starts after the end of the previous one (moved to the day after if needed).
+ */
+export function enchainerDates(etapes: EtapeConfig[], depuis = 0): EtapeConfig[] {
+  const out = etapes.map((e) => ({ ...e }));
+  // Last known date before the stage (end, or start when the end is not set yet).
+  let borne: string | null = null;
+  for (let i = 0; i < out.length; i++) {
+    const e = out[i];
+    if (i >= depuis) {
+      if (borne && e.debut && e.debut <= borne) e.debut = lendemain(borne);
+      else if (borne && !e.debut && out[i - 1]?.fin) e.debut = lendemain(out[i - 1].fin!);
+      if (e.debut && e.fin && e.fin < e.debut) e.fin = e.debut;
+    }
+    borne = e.fin || e.debut || borne;
+  }
+  return out;
+}
+
+/** Dates in order? (null = all right, otherwise what is wrong) */
+export function erreurDates(etapes: EtapeConfig[]): string | null {
+  let borne: { d: string; nom: string } | null = null;
+  for (const e of etapes) {
+    if (e.debut && e.fin && e.fin < e.debut) return `« ${e.nom} » finit avant de commencer.`;
+    if (borne && e.debut && e.debut <= borne.d) return `« ${e.nom} » doit commencer après la fin de « ${borne.nom} ».`;
+    if (borne && !e.debut && e.fin && e.fin <= borne.d) return `« ${e.nom} » doit finir après « ${borne.nom} ».`;
+    const d = e.fin || e.debut;
+    if (d) borne = { d, nom: e.nom };
+  }
+  return null;
 }
 
 /* ------------------------------------------------------------------ the player's own view */
@@ -299,11 +414,23 @@ export function situations(competitions: { c: Competition; groupes: Groupe[]; ma
     const gs = groupes.filter((g) => g.etape === k);
     const ms = matchs.filter((m) => m.etape === k);
     const tous = groupes.flatMap((g) => g.joueurs);
+    const vueB = e.format === "barrage" ? vueBarrage(c, groupes, matchs, k) : null;
+    const suivante = c.etapes[k + 1];
+    const nomHaut = (suivante?.nomsGroupes?.[0]) || "la division du haut";
+    const nomBas = (suivante?.nomsGroupes?.[1]) || "la division du bas";
     for (const id of miens) {
       const g = gs.find((x) => x.joueurs.some((j) => j.id === id));
       const joueur = g?.joueurs.find((j) => j.id === id) || tous.find((j) => j.id === id);
       if (!joueur) continue; // not in this competition
       const nom = (x: string | null) => tous.find((j) => j.id === x)?.nom || "?";
+      if (!g && vueB) {
+        // Play-off stage, without a play-off match: straight up or straight down.
+        const v = vueB.find((x) => x.cl.some((l) => l.id === id));
+        if (!v) continue;
+        const monte = v.haut.some((l) => l.id === id) || v.seul?.id === id;
+        out.push({ compet: c, joueur, etapeNom: e.nom, fin: e.fin, groupe: v.groupe.nom, rang: v.cl.find((l) => l.id === id)!.rang, sur: v.cl.length, pts: null, statut: monte ? { txt: `Monte directement en ${nomHaut}`, ton: "bon" } : { txt: `Va en ${nomBas}`, ton: "neutre" }, aJouer: [], joues: 0, total: 0 });
+        continue;
+      }
       if (!g) {
         out.push({ compet: c, joueur, etapeNom: e.nom, fin: e.fin, groupe: null, rang: null, sur: null, pts: null, statut: { txt: "Éliminé à l'étape précédente", ton: "fini" }, aJouer: [], joues: 0, total: 0 });
         continue;
@@ -314,6 +441,13 @@ export function situations(competitions: { c: Competition; groupes: Groupe[]; ma
         const vu = (p?: Proposition | null) => (p ? { m: jeSuisA ? p.a : p.b, s: jeSuisA ? p.b : p.a, v: p.v } : null);
         return { id: m.id, contre: nom(jeSuisA ? m.b : m.a), contreId: (jeSuisA ? m.b : m.a) || "", ko: m.tour != null, moi: vu(jeSuisA ? m.prop_a : m.prop_b), lui: vu(jeSuisA ? m.prop_b : m.prop_a) };
       });
+      if (e.format === "barrage") {
+        const m = mesMs[0];
+        const w = m ? gagnant(m) : null;
+        const statut = !m ? { txt: `Monte en ${nomHaut}`, ton: "bon" as const } : w ? (w === id ? { txt: `Barrage gagné : monte en ${nomHaut}`, ton: "bon" as const } : { txt: `Barrage perdu : va en ${nomBas}`, ton: "neutre" as const }) : { txt: `Match de barrage : le gagnant monte en ${nomHaut}`, ton: "moyen" as const };
+        out.push({ compet: c, joueur, etapeNom: e.nom, fin: e.fin, groupe: g.nom, rang: null, sur: null, pts: null, statut, aJouer, joues: mesMs.filter((m) => m.joue).length, total: mesMs.length });
+        continue;
+      }
       if (e.format === "elimination") {
         const perdu = mesMs.some((m) => m.joue && gagnant(m) !== id);
         out.push({ compet: c, joueur, etapeNom: e.nom, fin: e.fin, groupe: g.nom, rang: null, sur: null, pts: null, statut: perdu ? { txt: "Éliminé", ton: "fini" } : { txt: "Toujours en course", ton: "bon" }, aJouer: perdu ? [] : aJouer, joues: mesMs.filter((m) => m.joue).length, total: mesMs.length });
@@ -324,6 +458,10 @@ export function situations(competitions: { c: Competition; groupes: Groupe[]; ma
       const derniere = k >= c.etapes.length - 1 || e.passage === "fin";
       let statut: MaSituation["statut"];
       if (derniere) statut = moi.rang === 1 ? { txt: "En tête de la phase finale", ton: "bon" } : { txt: `${moi.rang}e de la phase finale`, ton: "neutre" };
+      else if (suivante?.format === "barrage") {
+        const h = suivante.haut ?? 0, b = suivante.bas ?? 0, n = cl.length;
+        statut = moi.rang <= h ? { txt: "En route pour monter directement", ton: "bon" } : moi.rang > n - b ? { txt: "En route vers la division du bas", ton: "moyen" } : { txt: "En zone de barrage", ton: "moyen" };
+      }
       else if (e.passage === "qualifies") statut = moi.rang <= e.qualifies ? { txt: `Qualifié pour l'instant (${e.qualifies} premiers)`, ton: "bon" } : { txt: `Pas encore qualifié (il faut finir dans les ${e.qualifies} premiers)`, ton: "moyen" };
       else {
         const moitie = Math.ceil(g.joueurs.length / 2);
