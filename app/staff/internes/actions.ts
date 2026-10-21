@@ -90,7 +90,7 @@ export async function saisirScore(matchId: string, butsA: number | null, butsB: 
     if (butsA == null || butsB == null) {
       // Erase a score.
       if (match.tour != null) return { ok: false, message: "Dans le tableau final, corrige le score au lieu de l'effacer." };
-      await db.from("ci_matchs").update({ buts_a: null, buts_b: null, vainqueur: null, joue: false, maj_le: new Date().toISOString() }).eq("id", matchId);
+      await db.from("ci_matchs").update({ buts_a: null, buts_b: null, vainqueur: null, joue: false, prop_a: null, prop_b: null, maj_le: new Date().toISOString() }).eq("id", matchId);
       rafraichir(match.competition_id);
       return { ok: true, message: "Score effacé." };
     }
@@ -99,10 +99,13 @@ export async function saisirScore(matchId: string, butsA: number | null, butsB: 
     if (ko && a === b && vainqueur !== match.a && vainqueur !== match.b) return { ok: false, message: "Match nul : choisis qui passe (prolongations ou tirs)." };
     if (ko) {
       // In a knockout, a winner can only change while the next round has not been played.
-      const { data: suiv } = await db.from("ci_matchs").select("joue").eq("competition_id", match.competition_id).eq("etape", match.etape).eq("tour", match.tour! + 1).eq("place", Math.floor(match.place! / 2)).maybeSingle();
+      let q = db.from("ci_matchs").select("joue").eq("competition_id", match.competition_id).eq("etape", match.etape).eq("tour", match.tour! + 1).eq("place", Math.floor(match.place! / 2));
+      if (match.groupe_id) q = q.eq("groupe_id", match.groupe_id);
+      const { data: suiv } = await q.maybeSingle();
       if (suiv?.joue) return { ok: false, message: "Le tour suivant est déjà joué : ce score ne peut plus changer." };
     }
-    const maj = { buts_a: a, buts_b: b, vainqueur: ko && a === b ? vainqueur : null, joue: true, maj_le: new Date().toISOString() };
+    // The staff decides: the players' proposals are cleared.
+    const maj = { buts_a: a, buts_b: b, vainqueur: ko && a === b ? vainqueur : null, joue: true, prop_a: null, prop_b: null, maj_le: new Date().toISOString() };
     const { error } = await db.from("ci_matchs").update(maj).eq("id", matchId);
     if (error) return { ok: false, message: expliquer(error) };
     if (ko) await avancerVainqueur(db, match.competition_id, match.etape, { ...match, ...maj });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { decrireEtape, nomsParDefaut, type EtapeConfig, type TypeCompet } from "@/lib/internes";
+import { decrireEtape, nomsParDefaut, nomsTableaux, type EtapeConfig, type TypeCompet } from "@/lib/internes";
 import { creerCompetition } from "./actions";
 
 const saisonActuelle = () => {
@@ -93,16 +93,34 @@ export default function Assistant() {
               <div className="as-ligne">
                 <label className="f as-court">Du<input className="input" type="date" value={e.debut || ""} onChange={(x) => maj(i, { debut: x.target.value || null })} /></label>
                 <label className="f as-court">Au<input className="input" type="date" value={e.fin || ""} onChange={(x) => maj(i, { fin: x.target.value || null })} /></label>
-                <label className="f as-court">Forme
-                  <select className="input" value={e.format} onChange={(x) => maj(i, x.target.value === "elimination" ? { format: "elimination", groupes: 1, passage: "fin" } : { format: "poules", groupes: 2, nomsGroupes: nomsParDefaut(2, i > 0), passage: derniere ? "fin" : "niveaux" })}>
-                    <option value="poules">Poules</option>
-                    <option value="elimination" disabled={!derniere}>Élimination directe{!derniere ? " (dernière étape)" : ""}</option>
-                  </select>
-                </label>
-                {e.format === "poules" ? (
+                {!derniere ? (
                   <label className="f as-court">Poules<input className="input" type="number" min={1} max={8} value={e.groupes} onChange={(x) => changerGroupes(i, Number(x.target.value))} /></label>
                 ) : null}
               </div>
+              {derniere ? (
+                <div className="as-forme" role="radiogroup" aria-label="Forme de la phase finale">
+                  <button type="button" className={`as-f${e.format === "poules" ? " on" : ""}`} onClick={() => maj(i, { format: "poules", groupes: Math.max(1, e.groupes), nomsGroupes: nomsParDefaut(Math.max(1, e.groupes), i > 0), passage: "fin" })}>
+                    <span aria-hidden="true">🏆</span><b>En poules ou mini-poules</b><small>Chacun contre chacun. 2 grandes poules, ou plusieurs mini-poules (3–4 joueurs) : les meilleurs ensemble, puis les suivants, et ainsi de suite</small>
+                  </button>
+                  <button type="button" className={`as-f${e.format === "elimination" ? " on" : ""}`} onClick={() => maj(i, { format: "elimination", groupes: Math.max(1, Math.min(e.groupes, 4)), nomsGroupes: nomsTableaux(Math.max(1, Math.min(e.groupes, 4))), passage: "fin" })}>
+                    <span aria-hidden="true">⚔️</span><b>En élimination directe</b><small>Matchs à élimination : quarts, demies, finale</small>
+                  </button>
+                </div>
+              ) : null}
+              {derniere ? (
+                <div className="as-ligne">
+                  <label className="f as-court">{e.format === "elimination" ? "Tableaux" : "Poules"}<input className="input" type="number" min={1} max={e.format === "elimination" ? 4 : 8} value={e.groupes} onChange={(x) => {
+                    const v = Math.max(1, Math.min(e.format === "elimination" ? 4 : 8, Number(x.target.value) || 1));
+                    maj(i, { groupes: v, nomsGroupes: e.format === "elimination" ? nomsTableaux(v) : nomsParDefaut(v, i > 0) });
+                  }} /></label>
+                  <p className="as-resume as-aide">{e.format === "elimination" ? "1 tableau = tout le monde ensemble. 2 tableaux = les meilleurs dans le tableau principal, les suivants dans le tableau B." : "Ex. 12 joueurs en 4 mini-poules : les 3 meilleurs ensemble, les 3 suivants ensemble… Le vainqueur de la 1re poule est le champion."}</p>
+                </div>
+              ) : null}
+              {e.format === "elimination" && e.groupes > 1 ? (
+                <label className="f">Noms des tableaux (du plus fort au moins fort)
+                  <input className="input" value={e.nomsGroupes.join(", ")} onChange={(x) => maj(i, { nomsGroupes: x.target.value.split(",").map((s) => s.trim()) })} placeholder={nomsTableaux(e.groupes).join(", ")} />
+                </label>
+              ) : null}
               {e.format === "poules" ? (
                 <label className="f">Noms des poules (du plus fort au moins fort)
                   <input className="input" value={e.nomsGroupes.join(", ")} onChange={(x) => maj(i, { nomsGroupes: x.target.value.split(",").map((s) => s.trim()) })} placeholder={nomsParDefaut(e.groupes, i > 0).join(", ")} />
