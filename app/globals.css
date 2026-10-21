@@ -4146,3 +4146,57 @@ table.t.ci-cl tr.moi td:nth-child(3) b { text-decoration: underline 3px #00e5ff;
 .ig-lig-in { display: flex; align-items: center; gap: 6px; }
 .ig-lig-nom { overflow-wrap: anywhere; hyphens: auto; }
 @media (max-width: 520px) { .ig-t th.ig-coin { width: 33%; } .ig-t th.ig-lig { font-size: 11.5px; } .ig-lig-in { gap: 4px; } }
+/* Grille des matchs : ses numéros de colonnes restent en haut de la grille (pas de titre « collant » qui glisse au milieu). */
+.scene .ig-t thead th, .ig-t thead th { position: static !important; top: auto !important; }
+/* Case choisie : le nom complet des 2 joueurs, un peu plus grand, sur sa ligne et au-dessus de sa colonne. */
+.ig-t thead tr { height: 64px; }
+.ig-t thead th.ig-col { position: relative !important; vertical-align: bottom; }
+.ig-col-nom {
+  position: absolute; bottom: 40px; left: 0; z-index: 4;
+  white-space: nowrap; padding: 4px 10px; border-radius: 10px;
+  font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 15px; letter-spacing: .01em;
+  color: #fff; background: linear-gradient(180deg, #f472e0, #c235b6);
+  text-shadow: 0 1px 0 rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.25);
+  box-shadow: 0 6px 14px -6px rgba(194,53,182,.7), inset 0 1px 0 rgba(255,255,255,.35);
+  animation: ig-pop .18s ease-out;
+}
+.ig-col-nom.d { left: auto; right: 0; }
+.ig-col-nom::after { content: ""; position: absolute; top: 100%; left: 12px; border: 6px solid transparent; border-top-color: #c235b6; }
+.ig-col-nom.d::after { left: auto; right: 12px; }
+.ig-t th.ig-lig.hl .ig-lig-nom {
+  font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1.22em; color: #c235b6;
+  text-shadow: 0 1px 0 #fff, 0 2px 0 rgba(194,53,182,.25), 0 3px 8px rgba(194,53,182,.3);
+}
+@keyframes ig-pop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 520px) { .ig-col-nom { font-size: 13px; padding: 3px 8px; } .ig-t thead tr { height: 58px; } }
+.ig-t td .num { white-space: nowrap; }
+.ig-v-j b { overflow-wrap: normal; word-break: normal; hyphens: none; }
+@media (max-width: 520px) {
+  .ig-t td { font-size: 11px; letter-spacing: -.02em; }
+  .ig-t th.ig-coin { width: 30%; }
+  .ig-v-j b { font-size: 17px !important; }
+}
+/* Bouton « Mettre le score » : un vrai bouton en relief. */
+.mo-l li.mo .mo-btn, .mo-btn {
+  all: unset; box-sizing: border-box; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 14px 6px 6px; border-radius: 999px;
+  font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 15px; letter-spacing: .02em; text-transform: uppercase;
+  color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.3);
+  background: linear-gradient(180deg, #f77fe6 0%, #d43fc6 55%, #a8259d 100%);
+  border: 1px solid #8f1f86;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -3px 0 rgba(0,0,0,.18), 0 4px 0 #7a1872, 0 8px 18px -6px rgba(194,53,182,.6);
+  transition: transform .08s, box-shadow .08s, filter .15s;
+}
+.mo-btn:hover { filter: brightness(1.07); }
+.mo-btn:active { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(0,0,0,.18), 0 1px 0 #7a1872, 0 3px 8px -4px rgba(194,53,182,.6); }
+.mo-btn:focus-visible { outline: 3px solid #00e5ff; outline-offset: 3px; }
+.mo-btn-ic { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-size: 16px; font-style: normal; background: #fff; box-shadow: inset 0 -2px 0 rgba(0,0,0,.12), 0 1px 3px rgba(0,0,0,.25); }
+.mo-btn-fl { font-size: 22px; line-height: 1; font-style: normal; margin-left: 2px; opacity: .9; }
+@media (max-width: 520px) { .mo-btn { font-size: 13.5px; gap: 8px; } .mo-btn-ic { width: 26px; height: 26px; font-size: 14px; } }
+/* Grille sur téléphone : les scores entiers et les noms coupés seulement entre deux mots. */
+.ig-t th.ig-lig .ig-lig-nom { overflow-wrap: normal; word-break: normal; hyphens: none; }
+@media (max-width: 520px) {
+  .ig-t td .ig-btn { font-size: 10.5px; padding: 0; letter-spacing: -.04em; }
+  .ig-t th.ig-lig { font-size: 10.5px; }
+}
