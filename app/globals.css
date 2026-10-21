@@ -4054,3 +4054,11 @@ table.t.ci-cl .c-evo { width: 30px; padding-left: 0 !important; padding-right: 2
 .ci-leg-h { padding: 1px 8px; border-radius: 99px; background: color-mix(in srgb, #a46bff 18%, var(--surface)); color: var(--fg); font-weight: 700; }
 table.t.ci-cl tr.moi.ci-1er td, table.t.ci-cl tr.moi.ci-haut td { font-weight: 700; }
 table.t.ci-cl tr.moi td:nth-child(3) b { text-decoration: underline 3px #00e5ff; text-underline-offset: 4px; }
+/* Starting groups: active players or the extended list */
+.rp-liste-choix { display: flex; flex-wrap: wrap; gap: 6px; }
+.rp-seg { padding: 8px 12px; border-radius: 99px; border: 2px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; font-weight: 700; font-size: 13.5px; cursor: pointer; }
+.rp-seg .num { margin-left: 4px; padding: 0 7px; border-radius: 99px; background: var(--sunk); font-size: 12px; }
+.rp-seg.on { border-color: #f05ad8; background: color-mix(in srgb, #f05ad8 12%, var(--surface)); }
+.rp-cherche { max-width: 360px; }
+.aj { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.rp-sauve { margin: 0; font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
