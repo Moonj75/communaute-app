@@ -1,7 +1,9 @@
 import { getVue, estInactif } from "@/lib/profil";
 import { essayer, lireCalendrier, lireParticipations, lireTaches } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
-import { urgences } from "@/lib/urgences";
+import { urgences, urgencesMatchs } from "@/lib/urgences";
+import { lireEnCours } from "@/lib/internes-db";
+import { situations } from "@/lib/internes";
 import { lireEligibles } from "@/lib/eligibles";
 import { lireNonLus } from "@/lib/courrier";
 import Defilant from "./Defilant";
@@ -22,6 +24,11 @@ export default async function BandeauUrgent() {
       lireEligibles(supabase),
     ]);
     const l = urgences(cal.data || [], parts.data || [], famille.filter((j) => j.actif), taches.data, undefined, elig, nonLus);
+    // Club competitions: matches still to play when the stage ends soon.
+    try {
+      const sits = situations(await lireEnCours(supabase), famille.map((j) => j.notionId));
+      l.push(...urgencesMatchs(sits, undefined, famille.length > 1));
+    } catch { /* competitions not installed yet */ }
     if (!l.length) return null;
     return <Defilant items={l} />;
   } catch {
