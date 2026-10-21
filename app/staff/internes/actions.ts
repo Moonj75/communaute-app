@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSessionProfil } from "@/lib/profil";
 import { avancerVainqueur, creerEtape, lireCompet, suite } from "@/lib/internes-db";
-import type { Brouillon, EtapeConfig, JoueurCompet, Match, TypeCompet } from "@/lib/internes";
+import { erreurDates, type Brouillon, type EtapeConfig, type JoueurCompet, type Match, type TypeCompet } from "@/lib/internes";
 
 export type Retour = { ok: boolean; message: string };
 
@@ -23,6 +23,41 @@ const rafraichir = (id?: string) => {
   if (id) revalidatePath(`/staff/internes/${id}`);
 };
 
+const date = (d: unknown) => (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null);
+const entier = (x: unknown, min: number, max: number, defaut: number) => Math.max(min, Math.min(max, Math.round(Number(x)) || (Number(x) === 0 ? 0 : defaut)));
+
+/** Clean list of stages (from a form): limits, last stage, play-off rules. Error text when it cannot be. */
+function nettoyerEtapes(brut: EtapeConfig[]): { etapes: EtapeConfig[]; erreur: string | null } {
+  const all = brut.slice(0, 8);
+  const etapes: EtapeConfig[] = all.map((e, i) => {
+    const format = e.format === "elimination" ? "elimination" : e.format === "barrage" ? "barrage" : "poules";
+    return {
+      nom: (String(e.nom || "").trim() || `Étape ${i + 1}`).slice(0, 80),
+      debut: date(e.debut),
+      fin: date(e.fin),
+      format,
+      groupes: entier(e.groupes, 1, 8, 1),
+      nomsGroupes: (e.nomsGroupes || []).map((n) => String(n).slice(0, 40)).filter(Boolean),
+      passage: format === "barrage" ? "niveaux" : i === all.length - 1 || format === "elimination" ? "fin" : e.passage === "qualifies" ? "qualifies" : "niveaux",
+      qualifies: entier(e.qualifies, 1, 16, 2),
+      // Leagues (mini-groups of N players) only for a stage after the first one.
+      taille: format === "poules" && i > 0 && e.taille ? entier(e.taille, 2, 12, 4) : null,
+      haut: format === "barrage" ? entier(e.haut, 0, 30, 4) : null,
+      bas: format === "barrage" ? entier(e.bas, 0, 30, 4) : null,
+    };
+  });
+  if (!etapes.length) return { etapes, erreur: "Il faut au moins une étape." };
+  for (let i = 0; i < etapes.length; i++) {
+    if (etapes[i].format !== "barrage") continue;
+    if (i === 0) return { etapes, erreur: "Un barrage ne peut pas être la première étape : il se joue après des poules." };
+    if (i === etapes.length - 1) return { etapes, erreur: "Un barrage ne peut pas être la dernière étape : il faut une étape après (division du haut / du bas)." };
+    if (etapes[i - 1].format !== "poules") return { etapes, erreur: `« ${etapes[i].nom} » : un barrage se joue juste après une étape en poules.` };
+    // Everybody goes on after the group stage that leads to the play-off.
+    etapes[i - 1].passage = "niveaux";
+  }
+  return { etapes, erreur: erreurDates(etapes) };
+}
+
 /** New competition (its stages are described once, then everything follows by itself). */
 export async function creerCompetition(p: { type: TypeCompet; nom: string; saison: string; pts: [number, number, number]; etapes: EtapeConfig[] }): Promise<Retour> {
   let id = "";
@@ -30,19 +65,8 @@ export async function creerCompetition(p: { type: TypeCompet; nom: string; saiso
     const db = await staff();
     const nom = p.nom.trim().slice(0, 120);
     if (!nom) return { ok: false, message: "Donne un nom à la compétition." };
-    if (!p.etapes.length) return { ok: false, message: "Il faut au moins une étape." };
-    const etapes: EtapeConfig[] = p.etapes.slice(0, 8).map((e, i, all) => ({
-      nom: (e.nom || `Étape ${i + 1}`).slice(0, 80),
-      debut: e.debut || null,
-      fin: e.fin || null,
-      format: e.format === "elimination" ? "elimination" : "poules",
-      groupes: Math.max(1, Math.min(8, Number(e.groupes) || 1)),
-      nomsGroupes: (e.nomsGroupes || []).map((n) => String(n).slice(0, 40)).filter(Boolean),
-      passage: i === all.length - 1 || e.format === "elimination" ? "fin" : e.passage === "qualifies" ? "qualifies" : "niveaux",
-      qualifies: Math.max(1, Math.min(16, Number(e.qualifies) || 2)),
-      // Leagues (mini-groups of N players) only for a stage after the first one.
-      taille: i > 0 && e.format !== "elimination" && e.taille ? Math.max(2, Math.min(12, Math.round(Number(e.taille)))) : null,
-    }));
+    const { etapes, erreur } = nettoyerEtapes(p.etapes || []);
+    if (erreur) return { ok: false, message: erreur };
     const [v, n, d] = p.pts.map((x) => Math.max(0, Math.min(10, Math.round(Number(x) || 0))));
     const { data, error } = await db
       .from("ci_competitions")
@@ -179,6 +203,54 @@ export async function enregistrerBrouillon(id: string, b: Brouillon): Promise<Re
     const { error } = await db.from("ci_competitions").update({ brouillon: propre }).eq("id", id).eq("statut", "preparation");
     if (error) return { ok: false, message: /brouillon/.test(error.message) ? "Lance d'abord le script Supabase « etape13 » (mis à jour)." : expliquer(error) };
     return { ok: true, message: "Enregistré" };
+  } catch (e) {
+    return { ok: false, message: expliquer(e) };
+  }
+}
+
+/**
+ * Changes a competition: name, season, points, names and dates of the stages, names of the groups already made,
+ * and the stages not started yet (format, groups, play-off added or removed…).
+ * Stages already started keep their shape: only their name and dates change
+ * (and, for the stage in progress, what happens at its end).
+ */
+export async function modifierCompetition(id: string, p: { nom: string; saison: string; pts: [number, number, number]; etapes: EtapeConfig[]; groupes: { id: string; nom: string }[] }): Promise<Retour> {
+  try {
+    const db = await staff();
+    const d = await lireCompet(db, id);
+    if (!d) return { ok: false, message: "Compétition introuvable." };
+    const { c } = d;
+    const nom = String(p.nom || "").trim().slice(0, 120);
+    if (!nom) return { ok: false, message: "Donne un nom à la compétition." };
+    // Last stage whose shape is fixed (already made): -1 while in preparation.
+    const fixe = c.statut === "preparation" ? -1 : c.statut === "terminee" ? c.etapes.length - 1 : c.etape;
+    if ((p.etapes || []).length <= fixe) return { ok: false, message: "Les étapes déjà commencées ne peuvent pas être retirées." };
+    const brut: EtapeConfig[] = p.etapes.map((e, i) => {
+      if (i > fixe) return e;
+      const ancien = c.etapes[i];
+      const enCours = c.statut === "en_cours" && i === c.etape;
+      return { ...ancien, nom: e.nom, debut: e.debut, fin: e.fin, ...(enCours && ancien.format === "poules" ? { passage: e.passage, qualifies: e.qualifies } : {}) };
+    });
+    const { etapes, erreur } = nettoyerEtapes(brut);
+    if (erreur) return { ok: false, message: erreur };
+    // The shape of the stages already made never changes (nettoyerEtapes may only touch their « passage »).
+    for (let i = 0; i <= fixe; i++) {
+      const a = c.etapes[i], b = etapes[i];
+      if (a.format !== b.format) return { ok: false, message: `« ${a.nom} » a déjà commencé : sa forme ne peut plus changer.` };
+      b.groupes = a.groupes; b.nomsGroupes = a.nomsGroupes; b.taille = a.taille ?? null; b.haut = a.haut ?? null; b.bas = a.bas ?? null;
+      if (!(c.statut === "en_cours" && i === c.etape)) { b.passage = a.passage; b.qualifies = a.qualifies; }
+    }
+    const [v, n, dd] = (p.pts || [3, 1, 0]).map((x) => entier(x, 0, 10, 0));
+    const { error } = await db.from("ci_competitions").update({ nom, saison: String(p.saison || "").trim().slice(0, 20) || null, pts_v: v, pts_n: n, pts_d: dd, etapes }).eq("id", id);
+    if (error) return { ok: false, message: expliquer(error) };
+    // Names of the groups already made.
+    for (const g of (p.groupes || []).slice(0, 100)) {
+      const nomG = String(g.nom || "").trim().slice(0, 40);
+      if (!nomG || !d.groupes.some((x) => x.id === g.id && x.nom !== nomG)) continue;
+      await db.from("ci_groupes").update({ nom: nomG }).eq("id", g.id).eq("competition_id", id);
+    }
+    rafraichir(id);
+    return { ok: true, message: "✅ Modifications enregistrées." };
   } catch (e) {
     return { ok: false, message: expliquer(e) };
   }
