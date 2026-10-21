@@ -5,11 +5,6 @@ import { useState, useTransition } from "react";
 import { etatSaisie, type JoueurCompet, type Match } from "@/lib/internes";
 import { saisirScore } from "@/app/staff/internes/actions";
 
-const court = (n: string) => {
-  const [p, ...r] = n.split(" ");
-  return r.length ? `${p} ${r.join(" ").charAt(0)}.` : p;
-};
-
 /**
  * Cross table of a group: each player in a row and in a column; the half below the diagonal is barred,
  * each match is in the half above (score read from the row player's side). The staff types the score
@@ -58,20 +53,34 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
   const mo = matchs.find((m) => m.id === mId);
   const autre = mo ? joueurs.find((j) => j.id === (mo.a === ligne ? mo.b : mo.a)) : null;
   const lui = joueurs.find((j) => j.id === ligne);
+  // The match in the spotlight: full names, in relief, above the table.
+  const mv = vise ? trouver(vise.r, vise.c) : null;
+  const jr = vise ? joueurs.find((j) => j.id === vise.r) : null;
+  const jc = vise ? joueurs.find((j) => j.id === vise.c) : null;
+  const [sa, sb] = mv && jr ? vu(mv, jr.id) : [null, null];
   return (
     <div className="ig">
+      <div className={`ig-vedette${mv ? " on" : ""}`} aria-live="polite">
+        {mv && jr && jc ? (
+          <>
+            <span className={`ig-v-j${mv.joue && sa! > sb! ? " gagne" : ""}`}><span className="ig-n">{iR + 1}</span><b>{jr.nom}</b></span>
+            <span className={`ig-v-s${mv.joue ? "" : " a-jouer"}`}>{mv.joue ? <><b className="num">{sa}</b><i>–</i><b className="num">{sb}</b></> : <small>à jouer</small>}</span>
+            <span className={`ig-v-j d${mv.joue && sb! > sa! ? " gagne" : ""}`}><b>{jc.nom}</b><span className="ig-n">{iC + 1}</span></span>
+          </>
+        ) : <span className="ig-v-aide">👆 Touche une case pour voir le match</span>}
+      </div>
       <div className="ig-scroll">
         <table className="ig-t">
           <thead>
             <tr>
               <th className="ig-coin"><span className="num">{joues}/{matchs.length}</span> joués</th>
-              {joueurs.map((j, c) => <th key={j.id} className={`ig-col${moi.includes(j.id) ? " moi" : ""}${colVisee(j.id) ? " hl" : ""}`} title={j.nom}><span className="ig-n">{c + 1}</span><span className="ig-nom">{court(j.nom)}</span></th>)}
+              {joueurs.map((j, c) => <th key={j.id} className={`ig-col${moi.includes(j.id) ? " moi" : ""}${colVisee(j.id) ? " hl" : ""}`} title={j.nom}><span className="ig-n">{c + 1}</span></th>)}
             </tr>
           </thead>
           <tbody>
             {joueurs.map((r, i) => (
               <tr key={r.id} className={moi.includes(r.id) ? "moi" : undefined}>
-                <th className={`ig-lig${ligneVisee(r.id) ? " hl" : ""}`} title={r.nom}><span className="ig-n">{i + 1}</span> {court(r.nom)}</th>
+                <th className={`ig-lig${ligneVisee(r.id) ? " hl" : ""}`} title={r.nom}><span className="ig-lig-in"><span className="ig-n">{i + 1}</span><span className="ig-lig-nom">{r.nom}</span></span></th>
                 {joueurs.map((c, j) => {
                   if (i === j) return <td key={c.id} className="ig-diag" aria-hidden="true" />;
                   if (j < i) return <td key={c.id} className="ig-barre" aria-hidden="true" />;
