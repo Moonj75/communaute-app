@@ -497,3 +497,20 @@ export async function lireActifs(): Promise<{ id: string; nom: string }[]> {
     .filter((x) => x.nom)
     .sort((a, b) => a.nom.localeCompare(b.nom));
 }
+
+/** New player in the Notion « Liste des joueurs » (the reference list). The e-mail is optional. */
+export async function creerJoueurNotion(p: { prenom: string | null; nom: string; email: string | null; actif: boolean; admin: boolean }): Promise<string> {
+  const DS_JOUEURS = process.env.NOTION_DS_JOUEURS || "3e329252-8add-80cc-96fe-000bc0a144e4";
+  const complet = [p.prenom, p.nom].filter(Boolean).join(" ").slice(0, 200);
+  const properties: Record<string, unknown> = {
+    "Nom complet": { title: [{ type: "text", text: { content: complet } }] },
+    Actif: { checkbox: p.actif },
+  };
+  if (p.prenom) properties["Prénom"] = { rich_text: [{ type: "text", text: { content: p.prenom.slice(0, 100) } }] };
+  if (p.email) {
+    properties.Email = { email: p.email };
+    properties["Accès application"] = { select: { name: p.admin ? "Administrateur" : "Joueur" } };
+  }
+  const pg = (await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS_JOUEURS }, properties } })) as Page;
+  return pg.id;
+}
