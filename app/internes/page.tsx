@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import Blocs from "@/components/Blocs";
 import { displayName, getVue } from "@/lib/profil";
-import { lireCompet, lireCompetitions } from "@/lib/internes-db";
-import { TYPES, type Competition, type TypeCompet } from "@/lib/internes";
+import { lireCompet, lireCompetitions, lireEnCours } from "@/lib/internes-db";
+import { situations, TYPES, type Competition, type TypeCompet } from "@/lib/internes";
+import MesMatchs from "@/components/internes/MesMatchs";
 import VueCompet from "@/components/internes/VueCompet";
 
 export const dynamic = "force-dynamic";
@@ -50,12 +51,16 @@ export default async function CompetitionsClub({ searchParams }: { searchParams:
     }),
   );
 
+  const sits = situations(await lireEnCours(supabase).catch(() => []), moi);
+  const aJouer = sits.reduce((n, x) => n + x.aJouer.length, 0);
+  const mes = { id: "mes-matchs", titre: "Mes matchs", ic: "⚔️", badge: aJouer || null, contenu: <MesMatchs sits={sits} famille={moi.length > 1} /> };
+
   return (
     <>
       <Header subtitle="Compétitions du club" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
         <section className="hello"><span className="kicker">Au club</span><h2>Compétitions du club</h2><p>Le championnat et la coupe des Lions : classements, matchs et résultats.</p></section>
-        <Blocs page="Compétitions du club" blocs={parts} />
+        <Blocs page="Compétitions du club" blocs={[mes, ...parts]} />
       </main>
     </>
   );
