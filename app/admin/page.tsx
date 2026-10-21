@@ -139,12 +139,12 @@ export default async function AdminPage() {
           </div>
         </section>
         ) },
-        { id: "ajouter", titre: "Ajouter un membre", ic: "➕", contenu: (
+        { id: "ajouter", titre: "Ajouter un joueur", ic: "➕", contenu: (
         <section className="panel" style={{ borderTop: "3px solid var(--accent)" }}>
           <div className="hd">
-            <h2>Ajouter un membre à la main</h2>
+            <h2>Ajouter un joueur</h2>
             <span className="muted" style={{ fontSize: 13 }}>
-              Seules les adresses de cette liste peuvent se connecter.
+              Il est créé dans la liste des joueurs Notion et proposé tout de suite partout (compétitions, formulaires). Avec un e-mail, il peut aussi se connecter.
             </span>
           </div>
           <div className="bd">

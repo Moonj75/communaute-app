@@ -15,8 +15,8 @@ export default function AddForm() {
       {state.error ? <div className="notice err">{state.error}</div> : null}
       <div className="addform">
         <label className="f">
-          E-mail
-          <input className="input" name="email" type="email" required placeholder="prenom.nom@exemple.be" />
+          E-mail <small className="muted">(facultatif)</small>
+          <input className="input" name="email" type="email" placeholder="Vide = pas de compte de connexion" />
         </label>
         <label className="f">
           Prénom
@@ -33,8 +33,11 @@ export default function AddForm() {
             <option value="admin">Administrateur</option>
           </select>
         </label>
+        <label className="f af-actif">
+          <span><input type="checkbox" name="actif" defaultChecked /> Actif cette saison</span>
+        </label>
         <button className="btn primary" type="submit" disabled={pending} style={{ minHeight: 50 }}>
-          {pending ? "Ajout…" : "+ Ajouter"}
+          {pending ? "Ajout…" : "+ Ajouter le joueur"}
         </button>
       </div>
     </form>
