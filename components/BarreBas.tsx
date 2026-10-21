@@ -38,7 +38,7 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
   const staffActif = STAFF.some((s) => actif(s.href));
   // Discovery space (member not active): no answers to competitions; calendar is on the home page.
   const items = inactif
-    ? [JOUEUR[0], { href: "/#bloc-calendrier", label: "Calendrier", ic: "calendrier", c: "canard" }, { ...JOUEUR[3], opt: false }, JOUEUR[4], JOUEUR[5]]
+    ? [JOUEUR[0], { href: "/#bloc-calendrier", label: "Calendrier", ic: "calendrier", c: "canard" }, { ...JOUEUR[3], opt: false }, JOUEUR[4], JOUEUR[5], JOUEUR[6]]
     : JOUEUR;
 
   useEffect(() => setOuvert(false), [path]);

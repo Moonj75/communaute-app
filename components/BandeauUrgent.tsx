@@ -14,7 +14,15 @@ export default async function BandeauUrgent() {
     const { supabase, user, profil } = await getVue();
     if (!user) return null;
     const nonLus = await lireNonLus(supabase, user.email || "", profil?.role === "admin");
-    if (estInactif(profil)) return nonLus.length ? <Defilant items={urgences([], [], [], null, undefined, undefined, nonLus)} /> : null;
+    if (estInactif(profil)) {
+      // A non-active member may still play the club championship: his matches count too.
+      const l0 = urgences([], [], [], null, undefined, undefined, nonLus);
+      try {
+        const fam = await chargerJoueurs(supabase, user.email);
+        l0.push(...urgencesMatchs(situations(await lireEnCours(supabase), fam.map((j) => j.notionId)), undefined, fam.length > 1));
+      } catch { /* competitions not installed yet */ }
+      return l0.length ? <Defilant items={l0} /> : null;
+    }
     const admin = profil?.role === "admin";
     const [cal, parts, famille, taches, elig] = await Promise.all([
       essayer(lireCalendrier),
