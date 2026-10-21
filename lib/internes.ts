@@ -60,7 +60,23 @@ export type Match = {
   /** Knockout: who goes on (needed when the score is a draw: extra time / shoot-out). */
   vainqueur: string | null;
   joue: boolean;
+  /** Score proposed by player a / player b (in the match's order: a's goals, b's goals). */
+  prop_a?: Proposition | null;
+  prop_b?: Proposition | null;
 };
+
+/** A score typed by one of the two players. When both typed the same score, the match is validated. */
+export type Proposition = { a: number; b: number; v: string | null; le: string };
+export const memeScore = (x?: Proposition | null, y?: Proposition | null) => Boolean(x && y && x.a === y.a && x.b === y.b && (x.v || null) === (y.v || null));
+
+/** Where a match stands for the scores typed by the players. */
+export function etatSaisie(m: Match): "valide" | "aucun" | "attente_a" | "attente_b" | "desaccord" {
+  if (m.joue) return "valide";
+  if (m.prop_a && m.prop_b) return memeScore(m.prop_a, m.prop_b) ? "valide" : "desaccord";
+  if (m.prop_a) return "attente_b";
+  if (m.prop_b) return "attente_a";
+  return "aucun";
+}
 
 export type Ligne = { id: string; nom: string; rang: number; j: number; g: number; n: number; p: number; bp: number; bc: number; diff: number; pts: number };
 
@@ -184,7 +200,15 @@ export function repartir(joueurs: JoueurCompet[], nbGroupes: number, mode: "bloc
 export function nomsParDefaut(n: number, niveaux: boolean) {
   if (niveaux && n === 2) return ["Poule haute", "Poule basse"];
   if (niveaux && n === 3) return ["Poule haute", "Poule moyenne", "Poule basse"];
+  // Mini-groups by level: the strongest first.
+  if (niveaux && n > 3) return Array.from({ length: n }, (_, i) => `Niveau ${i + 1}`);
   return Array.from({ length: n }, (_, i) => `Poule ${String.fromCharCode(65 + i)}`);
+}
+
+/** Names of the knockout tables of a final stage, from the strongest. */
+export function nomsTableaux(n: number) {
+  if (n <= 1) return ["Tableau final"];
+  return ["Tableau principal", ...Array.from({ length: n - 1 }, (_, i) => `Tableau ${String.fromCharCode(66 + i)}`)];
 }
 
 /** A stage is over when every match that can be played was played. */
@@ -195,7 +219,85 @@ export function etapeFinie(matchs: Match[]) {
 
 /** Short text describing a stage (for the admin). */
 export function decrireEtape(e: EtapeConfig, derniere: boolean) {
-  const f = e.format === "elimination" ? "Élimination directe" : `${e.groupes} poule${e.groupes > 1 ? "s" : ""}`;
+  const f = e.format === "elimination" ? `Élimination directe${e.groupes > 1 ? ` · ${e.groupes} tableaux (les meilleurs ensemble, les suivants ensemble)` : ""}` : `${e.groupes} poule${e.groupes > 1 ? "s" : ""}`;
   const p = derniere || e.passage === "fin" ? "dernière étape" : e.passage === "niveaux" ? "puis les forts ensemble, les suivants ensemble" : `puis les ${e.qualifies} premiers de chaque poule passent`;
   return `${f} · ${p}`;
+}
+
+/* ------------------------------------------------------------------ the player's own view */
+
+/** One of my matches still to play, seen from my side (« moi » = my goals). */
+export type AJouer = {
+  id: string;
+  contre: string;
+  contreId: string;
+  /** Knockout: a draw needs « who goes on ». */
+  ko: boolean;
+  moi: { m: number; s: number; v: string | null } | null;
+  lui: { m: number; s: number; v: string | null } | null;
+};
+
+export type MaSituation = {
+  compet: Competition;
+  joueur: JoueurCompet;
+  etapeNom: string;
+  fin: string | null;
+  groupe: string | null;
+  rang: number | null;
+  sur: number | null;
+  pts: number | null;
+  /** Where the player stands: « Qualifié », « En course », « Éliminé »… */
+  statut: { txt: string; ton: "bon" | "moyen" | "neutre" | "fini" };
+  aJouer: AJouer[];
+  joues: number;
+  total: number;
+};
+
+/**
+ * For each of my players (family): in each competition in progress, my group, my place, whether I am
+ * qualified or not, and the matches I still have to play in the current stage (before its end date).
+ */
+export function situations(competitions: { c: Competition; groupes: Groupe[]; matchs: Match[] }[], miens: string[]): MaSituation[] {
+  const out: MaSituation[] = [];
+  for (const { c, groupes, matchs } of competitions) {
+    if (c.statut !== "en_cours") continue;
+    const k = c.etape;
+    const e = c.etapes[k];
+    const gs = groupes.filter((g) => g.etape === k);
+    const ms = matchs.filter((m) => m.etape === k);
+    const tous = groupes.flatMap((g) => g.joueurs);
+    for (const id of miens) {
+      const g = gs.find((x) => x.joueurs.some((j) => j.id === id));
+      const joueur = g?.joueurs.find((j) => j.id === id) || tous.find((j) => j.id === id);
+      if (!joueur) continue; // not in this competition
+      const nom = (x: string | null) => tous.find((j) => j.id === x)?.nom || "?";
+      if (!g) {
+        out.push({ compet: c, joueur, etapeNom: e.nom, fin: e.fin, groupe: null, rang: null, sur: null, pts: null, statut: { txt: "Éliminé à l'étape précédente", ton: "fini" }, aJouer: [], joues: 0, total: 0 });
+        continue;
+      }
+      const mesMs = ms.filter((m) => m.groupe_id === g.id && (m.a === id || m.b === id) && m.a && m.b);
+      const aJouer: AJouer[] = mesMs.filter((m) => !m.joue).map((m) => {
+        const jeSuisA = m.a === id;
+        const vu = (p?: Proposition | null) => (p ? { m: jeSuisA ? p.a : p.b, s: jeSuisA ? p.b : p.a, v: p.v } : null);
+        return { id: m.id, contre: nom(jeSuisA ? m.b : m.a), contreId: (jeSuisA ? m.b : m.a) || "", ko: m.tour != null, moi: vu(jeSuisA ? m.prop_a : m.prop_b), lui: vu(jeSuisA ? m.prop_b : m.prop_a) };
+      });
+      if (e.format === "elimination") {
+        const perdu = mesMs.some((m) => m.joue && gagnant(m) !== id);
+        out.push({ compet: c, joueur, etapeNom: e.nom, fin: e.fin, groupe: g.nom, rang: null, sur: null, pts: null, statut: perdu ? { txt: "Éliminé", ton: "fini" } : { txt: "Toujours en course", ton: "bon" }, aJouer: perdu ? [] : aJouer, joues: mesMs.filter((m) => m.joue).length, total: mesMs.length });
+        continue;
+      }
+      const cl = classement(g.joueurs, ms.filter((m) => m.groupe_id === g.id), c);
+      const moi = cl.find((l) => l.id === id)!;
+      const derniere = k >= c.etapes.length - 1 || e.passage === "fin";
+      let statut: MaSituation["statut"];
+      if (derniere) statut = moi.rang === 1 ? { txt: "En tête de la phase finale", ton: "bon" } : { txt: `${moi.rang}e de la phase finale`, ton: "neutre" };
+      else if (e.passage === "qualifies") statut = moi.rang <= e.qualifies ? { txt: `Qualifié pour l'instant (${e.qualifies} premiers)`, ton: "bon" } : { txt: `Pas encore qualifié (il faut finir dans les ${e.qualifies} premiers)`, ton: "moyen" };
+      else {
+        const moitie = Math.ceil(g.joueurs.length / 2);
+        statut = moi.rang <= moitie ? { txt: "En route vers la poule haute", ton: "bon" } : { txt: "En route vers la poule basse", ton: "moyen" };
+      }
+      out.push({ compet: c, joueur, etapeNom: e.nom, fin: e.fin, groupe: g.nom, rang: moi.rang, sur: cl.length, pts: moi.pts, statut, aJouer, joues: mesMs.filter((m) => m.joue).length, total: mesMs.length });
+    }
+  }
+  return out;
 }

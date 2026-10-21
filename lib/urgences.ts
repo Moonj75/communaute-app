@@ -44,3 +44,31 @@ export function urgences(evs: Evenement[], parts: Participation[], famille: Joue
   }
   return l.sort((a, b) => (a.niveau === b.niveau ? 0 : a.niveau === "haut" ? -1 : 1));
 }
+
+/**
+ * Club competitions: when the end of a stage comes near (7 days or less, or past) and I still have
+ * matches to play, it goes in my « À faire » list.
+ */
+export function urgencesMatchs(sits: import("./internes").MaSituation[], today = aujourdhui(), famille = false): Urgence[] {
+  const l: Urgence[] = [];
+  for (const s of sits) {
+    // A score typed by my opponent, waiting for my confirmation: always in the list, at the top.
+    const qui0 = famille ? ` (${s.joueur.nom.split(" ")[0]})` : "";
+    for (const m of s.aJouer.filter((x) => x.lui && !x.moi))
+      l.push({ ic: "✋", txt: `Confirme le score contre ${m.contre}${qui0}`, quoi: `Score à confirmer${qui0}`, detail: `${s.compet.nom} · contre ${m.contre} : ${m.lui!.m}–${m.lui!.s}`, href: "/internes#bloc-mes-matchs", niveau: "haut" });
+    if (!s.aJouer.length || !s.fin) continue;
+    const j = joursEntre(today, s.fin);
+    if (j > 7) continue;
+    const n = s.aJouer.length;
+    const qui = famille ? ` (${s.joueur.nom.split(" ")[0]})` : "";
+    l.push({
+      ic: "⚔️",
+      txt: `${n} match${n > 1 ? "s" : ""} à jouer${qui} · ${s.compet.nom}`,
+      quoi: `${n} match${n > 1 ? "s" : ""} à jouer${qui}`,
+      detail: `${s.compet.nom} · ${s.etapeNom} · ${j < 0 ? "date dépassée !" : j === 0 ? "dernier jour !" : `avant le ${dateCourte(s.fin)}`}`,
+      href: "/internes#bloc-mes-matchs",
+      niveau: j <= 2 ? "haut" : "moyen",
+    });
+  }
+  return l;
+}
