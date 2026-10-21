@@ -6,14 +6,13 @@ import VueDecouverte from "@/components/club/VueDecouverte";
 import { prochainesCompetitions } from "@/lib/notion";
 import { lireClubs, lireEugies } from "@/lib/classements-lire";
 import { lireInfosPubliques } from "@/lib/club";
+import { salutation } from "@/lib/salut";
 import { essayer, lireCalendrier, lireClassementsClub, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
 
 export const dynamic = "force-dynamic";
 
-function greeting() {
-  const h = Number(new Intl.DateTimeFormat("fr-BE", { hour: "numeric", hour12: false, timeZone: "Europe/Brussels" }).format(new Date()));
-  return h < 18 && h >= 5 ? "Bonjour" : "Bonsoir";
-}
+// « Bonjour » in daylight, « Bonsoir » after sunset (see lib/salut.ts).
+const greeting = () => salutation();
 
 function jours(dateIso: string) {
   const t = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Brussels" }));
