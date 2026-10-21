@@ -89,7 +89,7 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
         ) : <span className="ig-v-aide">👆 Touche une case pour voir le match</span>}
       </div>
       <div className="ig-scroll">
-        <table className="ig-t">
+        <table className="ig-t" onMouseLeave={() => setSurvol(null)}>
           <thead>
             <tr>
               <th className="ig-coin"><span className="num">{joues}/{matchs.length}</span> joués</th>
@@ -112,7 +112,7 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
                   const cle = `${m.id}|${r.id}`;
                   return (
                     <td key={c.id} className={`ig-m${res}${editable ? " edit" : ""}${ouvert === cle ? " on" : ""}${vise && vise.r === r.id && vise.c === c.id ? " hl" : ""}${vise && ((i === iR && j > i && j < iC) || (j === iC && i < iR && j > i)) ? " trace" : ""}`}
-                      onMouseEnter={() => setSurvol({ r: r.id, c: c.id })} onMouseLeave={() => setSurvol(null)}>
+                      onMouseEnter={() => setSurvol({ r: r.id, c: c.id })}>
                       {ouvert === cle ? <span className="ig-btn"><span className="num">✎</span></span> : (
                         <button type="button" className="ig-btn" onClick={() => { setSel({ r: r.id, c: c.id }); if (editable) ouvrir(m, r.id); }} aria-label={`${r.nom} contre ${c.nom}`}>
                           {m.joue ? <span className="num">{a}–{b}</span> : etatSaisie(m) === "desaccord" ? <span className="ig-prop" title="Les deux joueurs ont mis des scores différents">⚠️</span> : etatSaisie(m) !== "aucun" ? <span className="ig-prop" title="Un joueur a mis le score, l'autre doit confirmer">⏳</span> : <span className="ig-pas">{editable ? "+" : "·"}</span>}
