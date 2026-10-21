@@ -40,6 +40,8 @@ export async function creerCompetition(p: { type: TypeCompet; nom: string; saiso
       nomsGroupes: (e.nomsGroupes || []).map((n) => String(n).slice(0, 40)).filter(Boolean),
       passage: i === all.length - 1 || e.format === "elimination" ? "fin" : e.passage === "qualifies" ? "qualifies" : "niveaux",
       qualifies: Math.max(1, Math.min(16, Number(e.qualifies) || 2)),
+      // Leagues (mini-groups of N players) only for a stage after the first one.
+      taille: i > 0 && e.format !== "elimination" && e.taille ? Math.max(2, Math.min(12, Math.round(Number(e.taille)))) : null,
     }));
     const [v, n, d] = p.pts.map((x) => Math.max(0, Math.min(10, Math.round(Number(x) || 0))));
     const { data, error } = await db

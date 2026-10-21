@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { decrireEtape, nomsParDefaut, nomsTableaux, type EtapeConfig, type TypeCompet } from "@/lib/internes";
+import { decrireEtape, LIGUES, nomsParDefaut, nomsTableaux, type EtapeConfig, type TypeCompet } from "@/lib/internes";
 import { creerCompetition } from "./actions";
 
 const saisonActuelle = () => {
@@ -17,7 +17,7 @@ const MODELES: Record<TypeCompet, EtapeConfig[]> = {
   championnat: [
     etape("Phase 1", { nomsGroupes: ["Poule A", "Poule B"] }),
     etape("Phase 2", { nomsGroupes: ["Poule haute", "Poule basse"] }),
-    etape("Phase finale", { nomsGroupes: ["Poule haute", "Poule basse"], passage: "fin" }),
+    etape("Phase finale", { nomsGroupes: [...LIGUES], passage: "fin", taille: 4 }),
   ],
   coupe: [
     etape("Poules", { nomsGroupes: ["Poule A", "Poule B"], passage: "qualifies", qualifies: 2 }),
@@ -99,15 +99,24 @@ export default function Assistant() {
               </div>
               {derniere ? (
                 <div className="as-forme" role="radiogroup" aria-label="Forme de la phase finale">
-                  <button type="button" className={`as-f${e.format === "poules" ? " on" : ""}`} onClick={() => maj(i, { format: "poules", groupes: Math.max(1, e.groupes), nomsGroupes: nomsParDefaut(Math.max(1, e.groupes), i > 0), passage: "fin" })}>
-                    <span aria-hidden="true">🏆</span><b>En poules ou mini-poules</b><small>Chacun contre chacun. 2 grandes poules, ou plusieurs mini-poules (3–4 joueurs) : les meilleurs ensemble, puis les suivants, et ainsi de suite</small>
+                  <button type="button" className={`as-f${e.format === "poules" && e.taille ? " on" : ""}`} onClick={() => maj(i, { format: "poules", taille: e.taille || 4, nomsGroupes: [...LIGUES], passage: "fin" })} disabled={i === 0}>
+                    <span aria-hidden="true">💎</span><b>En ligues de 4</b><small>Mini-poules : Diamond League (les meilleurs), Golden, Silver, Bronze, puis Fair Play League A, B…</small>
                   </button>
-                  <button type="button" className={`as-f${e.format === "elimination" ? " on" : ""}`} onClick={() => maj(i, { format: "elimination", groupes: Math.max(1, Math.min(e.groupes, 4)), nomsGroupes: nomsTableaux(Math.max(1, Math.min(e.groupes, 4))), passage: "fin" })}>
+                  <button type="button" className={`as-f${e.format === "poules" && !e.taille ? " on" : ""}`} onClick={() => maj(i, { format: "poules", taille: null, groupes: Math.max(1, e.groupes), nomsGroupes: nomsParDefaut(Math.max(1, e.groupes), i > 0), passage: "fin" })}>
+                    <span aria-hidden="true">🏆</span><b>En poules</b><small>Un nombre fixe de poules (ex. poule haute / poule basse)</small>
+                  </button>
+                  <button type="button" className={`as-f${e.format === "elimination" ? " on" : ""}`} onClick={() => maj(i, { format: "elimination", taille: null, groupes: Math.max(1, Math.min(e.groupes, 4)), nomsGroupes: nomsTableaux(Math.max(1, Math.min(e.groupes, 4))), passage: "fin" })}>
                     <span aria-hidden="true">⚔️</span><b>En élimination directe</b><small>Matchs à élimination : quarts, demies, finale</small>
                   </button>
                 </div>
               ) : null}
-              {derniere ? (
+              {derniere && e.format === "poules" && e.taille ? (
+                <div className="as-ligne">
+                  <label className="f as-court">Joueurs par ligue<input className="input" type="number" min={2} max={12} value={e.taille} onChange={(x) => maj(i, { taille: Math.max(2, Math.min(12, Number(x.target.value) || 4)) })} /></label>
+                  <p className="as-resume as-aide">Le nombre de ligues suit le nombre de joueurs : 16 joueurs = 4 ligues de 4. Le vainqueur de la Diamond League est le champion.</p>
+                </div>
+              ) : null}
+              {derniere && !(e.format === "poules" && e.taille) ? (
                 <div className="as-ligne">
                   <label className="f as-court">{e.format === "elimination" ? "Tableaux" : "Poules"}<input className="input" type="number" min={1} max={e.format === "elimination" ? 4 : 8} value={e.groupes} onChange={(x) => {
                     const v = Math.max(1, Math.min(e.format === "elimination" ? 4 : 8, Number(x.target.value) || 1));
@@ -121,7 +130,12 @@ export default function Assistant() {
                   <input className="input" value={e.nomsGroupes.join(", ")} onChange={(x) => maj(i, { nomsGroupes: x.target.value.split(",").map((s) => s.trim()) })} placeholder={nomsTableaux(e.groupes).join(", ")} />
                 </label>
               ) : null}
-              {e.format === "poules" ? (
+              {e.format === "poules" && e.taille ? (
+                <label className="f">Noms des ligues (de la plus forte à la moins forte ; au-delà : Fair Play League A, B…)
+                  <input className="input" value={e.nomsGroupes.join(", ")} onChange={(x) => maj(i, { nomsGroupes: x.target.value.split(",").map((s) => s.trim()) })} placeholder={LIGUES.join(", ")} />
+                </label>
+              ) : null}
+              {e.format === "poules" && !e.taille ? (
                 <label className="f">Noms des poules (du plus fort au moins fort)
                   <input className="input" value={e.nomsGroupes.join(", ")} onChange={(x) => maj(i, { nomsGroupes: x.target.value.split(",").map((s) => s.trim()) })} placeholder={nomsParDefaut(e.groupes, i > 0).join(", ")} />
                 </label>
