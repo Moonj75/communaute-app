@@ -20,6 +20,8 @@ export type EtapeConfig = {
   passage: Passage;
   /** With « qualifies »: how many of each group go on. */
   qualifies: number;
+  /** Leagues: players per mini-group (e.g. 4). The number of groups then follows the number of players. */
+  taille?: number | null;
 };
 
 export type TypeCompet = "championnat" | "coupe";
@@ -63,6 +65,7 @@ export type Match = {
   /** Score proposed by player a / player b (in the match's order: a's goals, b's goals). */
   prop_a?: Proposition | null;
   prop_b?: Proposition | null;
+  maj_le?: string;
 };
 
 /** A score typed by one of the two players. When both typed the same score, the match is validated. */
@@ -112,6 +115,20 @@ export function classement(joueurs: JoueurCompet[], matchs: Match[], c: Pick<Com
   lignes.sort((x, y) => y.pts - x.pts || y.diff - x.diff || y.bp - x.bp || direct(x.id, y.id) || x.nom.localeCompare(y.nom));
   lignes.forEach((l, i) => (l.rang = i + 1));
   return lignes;
+}
+
+/**
+ * Places gained (+) or lost (−) with the last validated match of the group:
+ * standings now compared with the standings just before that match.
+ */
+export function evolutions(joueurs: JoueurCompet[], matchs: Match[], c: Pick<Competition, "pts_v" | "pts_n" | "pts_d">): Map<string, number> {
+  const joues = matchs.filter((m) => m.joue && m.a && m.b).sort((x, y) => (x.maj_le || "").localeCompare(y.maj_le || ""));
+  const out = new Map<string, number>();
+  if (joues.length < 2) return out;
+  const dernier = joues[joues.length - 1];
+  const avant = new Map(classement(joueurs, matchs.filter((m) => m.id !== dernier.id), c).map((l) => [l.id, l.rang]));
+  for (const l of classement(joueurs, matchs, c)) out.set(l.id, (avant.get(l.id) || l.rang) - l.rang);
+  return out;
 }
 
 /* ------------------------------------------------------------------ matches */
@@ -205,6 +222,14 @@ export function nomsParDefaut(n: number, niveaux: boolean) {
   return Array.from({ length: n }, (_, i) => `Poule ${String.fromCharCode(65 + i)}`);
 }
 
+/** Names of the leagues of the final stage, from the strongest: Diamond, Golden, Silver, Bronze, then Fair Play A, B… */
+export const LIGUES = ["Diamond League", "Golden League", "Silver League", "Bronze League"];
+export function nomsLigues(n: number) {
+  return Array.from({ length: n }, (_, i) => LIGUES[i] || `Fair Play League ${String.fromCharCode(65 + i - LIGUES.length)}`);
+}
+/** Number of leagues for n players: never more than « taille » players in a league (sizes kept as even as possible). */
+export const nbLigues = (n: number, taille: number) => Math.max(1, Math.ceil(n / Math.max(2, taille)));
+
 /** Names of the knockout tables of a final stage, from the strongest. */
 export function nomsTableaux(n: number) {
   if (n <= 1) return ["Tableau final"];
@@ -219,7 +244,11 @@ export function etapeFinie(matchs: Match[]) {
 
 /** Short text describing a stage (for the admin). */
 export function decrireEtape(e: EtapeConfig, derniere: boolean) {
-  const f = e.format === "elimination" ? `Élimination directe${e.groupes > 1 ? ` · ${e.groupes} tableaux (les meilleurs ensemble, les suivants ensemble)` : ""}` : `${e.groupes} poule${e.groupes > 1 ? "s" : ""}`;
+  const f = e.format === "elimination"
+    ? `Élimination directe${e.groupes > 1 ? ` · ${e.groupes} tableaux (les meilleurs ensemble, les suivants ensemble)` : ""}`
+    : e.taille
+      ? `Ligues de ${e.taille} joueurs (Diamond, Golden, Silver, Bronze League…) : les meilleurs ensemble, puis les suivants`
+      : `${e.groupes} poule${e.groupes > 1 ? "s" : ""}`;
   const p = derniere || e.passage === "fin" ? "dernière étape" : e.passage === "niveaux" ? "puis les forts ensemble, les suivants ensemble" : `puis les ${e.qualifies} premiers de chaque poule passent`;
   return `${f} · ${p}`;
 }

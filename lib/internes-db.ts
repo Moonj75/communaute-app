@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  classement, etapeFinie, gagnant, nomsParDefaut, nomsTableaux, ordreGeneral, paires, repartir, tableauInitial,
+  classement, etapeFinie, gagnant, nbLigues, nomsLigues, nomsParDefaut, nomsTableaux, ordreGeneral, paires, repartir, tableauInitial,
   type Competition, type Groupe, type JoueurCompet, type Match,
 } from "./internes";
 
@@ -115,6 +115,11 @@ export async function suite(db: SupabaseClient, id: string, force = false): Prom
     const blocs = repartir(ordre, Math.max(1, suivante.groupes), "blocs");
     const noms = suivante.nomsGroupes.length >= blocs.length ? suivante.nomsGroupes : nomsTableaux(blocs.length);
     nouveaux = blocs.map((j, i) => ({ nom: noms[i] || `Tableau ${i + 1}`, joueurs: j }));
+  } else if (suivante.taille) {
+    // Leagues: mini-groups of « taille » players, the best together (Diamond League), then the next ones…
+    const blocs = repartir(ordre, nbLigues(ordre.length, suivante.taille), "blocs");
+    const defaut = nomsLigues(blocs.length);
+    nouveaux = blocs.map((j, i) => ({ nom: suivante.nomsGroupes[i] || defaut[i], joueurs: j }));
   } else {
     const blocs = repartir(ordre, suivante.groupes, e.passage === "niveaux" ? "blocs" : "serpentin");
     const noms = suivante.nomsGroupes.length >= blocs.length ? suivante.nomsGroupes : nomsParDefaut(blocs.length, e.passage === "niveaux");
