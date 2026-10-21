@@ -41,8 +41,7 @@ export default async function CompetitionsClub({ searchParams }: { searchParams:
             {autres.length > 1 ? (
               <nav className="ci-saisons">{autres.map((x) => <Link key={x.id} href={`/internes?c=${x.id}#bloc-${t}`} className={`chip${x.id === d.c.id ? " on" : ""}`}>{x.saison || x.nom}</Link>)}</nav>
             ) : null}
-            <h3 className="ci-titre">{d.c.nom}</h3>
-            <VueCompet c={d.c} groupes={d.groupes} matchs={d.matchs} etape={sp.c === d.c.id && sp.e != null ? Number(sp.e) : undefined} moi={moi} lien={(k) => `/internes?c=${d.c.id}&e=${k}#bloc-${t}`} />
+            <VueCompet titre={d.c.nom} c={d.c} groupes={d.groupes} matchs={d.matchs} etape={sp.c === d.c.id && sp.e != null ? Number(sp.e) : undefined} moi={moi} lien={(k) => `/internes?c=${d.c.id}&e=${k}#bloc-${t}`} />
           </>
         ) : (
           <p className="vide">{erreur ? "Les compétitions du club arrivent bientôt." : `Pas encore de ${t === "coupe" ? "coupe" : "championnat"} cette saison.`}</p>
