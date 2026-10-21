@@ -3968,3 +3968,50 @@ table.t.ci-cl td:nth-child(2) { white-space: nowrap; }
 /* Knockout boxes a bit narrower on phones so two rounds fit. */
 @media (max-width: 520px) { .tf-tour { min-width: 150px; } .tf-j { font-size: 12.5px; padding: 6px 8px; } }
 table.t.ci-cl { width: 100%; }
+/* Compétitions du club · Mes matchs */
+.mm { display: flex; flex-direction: column; gap: 10px; }
+.mm-c { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); border-left: 6px solid #f05ad8; background: var(--surface); }
+.mm-c.s-fini { opacity: .7; border-left-color: #8a8a8a; }
+.mm-tete { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.mm-ic { font-size: 24px; }
+.mm-t { display: flex; flex-direction: column; min-width: 0; }
+.mm-t small { color: var(--muted); }
+.mm-rang { display: flex; flex-direction: column; align-items: flex-end; }
+.mm-rang b { font-family: var(--font-display); font-style: italic; font-size: 26px; line-height: 1; color: #c235b6; }
+.mm-rang small { font-size: 11px; color: var(--muted); }
+.mm-statut { margin: 0; padding: 6px 10px; border-radius: 10px; font-weight: 700; font-size: 13.5px; background: var(--sunk); }
+.mm-statut.t-bon { background: color-mix(in srgb, #4d8dff 14%, var(--surface)); }
+.mm-statut.t-moyen { background: color-mix(in srgb, #ffa83a 18%, var(--surface)); }
+.mm-delai { margin: 0; font-size: 14px; }
+.mm-j { display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: 99px; background: #3d8bff; color: #fff; font-size: 11.5px; font-weight: 800; }
+.mm-delai.proche .mm-j { background: #ff8a00; }
+.mm-delai.depasse .mm-j { background: #c4120a; }
+.mm-l { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.mm-l li { padding: 5px 11px; border-radius: 99px; background: color-mix(in srgb, #f05ad8 12%, var(--surface)); border: 1px solid color-mix(in srgb, #f05ad8 40%, transparent); font-size: 13.5px; }
+.mm-vs { color: var(--muted); font-size: 12px; }
+.mm-fini { margin: 0; font-size: 13.5px; color: var(--muted); }
+/* Scores typed by the players */
+.ig-prop { font-size: 15px; }
+.ig-propo { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 6px 10px; border-radius: 10px; background: var(--sunk); font-size: 13px; }
+.ig-propo .btn { padding: 4px 10px; font-size: 12px; }
+.mo-l { flex-direction: column; flex-wrap: nowrap; }
+.mo-l li.mo { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid color-mix(in srgb, #f05ad8 40%, transparent); }
+.mo-l li.mo.e-confirmer { border: 2px solid #ffa83a; background: color-mix(in srgb, #ffa83a 10%, var(--surface)); }
+.mo-l li.mo.e-desaccord { border-color: #c4120a; }
+.mo-ligne { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.mo-t { font-size: 14.5px; }
+.mo-btn { padding: 7px 12px; font-size: 13px; }
+.mo-et { font-size: 13px; color: var(--muted); }
+.mo-conf { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.mo-act { display: flex; flex-wrap: wrap; gap: 8px; }
+.mo-lien { align-self: flex-start; border: 0; background: none; padding: 0; color: #c235b6; font-weight: 700; font-size: 12.5px; text-decoration: underline; cursor: pointer; }
+.mo-saisie { display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 10px; border-radius: 12px; background: var(--sunk); }
+.mo-saisie .ig-j small { font-weight: 400; color: var(--muted); }
+.mm-aide { margin: 0; font-size: 12px; color: var(--muted); }
+/* Assistant: shape of the final stage */
+.as-forme { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.as-f { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; cursor: pointer; }
+.as-f span { font-size: 22px; } .as-f small { color: var(--muted); font-size: 12px; }
+.as-f.on { border-color: #f05ad8; background: color-mix(in srgb, #f05ad8 10%, var(--surface)); }
+.as-aide { flex: 1 1 200px; }
+@media (max-width: 520px) { .as-forme { grid-template-columns: 1fr; } }
