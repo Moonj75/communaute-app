@@ -62,6 +62,12 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
     });
 
   const joues = matchs.filter((m) => m.joue).length;
+  // Scores typed by a player and not validated yet (shown under the table).
+  const nomDe = (id: string | null) => joueurs.find((j) => j.id === id)?.nom || "?";
+  const attente = valides.filter((m) => !m.joue && etatSaisie(m) !== "aucun").map((m) => {
+    const pr = m.prop_a || m.prop_b!;
+    return { m, x: nomDe(m.a), y: nomDe(m.b), p: `${pr.a}–${pr.b}`, qui: nomDe(m.prop_a ? m.a : m.b) };
+  });
   const [mId, ligne] = (ouvert || "|").split("|");
   const mo = matchs.find((m) => m.id === mId);
   const autre = mo ? joueurs.find((j) => j.id === (mo.a === ligne ? mo.b : mo.a)) : null;
@@ -100,7 +106,9 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
                   const m = trouver(r.id, c.id);
                   if (!m) return <td key={c.id} className="ig-vide" />;
                   const [a, b] = vu(m, r.id);
-                  const res = !m.joue ? "" : a! > b! ? " v" : a! < b! ? " d" : " n";
+                  // Validated: fluo green; typed by a player and waiting for the other one (or different): orange.
+                  const es = etatSaisie(m);
+                  const res = m.joue ? " ok" : es === "desaccord" ? " att desac" : es !== "aucun" ? " att" : "";
                   const cle = `${m.id}|${r.id}`;
                   return (
                     <td key={c.id} className={`ig-m${res}${editable ? " edit" : ""}${ouvert === cle ? " on" : ""}${vise && vise.r === r.id && vise.c === c.id ? " hl" : ""}${vise && ((i === iR && j > i && j < iC) || (j === iC && i < iR && j > i)) ? " trace" : ""}`}
@@ -117,6 +125,21 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="ig-att">
+        <span className="ig-leg"><i className="ok" /> Validé</span>
+        <span className="ig-leg"><i className="att" /> En attente</span>
+        {attente.length ? (
+          <ul className="ig-att-l" aria-label="Scores en attente de validation">
+            {attente.map(({ m, x, y, p, qui }) => (
+              <li key={m.id}>
+                <button type="button" className={`ig-att-b${etatSaisie(m) === "desaccord" ? " desac" : ""}`} onClick={() => { const cl = cellule(m); setSel(cl); if (editable) ouvrir(m, cl.r); }} title={etatSaisie(m) === "desaccord" ? "Les deux joueurs ont mis des scores différents" : `Mis par ${qui}, l'autre doit confirmer`}>
+                  {etatSaisie(m) === "desaccord" ? "⚠️" : "⏳"} {x.split(" ")[0]} <b className="num">{p}</b> {y.split(" ")[0]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : <span className="ig-att-vide">✓ Aucun score en attente</span>}
       </div>
       {info ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
       {mo && lui && autre ? (
