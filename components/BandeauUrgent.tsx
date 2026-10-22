@@ -49,7 +49,7 @@ export default async function BandeauUrgent() {
     if (admin) {
       try {
         const { count } = await supabase.from("cag_mouvements").select("id", { count: "exact", head: true }).eq("statut", "en_attente");
-        if (count) l.push({ ic: "💶", txt: `${count} demande${count > 1 ? "s" : ""} de cagnotte à valider`, quoi: `${count} demande${count > 1 ? "s" : ""} de cagnotte`, detail: "À valider · Admin → Cagnottes", href: "/admin#bloc-cagnottes", niveau: "moyen" });
+        if (count) l.push({ ic: "💶", txt: `${count} demande${count > 1 ? "s" : ""} de cagnotte à valider`, quoi: `${count} demande${count > 1 ? "s" : ""} de cagnotte`, detail: "À valider · Staff → Finances", href: "/admin/finances", niveau: "moyen" });
       } catch { /* kitty history not installed yet */ }
     }
     if (!l.length) return null;

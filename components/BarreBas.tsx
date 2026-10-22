@@ -6,39 +6,57 @@ import { useEffect, useRef, useState } from "react";
 import Icone from "./Icone";
 import NavSection from "./NavSection";
 
-type Item = { href: string; label: string; ic: string; opt?: boolean; desc?: string; c?: string };
+type Item = { href: string; label: string; ic: string; opt?: boolean; desc?: string; c?: string; /** Heading of the menu it is listed under. */ g?: string };
 
+/** Player side: Home, then two headings (competitions, me). */
 const JOUEUR: Item[] = [
   { href: "/", label: "Accueil", ic: "accueil", c: "rouge" },
-  { href: "/calendrier", label: "Calendrier", ic: "calendrier", c: "canard" },
-  { href: "/inscriptions", label: "Inscriptions", ic: "drapeau", c: "orange" },
-  { href: "/club/classements", label: "Classements", ic: "podium", opt: true, desc: "Belges et mondiaux", c: "indigo" },
-  { href: "/fiche", label: "Ma fiche", ic: "joueur", c: "violet" },
-  { href: "/courrier", label: "Courrier", ic: "mail", c: "or" },
-  { href: "/internes", label: "Compétitions du club", ic: "coupe", c: "magenta" },
+  { href: "/calendrier", label: "Calendrier", ic: "calendrier", c: "canard", g: "Compétitions" },
+  { href: "/inscriptions", label: "Inscriptions", ic: "drapeau", c: "orange", g: "Compétitions" },
+  { href: "/internes", label: "Compétitions du club", ic: "coupe", c: "magenta", g: "Compétitions" },
+  { href: "/club/classements", label: "Classements", ic: "podium", opt: true, desc: "Belges et mondiaux", c: "indigo", g: "Compétitions" },
+  { href: "/fiche", label: "Ma fiche", ic: "joueur", c: "violet", g: "Moi" },
+  { href: "/courrier", label: "Courrier", ic: "mail", c: "or", g: "Moi" },
 ];
+/** Staff side: six headings, each page in one place only. */
 const STAFF: Item[] = [
-  { href: "/staff/inscriptions", label: "Tableau de bord", ic: "tableau", desc: "Inscriptions, relances, logistique", c: "bleu" },
-  { href: "/staff/planning", label: "Planning", ic: "planning", desc: "Tâches et feuille de route", c: "violet" },
-  { href: "/staff/logistique", label: "Fiches logistiques", ic: "valise", desc: "Remplir et publier", c: "rose" },
-  { href: "/staff/notifications", label: "Notifications", ic: "cloche", desc: "Prévenir les joueurs", c: "orange" },
-  { href: "/staff/classements", label: "Mise à jour des classements", ic: "maj", desc: "FBFTS + FISTF, import manuel", c: "canard" },
-  { href: "/staff/internes", label: "Compétitions internes", ic: "coupe", desc: "Championnat et coupe du club", c: "magenta" },
-  { href: "/admin", label: "Joueurs & accès", ic: "dossier", desc: "Synchro Notion, comptes", c: "bronze" },
+  { href: "/staff/inscriptions", label: "Tableau de bord", ic: "tableau", desc: "Inscriptions, relances", c: "bleu", g: "Compétitions & déplacements" },
+  { href: "/staff/logistique", label: "Fiches logistiques", ic: "valise", desc: "Remplir et publier", c: "rose", g: "Compétitions & déplacements" },
+  { href: "/staff/internes", label: "Compétitions internes", ic: "coupe", desc: "Championnat et coupe du club", c: "magenta", g: "Compétitions & déplacements" },
+  { href: "/admin/valideurs", label: "Valideurs", ic: "coche", desc: "Qui valide les scores", c: "magenta", g: "Compétitions & déplacements" },
+  { href: "/staff/classements", label: "Mise à jour des classements", ic: "maj", desc: "FBFTS + FISTF", c: "canard", g: "Compétitions & déplacements" },
+  { href: "/staff/notifications", label: "Notifications", ic: "cloche", desc: "Prévenir les joueurs", c: "orange", g: "Communication" },
+  { href: "/admin/communication", label: "Mails & contacts", ic: "voix", desc: "Mails du club, demandes des visiteurs", c: "or", g: "Communication" },
+  { href: "/admin", label: "Joueurs & comptes", ic: "groupe", desc: "Ajout, connexions, aperçu, archives", c: "bronze", g: "Joueurs" },
+  { href: "/admin/finances", label: "Cagnottes", ic: "euro", desc: "Gains, dépenses, barème", c: "or", g: "Finances" },
+  { href: "/staff/planning", label: "Planning", ic: "planning", desc: "Tâches et feuille de route", c: "violet", g: "Organisation" },
+  { href: "/admin/technique", label: "Synchro & sauvegarde", ic: "reglage", desc: "Notion, sauvegarde", c: "bronze", g: "Technique" },
 ];
+/** Small icon of each heading. */
+const IC_GROUPE: Record<string, string> = { "Compétitions": "coupe", "Moi": "joueur", "Compétitions & déplacements": "drapeau", "Communication": "voix", "Joueurs": "groupe", "Finances": "euro", "Organisation": "planning", "Technique": "reglage" };
 
 /**
  * Floating dock at the bottom of the screen (always visible): main pages, then a round button
  * that opens the staff pages / « Plus » and log out.
  */
+/** Items in order, gathered under their heading (first appearance order). */
+function groupes(l: Item[]): [string, Item[]][] {
+  const m = new Map<string, Item[]>();
+  for (const i of l) m.set(i.g || "", [...(m.get(i.g || "") || []), i]);
+  return [...m.entries()];
+}
+
 export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: boolean; nom?: string; inactif?: boolean }) {
   const path = usePathname() || "/";
   const [ouvert, setOuvert] = useState(false);
-  const actif = (h: string) => (h === "/" ? path === "/" : path === h || path.startsWith(h + "/"));
+  // The longest matching address wins (« /admin/finances » is not « /admin »).
+  const tousLiens = [...JOUEUR, ...STAFF].map((i) => i.href);
+  const meilleur = tousLiens.filter((h) => (h === "/" ? path === "/" : path === h || path.startsWith(h + "/"))).sort((a, b) => b.length - a.length)[0];
+  const actif = (h: string) => h === meilleur;
   const staffActif = STAFF.some((s) => actif(s.href));
   // Discovery space (member not active): no answers to competitions; calendar is on the home page.
   const items = inactif
-    ? [JOUEUR[0], { href: "/#bloc-calendrier", label: "Calendrier", ic: "calendrier", c: "canard" }, { ...JOUEUR[3], opt: false }, JOUEUR[4], JOUEUR[5], JOUEUR[6]]
+    ? JOUEUR.filter((i) => i.href !== "/inscriptions").map((i) => (i.href === "/calendrier" ? { ...i, href: "/#bloc-calendrier" } : i.opt ? { ...i, opt: false } : i))
     : JOUEUR;
 
   useEffect(() => setOuvert(false), [path]);
@@ -83,6 +101,8 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
 
   // Current page, for the default bottom bar (pages without parts).
   const page = [...items, ...STAFF].find((i) => actif(i.href)) || items[0];
+  // Default bottom bar: the other pages of the same heading (arrows go from one to the next).
+  const freres = page.g ? (STAFF.includes(page) ? STAFF : items).filter((i) => i.g === page.g) : [];
 
   return (
     <>
@@ -100,20 +120,30 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
           </span>
         </div>
         <div className="mt-liste">
-          {items.map((i) => (
-            <Link key={i.href} href={i.href} prefetch={i.href.startsWith("/club/classements") ? true : undefined} className={`mt-l d-${i.c}${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>
-              <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
-              <span className="mt-t">{i.label}</span>
-            </Link>
+          {groupes(items).map(([g, l]) => (
+            <div key={g || "_"} className="mt-gr">
+              {g ? <p className="mt-gt"><Icone n={IC_GROUPE[g] || "etoile"} taille={12} /> {g}</p> : null}
+              {l.map((i) => (
+                <Link key={i.href} href={i.href} prefetch={i.href.startsWith("/club/classements") ? true : undefined} className={`mt-l d-${i.c}${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>
+                  <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
+                  <span className="mt-t">{i.label}</span>
+                </Link>
+              ))}
+            </div>
           ))}
           {isAdmin ? (
             <>
               <p className="mt-sec"><Icone n="etoile" taille={13} /> Espace staff</p>
-              {STAFF.map((i) => (
-                <Link key={i.href} href={i.href} className={`mt-l d-${i.c} staff${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>
-                  <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
-                  <span className="mt-t">{i.label}<small>{i.desc}</small></span>
-                </Link>
+              {groupes(STAFF).map(([g, l]) => (
+                <div key={g} className="mt-gr staff">
+                  <p className="mt-gt"><Icone n={IC_GROUPE[g] || "etoile"} taille={12} /> {g}</p>
+                  {l.map((i) => (
+                    <Link key={i.href} href={i.href} className={`mt-l d-${i.c} staff${actif(i.href) ? " on" : ""}`} tabIndex={ouvert ? 0 : -1} onClick={() => choisir(i.href)}>
+                      <span className="mt-ic"><Icone n={i.ic} taille={19} /></span>
+                      <span className="mt-t">{i.label}<small>{i.desc}</small></span>
+                    </Link>
+                  ))}
+                </div>
               ))}
             </>
           ) : null}
@@ -131,11 +161,15 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
       <NavSection
         className="defaut"
         couleur={page.c}
-        actuel="ici"
-        pages={[
-          ...(path !== page.href && page.href !== "/" ? [{ id: "racine", titre: page.label, ic: <Icone n={page.ic} taille={18} />, href: page.href }] : []),
-          { id: "ici", titre: path !== page.href && page.href !== "/" ? "Détail" : page.label, ic: <Icone n={page.ic} taille={18} /> },
-        ]}
+        actuel={freres.length > 1 && path === page.href ? page.href : "ici"}
+        pages={
+          freres.length > 1 && path === page.href
+            ? freres.map((i) => ({ id: i.href, titre: i.label, ic: <Icone n={i.ic} taille={18} />, href: i.href }))
+            : [
+                ...(path !== page.href && page.href !== "/" ? [{ id: "racine", titre: page.label, ic: <Icone n={page.ic} taille={18} />, href: page.href }] : []),
+                { id: "ici", titre: path !== page.href && page.href !== "/" ? "Détail" : page.label, ic: <Icone n={page.ic} taille={18} /> },
+              ]
+        }
       />
     </>
   );
