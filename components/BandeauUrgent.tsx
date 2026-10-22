@@ -45,6 +45,13 @@ export default async function BandeauUrgent() {
         if (n) l.push({ ic: "✅", txt: `${n} score${n > 1 ? "s" : ""} à valider`, quoi: `${n} score${n > 1 ? "s" : ""} à valider`, detail: "Compétitions du club · valideur", href: "/internes#bloc-a-valider", niveau: "moyen" });
       }
     } catch { /* competitions not installed yet */ }
+    // Staff: requests to use a kitty, waiting for a validation.
+    if (admin) {
+      try {
+        const { count } = await supabase.from("cag_mouvements").select("id", { count: "exact", head: true }).eq("statut", "en_attente");
+        if (count) l.push({ ic: "💶", txt: `${count} demande${count > 1 ? "s" : ""} de cagnotte à valider`, quoi: `${count} demande${count > 1 ? "s" : ""} de cagnotte`, detail: "À valider · Admin → Cagnottes", href: "/admin#bloc-cagnottes", niveau: "moyen" });
+      } catch { /* kitty history not installed yet */ }
+    }
     if (!l.length) return null;
     return <Defilant items={l} />;
   } catch {
