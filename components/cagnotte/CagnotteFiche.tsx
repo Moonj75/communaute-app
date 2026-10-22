@@ -33,13 +33,14 @@ export default function CagnotteFiche({ joueurId, nom, montant, groupe, mouvemen
 
   return (
     <>
-      <section className="fc-cagnotte fx-cagnotte" aria-label="Cagnotte">
+      {/* Only the word and the amount; a tap on the frame opens the detailed history. */}
+      <section
+        className={`fc-cagnotte fx-cagnotte${mouvements ? " fcg-clic" : ""}`}
+        aria-label={`Cagnotte : ${euro.format(valeur)}${attente ? `, ${attente} en attente` : ""}`}
+        {...(mouvements ? { role: "button", tabIndex: 0, title: "Voir le détail", onClick: () => setOuvert(true), onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOuvert(true); } } } : {})}
+      >
         <span className="fcg-ic" aria-hidden="true">💰</span>
-        <span className="fcg-txt">
-          <span className="fcg-l">{groupe ? "Cagnotte commune" : "Ma cagnotte"}</span>
-          <span className="fcg-s">{groupe ? `👨‍👩‍👧 ${groupe} · ` : ""}{attente ? `⏳ ${attente} en attente · ` : ""}déplacements du club</span>
-          {mouvements ? <button type="button" className="fcg-det" onClick={() => setOuvert(true)}>Détails ›</button> : null}
-        </span>
+        <span className="fcg-txt"><span className="fcg-l">Cagnotte</span></span>
         <b className="fcg-v num or-brillant">{euro.format(valeur)}</b>
       </section>
       {ouvert && mouvements ? (
