@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     lireCalendrier().catch(() => []),
     lireParticipations().catch(() => []),
     lireTaches().catch(() => []),
-    db.from("joueurs").select("notion_id,prenom,nom,email,actif"),
+    db.from("joueurs").select("*"),
     db.from("membres").select("email,role,actif"),
     db.from("push_abonnements").select("endpoint,email,p256dh,auth"),
     db.from("notif_modeles").select("cle,titre,texte,actif"),
@@ -48,7 +48,8 @@ export async function GET(req: NextRequest) {
     date: e.date ? dateCourte(e.date) : "",
     lieu: e.lieu || "",
   });
-  const joueurs: JoueurLite[] = ((rj.data || []) as { notion_id: string; prenom: string | null; nom: string; email: string | null; actif: boolean }[]).map((j) => ({
+  // Archived members get no reminder.
+  const joueurs: JoueurLite[] = ((rj.data || []) as { notion_id: string; prenom: string | null; nom: string; email: string | null; actif: boolean; archive?: boolean }[]).filter((j) => !j.archive).map((j) => ({
     notionId: j.notion_id,
     nom: [j.prenom, j.nom].filter(Boolean).join(" "),
     email: j.email,
