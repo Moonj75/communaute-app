@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { dissoudreCagnotte, enregistrerCagnotte, quitterCagnotte, regrouperCagnottes, renommerCagnotte } from "./cagnottes";
+import { annulerMouvement, dissoudreCagnotte, enregistrerCagnotte, quitterCagnotte, regrouperCagnottes, renommerCagnotte } from "./cagnottes";
+import Historique from "@/components/cagnotte/Historique";
+import type { Bareme, Mouvement } from "@/lib/cagnotte";
 
 type J = { notion_id: string; prenom: string | null; nom: string; actif: boolean; cagnotte: number | null; groupe: string | null };
 const euro = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" });
@@ -13,7 +15,8 @@ const versTexte = (n: number | null) => (n == null ? "" : n.toFixed(2).replace("
  * The kitty of every member (active or not), typed here and saved in Notion and in the app.
  * Members can share one kitty (« Famille Devreese »): one amount for all of them; or keep their own.
  */
-export default function Cagnottes({ joueurs }: { joueurs: J[] }) {
+export default function Cagnottes({ joueurs, mouvements = null, bareme = [] }: { joueurs: J[]; mouvements?: Mouvement[] | null; bareme?: Bareme[] }) {
+  const [histo, setHisto] = useState<{ titre: string; ids: string[]; groupe: boolean } | null>(null);
   const router = useRouter();
   const [montants, setMontants] = useState<Record<string, number | null>>(() => Object.fromEntries(joueurs.map((j) => [j.notion_id, j.cagnotte])));
   // After a change on the server (shared kitty made, member removed…), the amounts follow.
@@ -96,7 +99,7 @@ export default function Cagnottes({ joueurs }: { joueurs: J[] }) {
         </div>
         <input className="input cg-cherche" type="search" value={cherche} onChange={(e) => setCherche(e.target.value)} placeholder="🔎 Chercher un membre…" aria-label="Chercher un membre" />
       </div>
-      <p className="muted small">Tape le montant puis ✓ (ou Entrée) : enregistré dans Notion (« Cagnotte ») et dans l&apos;appli. Une <b>cagnotte commune</b> (ex. Famille Devreese) a un seul montant pour tous ses membres ; chacun la voit sur sa fiche.</p>
+      <p className="muted small">Le solde se calcule tout seul à partir de l&apos;historique (gains, dépenses). Pour corriger un solde, tape le bon montant puis ✓ : un « ajustement » est ajouté à l&apos;historique. 📜 = voir l&apos;historique. Une <b>cagnotte commune</b> (ex. Famille Devreese) additionne l&apos;historique de ses membres.</p>
       {info ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
 
       {/* Shared kitties */}
@@ -122,7 +125,7 @@ export default function Cagnottes({ joueurs }: { joueurs: J[] }) {
                 {ms.map((m) => (
                   <li key={m.notion_id}>
                     {nom(m)}{!m.actif ? <small> · non actif</small> : null}
-                    <button type="button" className="cg-x" title="Retirer de la cagnotte commune (il repart avec sa propre cagnotte, à 0 €)" disabled={pending} onClick={() => action(`q-${m.notion_id}`, () => quitterCagnotte(m.notion_id))}>✕</button>
+                    <button type="button" className="cg-x" title="Retirer de la cagnotte commune (il repart avec ses propres gains et dépenses)" disabled={pending} onClick={() => action(`q-${m.notion_id}`, () => quitterCagnotte(m.notion_id))}>✕</button>
                   </li>
                 ))}
               </ul>
@@ -134,6 +137,7 @@ export default function Cagnottes({ joueurs }: { joueurs: J[] }) {
                 <button type="button" className="btn" disabled={!ajout[g] || pending} onClick={() => action(`aj-${g}`, () => regrouperCagnottes([ajout[g]], g), () => setAjout((a) => ({ ...a, [g]: "" })))}>Ajouter</button>
                 <button type="button" className="btn" onClick={() => setRenomme((r) => ({ ...r, [g]: g }))}>✏️ Renommer</button>
                 <button type="button" className="btn" onClick={() => setDissout({ groupe: g, garde: ms[0].notion_id })}>✂️ Séparer</button>
+                {mouvements ? <button type="button" className="btn" onClick={() => setHisto({ titre: g, ids, groupe: true })}>📜 Historique</button> : null}
               </div>
               {e ? <span className={`cg-msg${e.ok ? " ok" : " err"}`}>{e.message}</span> : null}
             </li>
@@ -173,7 +177,10 @@ export default function Cagnottes({ joueurs }: { joueurs: J[] }) {
             <li key={id} className={`cg-li cg-solo${j.actif ? "" : " inactif"}${coche ? " coche" : ""}`}>
               <label className="cg-sel" title="Choisir pour une cagnotte commune"><input type="checkbox" checked={coche} onChange={(x) => setSelection((s) => (x.target.checked ? [...s, id] : s.filter((y) => y !== id)))} /></label>
               <span className="cg-nom"><b>{nom(j)}</b>{!j.actif ? <small> · non actif</small> : null}</span>
-              {champ(id, [id], nom(j))}
+              <span className="cg-droite">
+                {mouvements ? <button type="button" className="cg-h" title="Historique" aria-label={`Historique de ${nom(j)}`} onClick={() => setHisto({ titre: nom(j), ids: [id], groupe: false })}>📜</button> : null}
+                {champ(id, [id], nom(j))}
+              </span>
               {e ? <span className={`cg-msg${e.ok ? " ok" : " err"}`}>{e.message}</span> : null}
             </li>
           );
@@ -185,16 +192,24 @@ export default function Cagnottes({ joueurs }: { joueurs: J[] }) {
         <div className="ig-fond" onClick={() => !pending && setDissout(null)}>
           <div className="ig-saisie" role="dialog" aria-label="Séparer la cagnotte commune" onClick={(e) => e.stopPropagation()}>
             <p className="ig-qui">Séparer « {dissout.groupe} »</p>
-            <p className="muted small" style={{ textAlign: "center" }}>Chacun retrouve sa propre cagnotte. Le montant ({euro.format(Number(montants[groupes.find(([g]) => g === dissout.groupe)?.[1][0].notion_id || ""]) || 0)}) reste à :</p>
-            <select className="input" value={dissout.garde} onChange={(e) => setDissout({ ...dissout, garde: e.target.value })} aria-label="Qui garde le montant">
-              {(groupes.find(([g]) => g === dissout.groupe)?.[1] || []).map((m) => <option key={m.notion_id} value={m.notion_id}>{nom(m)}</option>)}
-            </select>
+            <p className="muted small" style={{ textAlign: "center" }}>Chacun retrouve sa propre cagnotte, avec ses propres gains et dépenses.</p>
             <span className="ig-btns">
-              <button type="button" className="btn primary" disabled={pending} onClick={() => action("dis", () => dissoudreCagnotte(dissout.groupe, dissout.garde), () => setDissout(null))}>{pending ? "…" : "✂️ Oui, séparer"}</button>
+              <button type="button" className="btn primary" disabled={pending} onClick={() => action("dis", () => dissoudreCagnotte(dissout.groupe), () => setDissout(null))}>{pending ? "…" : "✂️ Oui, séparer"}</button>
               <button type="button" className="btn" disabled={pending} onClick={() => setDissout(null)}>Annuler</button>
             </span>
           </div>
         </div>
+      ) : null}
+      {histo && mouvements ? (
+        <Historique
+          titre={histo.titre}
+          sousTitre={histo.groupe ? "Cagnotte commune" : undefined}
+          mouvements={mouvements.filter((m) => histo.ids.includes(m.joueur_id))}
+          bareme={bareme}
+          noms={histo.groupe ? Object.fromEntries(joueurs.map((j) => [j.notion_id, nom(j)])) : undefined}
+          onClose={() => setHisto(null)}
+          actions={(m) => (m.statut === "valide" && m.categorie !== "Solde de départ" ? <button type="button" className="hc-ann" disabled={pending} onClick={() => { if (window.confirm(`Annuler « ${m.libelle} » (${euro.format(Number(m.montant))}) ?`)) action(`an-${m.id}`, () => annulerMouvement(m.id)); }}>Annuler</button> : null)}
+        />
       ) : null}
     </div>
   );

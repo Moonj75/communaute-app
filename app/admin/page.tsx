@@ -4,7 +4,9 @@ import { displayName, getSessionProfil } from "@/lib/profil";
 import AddForm from "./AddForm";
 import Blocs from "@/components/Blocs";
 import SyncPanel from "./SyncPanel";
-import Cagnottes from "./Cagnottes";
+import CagnotteAdmin from "./CagnotteAdmin";
+import type { Bareme, Mouvement } from "@/lib/cagnotte";
+import { lireEvenementsLies } from "@/lib/cagnotte-db";
 import Valideurs from "./Valideurs";
 import Mails from "./Mails";
 import Archives from "./Archives";
@@ -35,16 +37,23 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (profil?.role !== "admin") redirect("/");
 
-  const [{ data: membres }, { data: profils }, { data: joueurs }, supersRes, contactsRes] = await Promise.all([
+  const [{ data: membres }, { data: profils }, { data: joueurs }, supersRes, mvtRes, barRes, contactsRes] = await Promise.all([
     supabase.from("membres").select("email,nom,prenom,role,actif,synced_at,invite_le").order("nom"),
     supabase.from("profils").select("email"),
     supabase.from("joueurs").select("*"),
     supabase.from("super_admins").select("email"),
+    supabase.from("cag_mouvements").select("*").order("date", { ascending: false }).limit(5000),
+    supabase.from("cag_bareme").select("*").order("ordre"),
     supabase.from("contacts").select("id,cree_le,prenom,nom,email,telephone,decouverte,message,traite").order("cree_le", { ascending: false }).limit(60),
   ]);
   type Contact = { id: string; cree_le: string; prenom: string; nom: string | null; email: string; telephone: string | null; decouverte: string | null; message: string | null; traite: boolean };
   // Super administrators (Supabase step 14): always admin and active, never removed.
   const supers = new Set(((supersRes.data || []) as { email: string }[]).map((x) => x.email));
+  // Kitty history (step 17): null = not installed yet.
+  const mouvements = mvtRes.error ? null : ((mvtRes.data || []) as Mouvement[]);
+  const bareme = barRes.error ? null : ((barRes.data || []) as Bareme[]);
+  const evenements = mouvements ? await lireEvenementsLies(supabase) : [];
+  const demandes = (mouvements || []).filter((m) => m.statut === "en_attente").length;
   const contacts = (contactsRes.data || []) as Contact[];
   const aTraiter = contacts.filter((c) => !c.traite).length;
   type J = { email: string | null; prenom: string | null; nom: string; actif: boolean; titulaire: boolean; roles: string[] | null; cagnotte: number | null };
@@ -96,9 +105,9 @@ export default async function AdminPage() {
           </div>
         </section>
         ) },
-        { id: "cagnottes", titre: "Cagnottes", ic: "💶", contenu: (
-          <section className="panel"><div className="hd"><h2>💶 Cagnottes des membres</h2><span className="muted small">Actifs et non actifs · reliées à Notion</span></div>
-            <div className="bd"><Cagnottes joueurs={(actuels as (J & { notion_id: string; cagnotte_groupe?: string | null })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, cagnotte: j.cagnotte == null ? null : Number(j.cagnotte), groupe: j.cagnotte_groupe || null }))} /></div>
+        { id: "cagnottes", titre: "Cagnottes", ic: "💶", badge: demandes || null, contenu: (
+          <section className="panel"><div className="hd"><h2>💶 Cagnottes des membres</h2><span className="muted small">Gains, dépenses, historique · reliées à Notion</span></div>
+            <div className="bd"><CagnotteAdmin joueurs={(actuels as (J & { notion_id: string; cagnotte_groupe?: string | null })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, cagnotte: j.cagnotte == null ? null : Number(j.cagnotte), groupe: j.cagnotte_groupe || null }))} mouvements={mouvements} bareme={bareme} evenements={evenements} /></div>
           </section>
         ) },
         { id: "mails", titre: "Mails du club", ic: "💌", contenu: (
