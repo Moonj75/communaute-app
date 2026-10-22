@@ -19,7 +19,8 @@ export default async function FichePage() {
   const lire = (cols: string) =>
     supabase.from("joueurs").select(cols).eq("email", email).order("titulaire", { ascending: false }).order("prenom");
   // Newer columns may not exist yet if a SQL step was not run: fall back gracefully.
-  let res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares");
+  let res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares,cagnotte_groupe");
+  if (res.error) res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares");
   if (res.error) res = await lire(COLS + ",photo_path");
   if (res.error) res = await lire(COLS);
   const fiches = ((res.data || []) as unknown) as Fiche[];
@@ -46,7 +47,12 @@ export default async function FichePage() {
     };
   });
   const aClassements = extraits.some((x) => x.length);
-  const total = fiches.reduce((s, f) => s + (Number(f.cagnotte) || 0), 0);
+  // A shared kitty (« Famille Devreese ») is counted once.
+  const vus = new Set<string>();
+  const total = fiches.reduce((s, f) => {
+    if (f.cagnotte_groupe) { if (vus.has(f.cagnotte_groupe)) return s; vus.add(f.cagnotte_groupe); }
+    return s + (Number(f.cagnotte) || 0);
+  }, 0);
 
   return (
     <>

@@ -13,6 +13,8 @@ export type Fiche = {
   titulaire: boolean;
   roles: string[] | null;
   cagnotte: number | null;
+  /** Shared kitty (« Famille Devreese »), when there is one. */
+  cagnotte_groupe?: string | null;
   telephone: string | null;
   categorie: string | null;
   serie: string | null;
@@ -123,8 +125,8 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
       <section className="fc-cagnotte fx-cagnotte" aria-label="Cagnotte">
         <span className="fcg-ic" aria-hidden="true">💰</span>
         <span className="fcg-txt">
-          <span className="fcg-l">Ma cagnotte</span>
-          <span className="fcg-s">déplacements du club</span>
+          <span className="fcg-l">{f.cagnotte_groupe ? "Cagnotte commune" : "Ma cagnotte"}</span>
+          <span className="fcg-s">{f.cagnotte_groupe ? `👨‍👩‍👧 ${f.cagnotte_groupe} · déplacements du club` : "déplacements du club"}</span>
         </span>
         <b className="fcg-v num or-brillant">{euro.format(cagnotte)}</b>
       </section>
