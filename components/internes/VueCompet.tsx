@@ -1,6 +1,6 @@
 import type React from "react";
 import Link from "next/link";
-import { classement, evolutions, decrireEtape, vueBarrage, TYPES, type Competition, type Groupe, type Match } from "@/lib/internes";
+import { classement, evolutions, decrireEtape, vueBarrage, LIGUES, TYPES, type Competition, type Groupe, type Match } from "@/lib/internes";
 import { dateMoyenne } from "@/lib/club-types";
 import Grille from "./Grille";
 import Onglets from "./Onglets";
@@ -25,8 +25,8 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
   const ms = matchs.filter((m) => m.etape === k);
   const passeOn = e && e.passage === "qualifies" ? e.qualifies : 0;
   const suivante = c.etapes[k + 1];
-  const nomHaut = suivante?.nomsGroupes?.[0] || "division du haut";
-  const nomBas = suivante?.nomsGroupes?.[1] || "division du bas";
+  const nomHaut = suivante?.nomsGroupes?.[0] || "Division du haut";
+  const nomBas = suivante?.nomsGroupes?.[1] || "Division du bas";
   const lj = (l: { id: string; nom: string; rang: number }) => ({ id: l.id, nom: l.nom, rang: l.rang });
   const blocsBarrage = e?.format === "barrage"
     ? vueBarrage(c, groupes, matchs, k).map((v) => ({ nom: v.groupe.nom, haut: v.haut.map(lj), seul: v.seul ? lj(v.seul) : null, duels: v.duelsJoues.map((d) => ({ x: lj(d.x), y: lj(d.y), match: d.match })), bas: v.bas.map(lj) }))
@@ -93,8 +93,11 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
           // Names given to the groups of the stage they go to (e.g. « Division 1 », « Division 2 ») for the legend.
           const cible = avantBarrage ? c.etapes[k + 2] : suivante;
           const nomsCible = (cible?.nomsGroupes || []).filter(Boolean);
-          const legHaut = nomsCible[0] || (avantBarrage ? "Division du haut" : "Poule du haut");
-          const legBas = nomsCible.length >= 2 ? nomsCible[nomsCible.length - 1] : avantBarrage ? "Division du bas" : "Poule du bas";
+          // Leagues next (Diamond, Golden…): the top half of the leagues for the ones above, the rest for the others.
+          const ligues = cible?.taille ? (nomsCible.length ? nomsCible : LIGUES) : null;
+          const moitie = ligues ? Math.ceil(ligues.length / 2) : 0;
+          const legHaut = ligues ? ligues.slice(0, moitie).join(" / ") : nomsCible[0] || (avantBarrage ? "Division du haut" : "Poule du haut");
+          const legBas = ligues ? ligues.slice(moitie).join(" / ") || ligues[ligues.length - 1] : nomsCible.length >= 2 ? nomsCible[nomsCible.length - 1] : avantBarrage ? "Division du bas" : "Poule du bas";
           const ligue = /diamond/i.test(g.nom) ? " lg-diamond" : /gold/i.test(g.nom) ? " lg-gold" : /silver/i.test(g.nom) ? " lg-silver" : /bronze/i.test(g.nom) ? " lg-bronze" : /fair play/i.test(g.nom) ? " lg-fair" : "";
           const niveau = k > 0 && c.etapes[k - 1]?.passage === "niveaux" && gs.length > 1 ? (gi === 0 ? "haut" : gi === gs.length - 1 ? "bas" : "milieu") : "";
           const joues = mg.filter((m) => m.joue).length;
@@ -132,7 +135,7 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
                     </tbody>
                   </table>
                 </div>
-                {monte && commence ? <p className="ci-leg"><span className="ci-leg-1">👑 1er</span><span className="ci-leg-h" title={e?.passage === "qualifies" ? undefined : avantBarrage ? `Montent directement en ${legHaut}` : `Vont en ${legHaut}`}>{e?.passage === "qualifies" ? "Qualifiés" : `⬆ ${legHaut}`}</span>{avantBarrage && finBarrage > monte ? <span className="ci-leg-b" title={`Match de barrage : le gagnant va en ${legHaut}, le perdant en ${legBas}`}>⚔ Barrage</span> : null}{zoneBas ? <span className="ci-leg-d" title={`Vont en ${legBas}`}>⬇ {legBas}</span> : null}<span><b className="ci-up">▲</b>/<b className="ci-down">▼</b> places au dernier match</span></p> : null}
+                {monte && commence ? <p className="ci-leg"><span className="ci-leg-1">👑 1er</span><span className="ci-leg-h" title={e?.passage === "qualifies" ? undefined : avantBarrage ? `Montent directement en ${legHaut}` : `Vont en ${legHaut}`}>{e?.passage === "qualifies" ? `Accès ${suivante?.nom || "étape suivante"}` : `Accès ${legHaut}`}</span>{avantBarrage && finBarrage > monte ? <span className="ci-leg-b" title={`Match de barrage : le gagnant va en ${legHaut}, le perdant en ${legBas}`}>Barrage</span> : null}{zoneBas ? <span className="ci-leg-d" title={`Vont en ${legBas}`}>Accès {legBas}</span> : null}<span><b className="ci-up">▲</b>/<b className="ci-down">▼</b> places au dernier match</span></p> : null}
                 </div>
                 <div className="ci-duo-mx">
                                 <Grille joueurs={g.joueurs} matchs={mg} editable={editable && c.statut === "en_cours" && k === c.etape} moi={moi} />

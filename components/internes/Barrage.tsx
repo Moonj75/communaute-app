@@ -57,7 +57,7 @@ export default function Barrage({ blocs, editable = false, moi = [], nomHaut, no
           <p className="br-titre">{b.nom}</p>
           {b.haut.length || b.seul ? (
             <div className="br-zone h">
-              <p className="br-zt"><span aria-hidden="true">⬆️</span> Montent directement en {nomHaut}</p>
+              <p className="br-zt"><span aria-hidden="true">⬆️</span> Accès direct {nomHaut}</p>
               <ul className="br-l">{b.haut.map((j) => puce(j, "h"))}{b.seul ? puce(b.seul, "h") : null}</ul>
             </div>
           ) : null}
@@ -84,7 +84,7 @@ export default function Barrage({ blocs, editable = false, moi = [], nomHaut, no
           ) : null}
           {b.bas.length ? (
             <div className="br-zone b">
-              <p className="br-zt"><span aria-hidden="true">⬇️</span> Vont en {nomBas}</p>
+              <p className="br-zt"><span aria-hidden="true">⬇️</span> Accès {nomBas}</p>
               <ul className="br-l">{b.bas.map((j) => puce(j, "b"))}</ul>
             </div>
           ) : null}
