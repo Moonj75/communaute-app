@@ -3,7 +3,8 @@ import { essayer, lireCalendrier, lireParticipations, lireTaches } from "@/lib/c
 import { chargerJoueurs } from "@/lib/donnees";
 import { urgences, urgencesMatchs } from "@/lib/urgences";
 import { lireEnCours } from "@/lib/internes-db";
-import { situations } from "@/lib/internes";
+import { matchsAValider, situations } from "@/lib/internes";
+import { droitsValideur } from "@/lib/valideurs";
 import { lireEligibles } from "@/lib/eligibles";
 import { lireNonLus } from "@/lib/courrier";
 import Defilant from "./Defilant";
@@ -34,8 +35,15 @@ export default async function BandeauUrgent() {
     const l = urgences(cal.data || [], parts.data || [], famille.filter((j) => j.actif), taches.data, undefined, elig, nonLus);
     // Club competitions: matches still to play when the stage ends soon.
     try {
-      const sits = situations(await lireEnCours(supabase), famille.map((j) => j.notionId));
+      const enCours = await lireEnCours(supabase);
+      const sits = situations(enCours, famille.map((j) => j.notionId));
       l.push(...urgencesMatchs(sits, undefined, famille.length > 1));
+      // Validators: scores waiting for a validation (not their own matches).
+      const droits = await droitsValideur(supabase, user.email, admin);
+      if (droits.ok) {
+        const n = matchsAValider(enCours).filter((x) => !droits.miens.includes(x.a.id) && !droits.miens.includes(x.b.id)).length;
+        if (n) l.push({ ic: "✅", txt: `${n} score${n > 1 ? "s" : ""} à valider`, quoi: `${n} score${n > 1 ? "s" : ""} à valider`, detail: "Compétitions du club · valideur", href: "/internes#bloc-a-valider", niveau: "moyen" });
+      }
     } catch { /* competitions not installed yet */ }
     if (!l.length) return null;
     return <Defilant items={l} />;
