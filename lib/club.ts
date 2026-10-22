@@ -532,3 +532,32 @@ export async function majRolesNotion(pageId: string, roles: string[]) {
 export async function majArchiveNotion(pageId: string, archive: boolean) {
   await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { "Archivé": { checkbox: archive } } } });
 }
+
+/** « Journal des cagnottes » in Notion: one page per movement (written by the app). Returns the page id. */
+const DS_JOURNAL_CAGNOTTES = process.env.NOTION_DS_JOURNAL_CAGNOTTES || "9fa381a2-0bfd-4cca-b046-1df284027801";
+export async function ecrireJournalCagnotte(m: { evenement?: string | null; id: string; libelle: string; date: string; joueurId: string; sens: "gain" | "depense"; categorie: string; quantite: number | null; unite: string | null; taux: number | null; montant: number; statut: "en_attente" | "valide" | "refuse"; groupe: string | null; validePar: string | null }, pageId?: string | null) {
+  const statut = m.statut === "valide" ? "Validé" : m.statut === "refuse" ? "Refusé" : "En attente";
+  const txt = (t: string | null | undefined) => ({ rich_text: t ? [{ type: "text", text: { content: t.slice(0, 200) } }] : [] });
+  const properties: Record<string, unknown> = {
+    "Libellé": { title: [{ type: "text", text: { content: (m.libelle || m.categorie || "Mouvement").slice(0, 200) } }] },
+    Date: { date: { start: m.date.slice(0, 10) } },
+    Membre: { relation: [{ id: m.joueurId }] },
+    Sens: { select: { name: m.sens === "gain" ? "Gain" : "Dépense" } },
+    "Catégorie": txt(m.categorie),
+    "Quantité": { number: m.quantite },
+    "Unité": m.unite ? { select: { name: m.unite } } : { select: null },
+    Taux: { number: m.taux },
+    Montant: { number: m.montant },
+    Statut: { select: { name: statut } },
+    "Cagnotte commune": txt(m.groupe),
+    "Validé par": txt(m.validePar),
+    "Réf. appli": txt(m.id),
+    "Événement": txt(m.evenement || null),
+  };
+  if (pageId) {
+    await notion(`pages/${pageId}`, { method: "PATCH", body: { properties } });
+    return pageId;
+  }
+  const pg = (await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS_JOURNAL_CAGNOTTES }, properties } })) as Page;
+  return pg.id;
+}
