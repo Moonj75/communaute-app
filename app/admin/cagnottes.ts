@@ -6,6 +6,7 @@ import { majCagnotteNotion } from "@/lib/club";
 import { journaliser, recalculer, soldeDe } from "@/lib/cagnotte-db";
 import { arrondi, euro, montantTache, type Bareme, type Mouvement, type Unite } from "@/lib/cagnotte";
 import { deposer } from "@/lib/courrier";
+import { pousser, pushPret, type Abonnement } from "@/lib/push";
 
 export type RetourCagnotte = { ok: boolean; message: string; montant?: number | null };
 type Ligne = { notion_id: string; email: string | null; prenom: string | null; nom: string; cagnotte: number | null; cagnotte_groupe?: string | null };
@@ -53,7 +54,16 @@ async function ajouter(supabase: DB, lignes: Partial<Mouvement>[], liste: Ligne[
     const j = liste.find((x) => x.notion_id === m.joueur_id);
     await journaliser(supabase, m, j?.cagnotte_groupe || null);
     const a = avis?.(m);
-    if (a && j?.email) { try { await deposer(supabase, [j.email], { type: "notification", titre: a.titre, texte: a.texte, lien: "/fiche" }); } catch { /* the movement is saved anyway */ } }
+    if (a && j?.email) {
+      try { await deposer(supabase, [j.email], { type: "notification", titre: a.titre, texte: a.texte, lien: "/fiche" }); } catch { /* the movement is saved anyway */ }
+      // Notification on the phone: « 💰 +20 € dans ta cagnotte » (vibrates; « ting » in the app).
+      try {
+        if (pushPret()) {
+          const { data: subs } = await supabase.from("push_abonnements").select("endpoint,email,p256dh,auth").eq("email", j.email.toLowerCase());
+          await pousser(supabase, (subs || []) as Abonnement[], [j.email], { title: a.titre, body: a.texte, url: "/fiche", tag: `cag-${m.id}`, ...(m.sens === "gain" ? { montant: Number(m.montant), libelle: m.libelle } : {}) });
+        }
+      } catch { /* the movement is saved anyway */ }
+    }
   }
   return faits;
 }
@@ -74,7 +84,8 @@ export async function enregistrerCagnotte(notionId: string, texte: string): Prom
     const diff = arrondi(cible - avant);
     if (!diff) return fini("✓ Rien à changer", cible);
     const liste = await tous(supabase);
-    await ajouter(supabase, [{ joueur_id: notionId, sens: diff > 0 ? "gain" : "depense", categorie: "Ajustement", montant: Math.abs(diff), libelle: "Ajustement manuel du solde", statut: "valide", valide_par: qui, valide_le: new Date().toISOString(), date: jour(null) }], liste);
+    await ajouter(supabase, [{ joueur_id: notionId, sens: diff > 0 ? "gain" : "depense", categorie: "Ajustement", montant: Math.abs(diff), libelle: "Ajustement manuel du solde", statut: "valide", valide_par: qui, valide_le: new Date().toISOString(), date: jour(null) }], liste,
+      () => (diff > 0 ? { titre: `💰 +${euro.format(diff)} dans ta cagnotte`, texte: `Ta cagnotte passe à ${euro.format(cible)}.` } : null));
     return fini(`✓ Solde : ${euro.format(cible)}`, cible);
   } catch (e) {
     return rate(e);
