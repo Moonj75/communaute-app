@@ -7,6 +7,7 @@ import { avancerVainqueur, suite } from "@/lib/internes-db";
 import { memeScore, type Match, type Proposition } from "@/lib/internes";
 import { deposer } from "@/lib/courrier";
 import { pousser, pushPret, type Abonnement } from "@/lib/push";
+import { droitsValideur } from "@/lib/valideurs";
 
 export type RetourScore = { ok: boolean; message: string; valide?: boolean };
 
@@ -83,5 +84,50 @@ export async function proposerScore(matchId: string, joueurId: string, mesButs: 
     };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Enregistrement impossible." };
+  }
+}
+
+/**
+ * A validator (or an administrator) validates a score waiting in the club competitions, after his confirmation.
+ * He never validates a match he plays himself. Both players get a word in their mailbox.
+ */
+export async function validerMatch(matchId: string, butsA: number, butsB: number, vainqueur: string | null = null): Promise<RetourScore> {
+  try {
+    const { supabase, user, profil } = await getSessionProfil();
+    if (!user?.email) return { ok: false, message: "Reconnecte-toi." };
+    const droits = await droitsValideur(supabase, user.email, profil?.role === "admin");
+    if (!droits.ok) return { ok: false, message: "Réservé aux valideurs et aux administrateurs." };
+    const db = clientAdmin();
+    if (!db) return { ok: false, message: "La validation n'est pas encore configurée (clé serveur absente)." };
+    const { data: brut } = await db.from("ci_matchs").select("*").eq("id", matchId).maybeSingle();
+    const m = brut as Match | null;
+    if (!m) return { ok: false, message: "Match introuvable." };
+    if (m.joue) return { ok: false, message: "Ce match est déjà validé." };
+    if ((m.a && droits.miens.includes(m.a)) || (m.b && droits.miens.includes(m.b))) return { ok: false, message: "Tu ne peux pas valider un match que tu joues : un autre valideur doit le faire." };
+    const { data: c } = await db.from("ci_competitions").select("etape,statut,nom").eq("id", m.competition_id).single();
+    if (!c || c.statut !== "en_cours" || c.etape !== m.etape) return { ok: false, message: "Cette étape est terminée." };
+    const a = Math.max(0, Math.min(99, Math.round(Number(butsA)))), b = Math.max(0, Math.min(99, Math.round(Number(butsB))));
+    if (Number.isNaN(a) || Number.isNaN(b)) return { ok: false, message: "Entre les deux scores." };
+    const ko = m.tour != null;
+    if (ko && a === b && vainqueur !== m.a && vainqueur !== m.b) return { ok: false, message: "Match nul : indique qui passe (prolongations ou tirs)." };
+    const maj = { buts_a: a, buts_b: b, vainqueur: ko && a === b ? vainqueur : null, joue: true, prop_a: null, prop_b: null, maj_le: new Date().toISOString() };
+    const { error } = await db.from("ci_matchs").update(maj).eq("id", matchId);
+    if (error) return { ok: false, message: error.message };
+    if (ko) await avancerVainqueur(db, m.competition_id, m.etape, { ...m, ...maj });
+    const info = await suite(db, m.competition_id);
+    // A word to both players.
+    try {
+      const { data: js } = await db.from("joueurs").select("notion_id,email,prenom,nom").in("notion_id", [m.a, m.b].filter(Boolean) as string[]);
+      const liste = (js || []) as { notion_id: string; email: string | null; prenom: string | null; nom: string }[];
+      const n = (id: string | null) => { const j = liste.find((x) => x.notion_id === id); return j ? [j.prenom, j.nom].filter(Boolean).join(" ") : "?"; };
+      const qui = [profil?.prenom, profil?.nom].filter(Boolean).join(" ") || "un valideur";
+      const emails = liste.map((x) => x.email).filter(Boolean) as string[];
+      if (emails.length) await deposer(db, emails, { type: "notification", titre: `✅ Score validé : ${n(m.a)} ${a}–${b} ${n(m.b)}`, texte: `Le score de votre match (${c.nom}) a été validé par ${qui}. Le classement est à jour.`, lien: "/internes" });
+    } catch { /* the score is validated anyway */ }
+    revalidatePath("/internes");
+    revalidatePath("/staff/internes", "layout");
+    return { ok: true, valide: true, message: info || "✅ Score validé : le classement est à jour." };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Validation impossible." };
   }
 }
