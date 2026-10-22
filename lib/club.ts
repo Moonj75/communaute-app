@@ -519,3 +519,8 @@ export async function creerJoueurNotion(p: { prenom: string | null; nom: string;
 export async function majCagnotteNotion(pageId: string, montant: number | null) {
   await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { Cagnotte: { number: montant } } } });
 }
+
+/** Writes a player's « Rôles » (multi-select) in the Notion « Liste des joueurs » (a new option is created by Notion). */
+export async function majRolesNotion(pageId: string, roles: string[]) {
+  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { "Rôles": { multi_select: roles.map((name) => ({ name })) } } } });
+}

@@ -472,3 +472,39 @@ export function situations(competitions: { c: Competition; groupes: Groupe[]; ma
   }
   return out;
 }
+
+/* ------------------------------------------------------------------ validators */
+
+/** Role given in Notion (« Rôles ») to the members who may validate club competition scores. */
+export const ROLE_VALIDEUR = "✅ Valideur";
+
+/** A score waiting for a validation (typed by one player, or different between the two). */
+export type AValider = {
+  match: Match;
+  competId: string;
+  compet: string;
+  etape: string;
+  groupe: string;
+  a: JoueurCompet;
+  b: JoueurCompet;
+  ko: boolean;
+  desaccord: boolean;
+};
+
+/** Every score typed by a player and not validated yet, in the stages in progress. */
+export function matchsAValider(competitions: { c: Competition; groupes: Groupe[]; matchs: Match[] }[]): AValider[] {
+  const out: AValider[] = [];
+  for (const { c, groupes, matchs } of competitions) {
+    if (c.statut !== "en_cours") continue;
+    const tous = groupes.flatMap((g) => g.joueurs);
+    const nom = (id: string) => tous.find((j) => j.id === id) || { id, nom: "?" };
+    for (const m of matchs) {
+      if (m.etape !== c.etape || m.joue || !m.a || !m.b || (!m.prop_a && !m.prop_b)) continue;
+      const g = groupes.find((x) => x.id === m.groupe_id);
+      out.push({ match: m, competId: c.id, compet: c.nom, etape: c.etapes[c.etape]?.nom || "", groupe: g?.nom || "", a: nom(m.a), b: nom(m.b), ko: m.tour != null, desaccord: etatSaisie(m) === "desaccord" });
+    }
+  }
+  // The oldest typed first.
+  const quand = (x: AValider) => [x.match.prop_a?.le, x.match.prop_b?.le].filter(Boolean).sort()[0] || "";
+  return out.sort((x, y) => quand(x).localeCompare(quand(y)));
+}
