@@ -4520,3 +4520,29 @@ main.wrap:has(.og .ci-ecran) { padding-bottom: 0; margin-bottom: 0; }
 .ml-obj small { color: var(--muted); font-weight: 700; }
 .ml-frame { width: 100%; height: min(720px, 75vh); border: 1px solid var(--line); border-radius: 14px; background: #f1eee8; }
 .ml-form textarea.input { font-family: inherit; font-size: 14.5px; font-weight: 500; line-height: 1.5; }
+/* ===== Cagnottes communes ===== */
+.cg-grp { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: linear-gradient(160deg, color-mix(in srgb, #ffd54a 16%, var(--surface)), var(--surface)); border: 1.5px solid #e0a800; box-shadow: 0 8px 18px -14px rgba(0,0,0,.5); }
+.cg-grp-t { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.cg-grp-ic { font-size: 22px; }
+.cg-grp-n { font-family: var(--font-display); font-style: italic; font-size: 19px; flex: 1 1 auto; min-width: 0; }
+.cg-ren { display: inline-flex; gap: 6px; flex: 1 1 auto; } .cg-ren .input { min-width: 0; }
+.cg-mb { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.cg-mb li { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); font-weight: 700; font-size: 13px; }
+.cg-mb li small { color: var(--muted); font-weight: 500; }
+.cg-x { width: 22px; height: 22px; border-radius: 50%; border: 0; background: var(--sunk); color: var(--muted); cursor: pointer; font-weight: 800; font-size: 11px; }
+.cg-x:hover { background: #ffd5d1; color: #8a1a10; }
+.cg-grp-act { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cg-grp-act select { flex: 1 1 200px; max-width: 320px; }
+.cg-nouveau { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1.5px dashed #e0a800; }
+.cg-idees { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cg-idee { border: 1.5px solid #e0a800; background: color-mix(in srgb, #ffd54a 18%, var(--surface)); border-radius: 99px; padding: 4px 12px; font: inherit; font-weight: 800; font-size: 12.5px; cursor: pointer; }
+.cg-barre { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px; border-radius: 10px; background: var(--sunk); }
+.cg-barre .input { flex: 1 1 200px; max-width: 280px; }
+.cg-solo { grid-template-columns: auto minmax(0, 1fr) auto !important; }
+.cg-sel input { width: 18px; height: 18px; accent-color: #c99700; cursor: pointer; }
+.cg-li.coche { border-color: #e0a800; background: color-mix(in srgb, #ffd54a 12%, var(--surface)); }
+/* ===== Archives (gris ardoise) ===== */
+.ar-li.archive { background: color-mix(in srgb, #64748b 10%, var(--surface)); border-style: dashed; }
+.ar-li.archive .cg-nom b { color: var(--muted); }
+.ar-b { border-color: #64748b; }
+.ar-b.on { background: color-mix(in srgb, #64748b 18%, var(--surface)); border-color: #475569; color: var(--fg); }
