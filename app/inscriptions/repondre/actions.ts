@@ -6,8 +6,9 @@ import { enregistrerReponse, lireCalendrier, lireParticipations, NotionErreur, T
 import { chargerJoueurs } from "@/lib/donnees";
 import { concerne, indexReponses, libelleTally, modifiable } from "@/lib/club-types";
 import { lireEligibles } from "@/lib/eligibles";
+import { demandesEvenement, POSTES_EVENEMENT } from "@/lib/cagnotte-db";
 
-export type RetourReponse = { ok: boolean; message?: string; statut?: string; definitif?: boolean };
+export type RetourReponse = { ok: boolean; message?: string; statut?: string; definitif?: boolean; /** Kitty requested for this event (waiting for a validation). */ cagnotte?: number; cagnotteMsg?: string };
 
 const CHOIX = {
   statut: ["Oui", "Non", "Peut-être"],
@@ -59,7 +60,19 @@ export async function envoyerReponse(_p: RetourReponse | null, fd: FormData): Pr
       definitif,
     });
     revalidateTag(TAGS.participations);
-    return { ok: true, statut, definitif };
+    // Kitty: what the player wants to pay with it for this event (requests waiting for a validation).
+    let cagnotte: number | undefined;
+    let cagnotteMsg: string | undefined;
+    if (fd.get("cag_present") === "1") {
+      const veut = statut === "Oui" && fd.get("cagnotte") === "Oui";
+      const postes = veut ? POSTES_EVENEMENT.map((categorie, i) => ({ categorie, montant: Math.max(0, Number(String(fd.get(`cag_${i}`) || "").replace(",", ".")) || 0) })) : [];
+      try {
+        const r = await demandesEvenement({ joueurId: joueur.notionId, evId: ev.id, evNom: ev.nom, email: user.email || "", postes });
+        if (r.ok && "total" in r && r.total) cagnotte = r.total;
+        if (!r.ok) cagnotteMsg = r.message;
+      } catch { cagnotteMsg = "La demande de cagnotte n'a pas pu être enregistrée : refais-la depuis ta fiche."; }
+    }
+    return { ok: true, statut, definitif, cagnotte, cagnotteMsg };
   } catch (e) {
     return { ok: false, message: e instanceof NotionErreur ? e.message : "L'envoi n'a pas fonctionné, réessaie dans un instant." };
   }

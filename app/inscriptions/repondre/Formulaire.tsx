@@ -6,7 +6,12 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { envoyerReponse, type RetourReponse } from "./actions";
 
 type Init = { statut: string | null; jours: string | null; restrictions: string | null; depart: string | null; retour: string | null; vehicule: string | null; referent?: string | null };
-type Cle = "statut" | "jours" | "restrictions" | "depart" | "retour" | "vehicule" | "referent";
+type Cle = "statut" | "jours" | "restrictions" | "depart" | "retour" | "vehicule" | "referent" | "cagnotte";
+type InfoCagnotte = { solde: number; disponible: number; deja: { categorie: string; montant: number; statut: string }[] } | null;
+/** What the kitty can pay for an event (same order as on the server). */
+const POSTES = [{ c: "Inscription tournoi", ic: "🎫" }, { c: "Déplacement", ic: "🚐" }, { c: "Hébergement", ic: "🏨" }, { c: "Autre dépense", ic: "✍️" }];
+const eur = new Intl.NumberFormat("fr-BE", { style: "currency", currency: "EUR" });
+const num = (t: string) => Math.max(0, Number(String(t || "").replace(",", ".")) || 0);
 type Option = { v: string; l: string; ic?: string; d?: string };
 type Etape = { cle: Cle; q: string; aide?: string; options: Option[]; grand?: boolean };
 
@@ -37,7 +42,13 @@ export default function Formulaire(p: {
   /** « jusqu'au 12 oct. » : last day the answer can still be changed. */
   jusquau: string | null;
   confirmation: boolean;
+  /** The player's kitty (null = not available). */
+  cagnotte?: InfoCagnotte;
 }) {
+  const cag = p.cagnotte || null;
+  const dejaAttente = (cag?.deja || []).filter((d) => d.statut === "en_attente");
+  const [montants, setMontants] = useState<string[]>(() => POSTES.map((x) => { const d = dejaAttente.find((y) => y.categorie === x.c); return d ? String(d.montant).replace(".", ",") : ""; }));
+  const totalCag = montants.reduce((s, m) => s + num(m), 0);
   const [etat, action, pending] = useActionState<RetourReponse | null, FormData>(envoyerReponse, null);
   const [r, setR] = useState<Partial<Record<Cle, string | null>>>({
     statut: p.init.statut && p.init.statut !== "En attente" ? p.init.statut : null,
@@ -47,13 +58,14 @@ export default function Formulaire(p: {
     retour: p.init.retour,
     vehicule: p.init.vehicule,
     referent: p.init.referent || null,
+    cagnotte: dejaAttente.length ? "Oui" : null,
   });
   // Question being edited (null = the first unanswered one).
   const [ouverte, setOuverte] = useState<Cle | null>(null);
   const [confirmer, setConfirmer] = useState(false);
   const [quitter, setQuitter] = useState(false);
   const router = useRouter();
-  const touche = JSON.stringify(r) !== JSON.stringify({ statut: p.init.statut && p.init.statut !== "En attente" ? p.init.statut : null, jours: p.init.jours, restrictions: p.init.restrictions, depart: p.init.depart, retour: p.init.retour, vehicule: p.init.vehicule, referent: p.init.referent || null });
+  const touche = JSON.stringify({ ...r, cagnotte: undefined }) !== JSON.stringify({ statut: p.init.statut && p.init.statut !== "En attente" ? p.init.statut : null, jours: p.init.jours, restrictions: p.init.restrictions, depart: p.init.depart, retour: p.init.retour, vehicule: p.init.vehicule, referent: p.init.referent || null, cagnotte: undefined });
   const sortir = () => (touche ? setQuitter(true) : router.push("/inscriptions"));
   const courante = useRef<HTMLFieldSetElement>(null);
 
@@ -121,8 +133,19 @@ export default function Formulaire(p: {
         { v: "Non", l: "Non", ic: "🙂" },
       ],
     });
+    // The kitty: pay part of this event with it (entry fee, trip, accommodation…), up to what is available.
+    if (cag && (cag.disponible > 0 || dejaAttente.length))
+      l.push({
+        cle: "cagnotte",
+        q: "Veux-tu utiliser ta cagnotte pour cette compétition ?",
+        aide: `Disponible : ${eur.format(cag.disponible)}. Tu choisis ensuite pour quoi (inscription, déplacement, hébergement…) et combien. Un responsable valide la demande.`,
+        options: [
+          { v: "Oui", l: "Oui, j'utilise ma cagnotte", ic: "💰" },
+          { v: "Non", l: "Non merci", ic: "🙂" },
+        ],
+      });
     return l;
-  }, [r.statut, r.restrictions, p.deuxJours, p.loin, p.evNom]);
+  }, [r.statut, r.restrictions, p.deuxJours, p.loin, p.evNom, cag, dejaAttente.length]);
 
   const premiereVide = etapes.find((e) => !r[e.cle])?.cle || null;
   const active = ouverte && etapes.some((e) => e.cle === ouverte) ? ouverte : premiereVide;
@@ -160,6 +183,8 @@ export default function Formulaire(p: {
               ? "Merci pour ces informations, à bientôt !"
               : "Merci pour ces informations, nous te rappellerons plus tard pour que tu aies le temps de te décider."}
         </p>
+        {etat.cagnotte ? <p className="cag-merci">💰 Demande de cagnotte : <b>{eur.format(etat.cagnotte)}</b> pour {p.evNom}. Elle sera déduite dès qu&apos;un responsable l&apos;aura validée.</p> : null}
+        {etat.cagnotteMsg ? <p className="notice err">{etat.cagnotteMsg}</p> : null}
         <div className="merci-act">
           <Link className="btn primary" href="/inscriptions">
             ← Retour à mes inscriptions
@@ -181,6 +206,8 @@ export default function Formulaire(p: {
       <input type="hidden" name="j" value={p.joueurId} />
       {/* Only the answers to questions that apply are sent. */}
       {etapes.map((e) => (r[e.cle] ? <input key={e.cle} type="hidden" name={e.cle} value={r[e.cle]!} /> : null))}
+      {cag ? <input type="hidden" name="cag_present" value="1" /> : null}
+      {cag && r.cagnotte === "Oui" ? POSTES.map((x, i) => <input key={x.c} type="hidden" name={`cag_${i}`} value={String(num(montants[i]))} />) : null}
 
       <div className="pas-prog" aria-label={`Étape ${Math.min(faites + 1, etapes.length)} sur ${etapes.length}`}>
         <div className="pas-barre">
@@ -221,6 +248,33 @@ export default function Formulaire(p: {
           </fieldset>
         );
       })}
+
+      {cag && r.statut === "Oui" && r.cagnotte === "Oui" && active !== "cagnotte" ? (
+        <section className="cag-rep">
+          <p className="cag-rep-t">💰 Ma cagnotte pour {p.evNom}</p>
+          <p className="small">Indique combien tu veux payer avec ta cagnotte, poste par poste. Le total ne peut pas dépasser ce que tu as.</p>
+          <ul>
+            {POSTES.map((x, i) => {
+              const autres = montants.reduce((s, m, k) => (k === i ? s : s + num(m)), 0);
+              const max = Math.max(0, Math.round((cag.disponible - autres) * 100) / 100);
+              return (
+                <li key={x.c}>
+                  <span className="cag-rep-p"><span aria-hidden="true">{x.ic}</span>{x.c}</span>
+                  <span className="cg-saisie">
+                    <input className="input num" inputMode="decimal" value={montants[i]} placeholder="0,00" aria-label={`Montant pour ${x.c}`}
+                      onChange={(e) => { const v = e.target.value.replace(/[^\d,.]/g, "").slice(0, 8); const n = num(v); setMontants((m) => m.map((y, k) => (k === i ? (n > max ? String(max).replace(".", ",") : v) : y))); }} />
+                    <i aria-hidden="true">€</i>
+                  </span>
+                  <button type="button" className="cag-max" onClick={() => setMontants((m) => m.map((y, k) => (k === i ? String(max).replace(".", ",") : y)))} disabled={max <= 0}>max</button>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="cag-rep-tot">Total demandé <b className="num">{eur.format(totalCag)}</b> · reste disponible <b className="num">{eur.format(Math.max(0, cag.disponible - totalCag))}</b></p>
+          {(cag.deja || []).filter((d) => d.statut === "valide").length ? <p className="small muted">Déjà validé pour cette compétition : {(cag.deja || []).filter((d) => d.statut === "valide").map((d) => `${d.categorie} ${eur.format(d.montant)}`).join(", ")}.</p> : null}
+          {!totalCag ? <p className="small muted">Aucun montant : rien ne sera demandé.</p> : null}
+        </section>
+      ) : null}
 
       {complet ? (
         <section className="pas-fin">

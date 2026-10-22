@@ -7,6 +7,7 @@ import { chargerJoueurs } from "@/lib/donnees";
 import { lireEligibles } from "@/lib/eligibles";
 import { concerne, compteARebours, dateCourte, dateMoyenne, estLoin, indexReponses, modifiable, moisCourt, phase, surDeuxJours } from "@/lib/club-types";
 import Formulaire from "./Formulaire";
+import { cagnottePourEvenement } from "@/lib/cagnotte-db";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,8 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
   // Form kept for other players: greyed for this one (counts as « Non »). Staff can still answer for anyone.
   const nonConcerne = !concerne(elig, ev.id, joueur.notionId);
   const ouvert = (modifiable(ev, p) && !nonConcerne) || admin;
+  // The player's kitty (can pay part of this event: entry fee, trip, accommodation…).
+  const cag = ouvert ? await cagnottePourEvenement(joueur.notionId, ev.id).catch(() => null) : null;
   const jusquau = ph === "confirmation" ? (ev.validation ? `jusqu'au ${dateCourte(ev.validation)}` : null) : ev.limite ? `jusqu'au ${dateCourte(ev.limite)}` : null;
 
   return (
@@ -87,6 +90,7 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
             autres={(famille === maFamille ? actifs : []).filter((j) => j.notionId !== joueur.notionId).map((j) => ({ id: j.notionId, prenom: j.nom.split(" ")[0] }))}
             jusquau={jusquau}
             confirmation={ph === "confirmation"}
+            cagnotte={cag}
           />
         ) : (
           <section className="verrou">
