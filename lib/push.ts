@@ -3,7 +3,7 @@ import webpush from "web-push";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Abonnement = { endpoint: string; email: string; p256dh: string; auth: string };
-export type MessagePush = { title: string; body: string; url?: string; tag?: string };
+export type MessagePush = { title: string; body: string; url?: string; tag?: string; /** Kitty gain (the app shows « +20 € »). */ montant?: number; libelle?: string };
 
 export function pushPret() {
   return Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
