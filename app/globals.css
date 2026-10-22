@@ -4427,3 +4427,13 @@ main.wrap:has(.og .ci-ecran) { padding-bottom: 0; margin-bottom: 0; }
 .ig-t th.ig-lig.hl .ig-lig-nom { font-family: inherit !important; font-style: normal !important; font-weight: 800 !important; letter-spacing: 0 !important; }
 .ig-t th.ig-lig .ig-lig-nom { font-weight: 800; }
 .ig-v-j b { display: block !important; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: normal; font-size: clamp(16px, calc(1.2vw + 7px), 21px); line-height: 1.08; max-height: 2.2em; }
+/* Scores en attente : un seul à la fois, flèches pour passer au suivant / précédent. */
+.ig-car { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; }
+.ig-car .ig-att-b { flex: 1 1 auto; min-width: 0; justify-content: center; overflow: hidden; text-overflow: ellipsis; transition: box-shadow .15s, background .15s; }
+.ig-car .ig-att-b.on { background: color-mix(in srgb, #ff9f1c 38%, var(--surface)); box-shadow: 0 0 0 2px #f05ad8; }
+.ig-car-f { all: unset; cursor: pointer; flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 20px; font-weight: 800; line-height: 1; color: #fff; background: linear-gradient(180deg, #ffb347, #f08a00); box-shadow: 0 2px 0 #b86400, 0 4px 8px -4px rgba(240,138,0,.6); }
+.ig-car-f:active { transform: translateY(2px); box-shadow: 0 0 0 #b86400; }
+.ig-car-f:disabled { opacity: .35; cursor: default; }
+.ig-car-n { flex: none; font-size: 11px; font-weight: 800; color: var(--muted); }
+.ig-v-att { color: #b86400; font-weight: 800; white-space: nowrap; }
+.ig-v-s.a-jouer:has(.ig-v-att) { background: color-mix(in srgb, #ff9f1c 25%, var(--surface)); border: 1.5px dashed #f08a00; }
