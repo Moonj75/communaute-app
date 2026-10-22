@@ -6,6 +6,12 @@ import { creerJoueurNotion } from "@/lib/club";
 
 export type AdminState = { ok?: string; error?: string };
 
+/** The super administrator (table super_admins, Supabase step 14): always admin, never demoted nor removed. */
+async function estSuperAdmin(supabase: Awaited<ReturnType<typeof getSessionProfil>>["supabase"], email: string) {
+  const { data, error } = await supabase.from("super_admins").select("email").eq("email", email.toLowerCase()).maybeSingle();
+  return !error && Boolean(data);
+}
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
@@ -55,6 +61,7 @@ export async function updateMembre(formData: FormData) {
   const actif = formData.get("actif");
   if (actif === "true" || actif === "false") patch.actif = actif === "true";
   if (email === profil.email && (patch.role === "joueur" || patch.actif === false)) return; // never lock yourself out
+  if (await estSuperAdmin(supabase, email) && (patch.role === "joueur" || patch.actif === false)) return; // the super administrator always stays
   if (Object.keys(patch).length) await supabase.from("membres").update(patch).eq("email", email);
   revalidatePath("/admin");
 }
@@ -65,6 +72,7 @@ export async function retirerMembre(formData: FormData) {
   if (profil?.role !== "admin") return;
   const email = String(formData.get("email") || "").toLowerCase();
   if (!email || email === profil.email) return;
+  if (await estSuperAdmin(supabase, email)) return; // never removed
   const { count } = await supabase.from("joueurs").select("notion_id", { count: "exact", head: true }).eq("email", email);
   if (count) return; // still used by a fiche: change the e-mail in Notion instead
   const { error } = await supabase.from("membres").delete().eq("email", email);

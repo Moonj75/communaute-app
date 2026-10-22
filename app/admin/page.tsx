@@ -4,6 +4,7 @@ import { displayName, getSessionProfil } from "@/lib/profil";
 import AddForm from "./AddForm";
 import Blocs from "@/components/Blocs";
 import SyncPanel from "./SyncPanel";
+import Cagnottes from "./Cagnottes";
 import InviteCell from "./InviteCell";
 import { retirerMembre, updateMembre } from "./actions";
 import { commencerApercu } from "./apercu";
@@ -28,13 +29,16 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (profil?.role !== "admin") redirect("/");
 
-  const [{ data: membres }, { data: profils }, { data: joueurs }, contactsRes] = await Promise.all([
+  const [{ data: membres }, { data: profils }, { data: joueurs }, supersRes, contactsRes] = await Promise.all([
     supabase.from("membres").select("email,nom,prenom,role,actif,synced_at,invite_le").order("nom"),
     supabase.from("profils").select("email"),
-    supabase.from("joueurs").select("email,prenom,nom,actif,titulaire,roles,cagnotte"),
+    supabase.from("joueurs").select("notion_id,email,prenom,nom,actif,titulaire,roles,cagnotte"),
+    supabase.from("super_admins").select("email"),
     supabase.from("contacts").select("id,cree_le,prenom,nom,email,telephone,decouverte,message,traite").order("cree_le", { ascending: false }).limit(60),
   ]);
   type Contact = { id: string; cree_le: string; prenom: string; nom: string | null; email: string; telephone: string | null; decouverte: string | null; message: string | null; traite: boolean };
+  // Super administrators (Supabase step 14): always admin and active, never removed.
+  const supers = new Set(((supersRes.data || []) as { email: string }[]).map((x) => x.email));
   const contacts = (contactsRes.data || []) as Contact[];
   const aTraiter = contacts.filter((c) => !c.traite).length;
   type J = { email: string | null; prenom: string | null; nom: string; actif: boolean; titulaire: boolean; roles: string[] | null; cagnotte: number | null };
@@ -83,6 +87,11 @@ export default async function AdminPage() {
             )}
           </div>
         </section>
+        ) },
+        { id: "cagnottes", titre: "Cagnottes", ic: "💶", contenu: (
+          <section className="panel"><div className="hd"><h2>💶 Cagnottes des membres</h2><span className="muted small">Actifs et non actifs · reliées à Notion</span></div>
+            <div className="bd"><Cagnottes joueurs={((joueurs || []) as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, cagnotte: j.cagnotte == null ? null : Number(j.cagnotte) }))} /></div>
+          </section>
         ) },
         { id: "apercu", titre: "Voir comme un joueur", ic: "👁️", contenu: (
         <section className="panel" style={{ borderTop: "3px solid var(--night)" }}>
@@ -179,7 +188,7 @@ export default async function AdminPage() {
               <tbody>
                 {list.map((m) => (
                   <tr key={m.email}>
-                    <td style={{ fontWeight: 700 }}>{[m.prenom, m.nom].filter(Boolean).join(" ")}</td>
+                    <td style={{ fontWeight: 700 }}>{[m.prenom, m.nom].filter(Boolean).join(" ")}{supers.has(m.email) ? <> <span className="pill sa-pill" title="Toujours administrateur : personne ne peut le rétrograder, le désactiver ni le retirer">👑 Super admin</span></> : null}</td>
                     <td>{m.email}</td>
                     <td>
                       {!parEmail.has(m.email) ? <span className="pill" title="Aucune fiche Notion n'utilise cette adresse">⚠️ sans fiche Notion</span> : null}
@@ -193,6 +202,7 @@ export default async function AdminPage() {
                       ))}
                     </td>
                     <td>
+                      {supers.has(m.email) ? <span className="pill adm" title="Protégé : toujours administrateur">🔒 Administrateur</span> : (
                       <form action={updateMembre} className="cpt-role">
                         <input type="hidden" name="email" value={m.email} />
                         <select className="input" name="role" defaultValue={m.role}>
@@ -201,8 +211,10 @@ export default async function AdminPage() {
                         </select>
                         <button className="cpt-ok" type="submit" title="Valider le rôle" aria-label="Valider le rôle">✓</button>
                       </form>
+                      )}
                     </td>
                     <td>
+                      {supers.has(m.email) ? <span className="pill on" title="Protégé : toujours actif">🔒 Actif</span> : (
                       <form action={updateMembre}>
                         <input type="hidden" name="email" value={m.email} />
                         <input type="hidden" name="actif" value={m.actif ? "false" : "true"} />
@@ -210,6 +222,7 @@ export default async function AdminPage() {
                           <span className={`pill ${m.actif ? "on" : ""}`}>{m.actif ? "Actif" : "Inactif"}</span>
                         </button>
                       </form>
+                      )}
                     </td>
                     <td className="cpt-c">{connected.has(m.email) ? <span className="pill on">✓ connecté</span> : <span className="pill">jamais</span>}</td>
                     <td>
@@ -222,7 +235,7 @@ export default async function AdminPage() {
                       </form>
                     </td>
                     <td>
-                      {!parEmail.has(m.email) && m.email !== (user.email || "").toLowerCase() ? (
+                      {!parEmail.has(m.email) && !supers.has(m.email) && m.email !== (user.email || "").toLowerCase() ? (
                         <form action={retirerMembre}>
                           <input type="hidden" name="email" value={m.email} />
                           <button className="btn" type="submit" title="Retirer ce compte (ancienne adresse)">🗑️ Retirer</button>
