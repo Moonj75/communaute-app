@@ -7,6 +7,7 @@ import SyncPanel from "./SyncPanel";
 import Cagnottes from "./Cagnottes";
 import Valideurs from "./Valideurs";
 import Mails from "./Mails";
+import Archives from "./Archives";
 import { brevoPret } from "@/lib/brevo";
 import InviteCell from "./InviteCell";
 import { retirerMembre, updateMembre } from "./actions";
@@ -47,6 +48,8 @@ export default async function AdminPage() {
   const contacts = (contactsRes.data || []) as Contact[];
   const aTraiter = contacts.filter((c) => !c.traite).length;
   type J = { email: string | null; prenom: string | null; nom: string; actif: boolean; titulaire: boolean; roles: string[] | null; cagnotte: number | null };
+  // Archived members (step 16) are left out of the lists below (cagnottes, validators, mails).
+  const actuels = ((joueurs || []) as (J & { archive?: boolean })[]).filter((j) => !j.archive);
   const parEmail = new Map<string, J[]>();
   for (const j of (joueurs || []) as J[]) if (j.email) parEmail.set(j.email, [...(parEmail.get(j.email) || []), j]);
   const connected = new Set((profils || []).map((p: { email: string }) => p.email));
@@ -95,17 +98,22 @@ export default async function AdminPage() {
         ) },
         { id: "cagnottes", titre: "Cagnottes", ic: "💶", contenu: (
           <section className="panel"><div className="hd"><h2>💶 Cagnottes des membres</h2><span className="muted small">Actifs et non actifs · reliées à Notion</span></div>
-            <div className="bd"><Cagnottes joueurs={((joueurs || []) as (J & { notion_id: string; cagnotte_groupe?: string | null })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, cagnotte: j.cagnotte == null ? null : Number(j.cagnotte), groupe: j.cagnotte_groupe || null }))} /></div>
+            <div className="bd"><Cagnottes joueurs={(actuels as (J & { notion_id: string; cagnotte_groupe?: string | null })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, cagnotte: j.cagnotte == null ? null : Number(j.cagnotte), groupe: j.cagnotte_groupe || null }))} /></div>
           </section>
         ) },
         { id: "mails", titre: "Mails du club", ic: "💌", contenu: (
           <section className="panel"><div className="hd"><h2>💌 Écrire un mail aux membres</h2><span className="muted small">Fêtes, reprise de la saison, félicitations…</span></div>
-            <div className="bd"><Mails brevo={brevoPret()} joueurs={((joueurs || []) as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, email: j.email, prenom: j.prenom, nom: j.nom, actif: j.actif }))} /></div>
+            <div className="bd"><Mails brevo={brevoPret()} joueurs={(actuels as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, email: j.email, prenom: j.prenom, nom: j.nom, actif: j.actif }))} /></div>
           </section>
         ) },
         { id: "valideurs", titre: "Valideurs", ic: "✅", contenu: (
           <section className="panel"><div className="hd"><h2>✅ Valideurs des compétitions du club</h2><span className="muted small">Championnat et coupe · reliés à Notion</span></div>
-            <div className="bd"><Valideurs joueurs={((joueurs || []) as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, roles: j.roles, email: j.email }))} /></div>
+            <div className="bd"><Valideurs joueurs={(actuels as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, roles: j.roles, email: j.email }))} /></div>
+          </section>
+        ) },
+        { id: "archives", titre: "Archives", ic: "🗄️", contenu: (
+          <section className="panel"><div className="hd"><h2>🗄️ Membres archivés</h2><span className="muted small">Anciens membres · reliés à Notion</span></div>
+            <div className="bd"><Archives joueurs={((joueurs || []) as (J & { notion_id: string; archive?: boolean })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, archive: Boolean(j.archive), email: j.email }))} /></div>
           </section>
         ) },
         { id: "apercu", titre: "Voir comme un joueur", ic: "👁️", contenu: (
@@ -203,7 +211,7 @@ export default async function AdminPage() {
               <tbody>
                 {list.map((m) => (
                   <tr key={m.email}>
-                    <td style={{ fontWeight: 700 }}>{[m.prenom, m.nom].filter(Boolean).join(" ")}{supers.has(m.email) ? <> <span className="pill sa-pill" title="Toujours administrateur : personne ne peut le rétrograder, le désactiver ni le retirer">👑 Super admin</span></> : null}</td>
+                    <td style={{ fontWeight: 700 }}>{[m.prenom, m.nom].filter(Boolean).join(" ")}{(parEmail.get(m.email) || []).length && (parEmail.get(m.email) || []).every((j) => (j as J & { archive?: boolean }).archive) ? <> <span className="pill" title="Toutes ses fiches sont archivées : plus d'accès">🗄️ Archivé</span></> : null}{supers.has(m.email) ? <> <span className="pill sa-pill" title="Toujours administrateur : personne ne peut le rétrograder, le désactiver ni le retirer">👑 Super admin</span></> : null}</td>
                     <td>{m.email}</td>
                     <td>
                       {!parEmail.has(m.email) ? <span className="pill" title="Aucune fiche Notion n'utilise cette adresse">⚠️ sans fiche Notion</span> : null}

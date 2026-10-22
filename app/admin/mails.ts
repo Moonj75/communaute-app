@@ -39,9 +39,9 @@ export async function envoyerMailClub(p: EnvoiMail): Promise<RetourMail> {
     if (p.test) {
       personnes = [{ email: user.email.toLowerCase(), prenoms: [profil.prenom || ""].filter(Boolean), nom: [profil.prenom, profil.nom].filter(Boolean).join(" ") }];
     } else {
-      const { data } = await supabase.from("joueurs").select("notion_id,email,prenom,nom,actif");
-      const js = ((data || []) as { notion_id: string; email: string | null; prenom: string | null; nom: string; actif: boolean }[])
-        .filter((j) => j.email)
+      const { data } = await supabase.from("joueurs").select("*");
+      const js = ((data || []) as { notion_id: string; email: string | null; prenom: string | null; nom: string; actif: boolean; archive?: boolean }[])
+        .filter((j) => j.email && !j.archive)
         .filter((j) => (p.cible === "actifs" ? j.actif : p.cible === "non" ? !j.actif : p.cible === "choix" ? (p.choix || []).includes(j.notion_id) : true));
       const par = new Map<string, { email: string; prenoms: string[]; nom: string }>();
       for (const j of js) {

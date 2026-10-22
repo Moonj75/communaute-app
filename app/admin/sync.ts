@@ -60,9 +60,9 @@ export async function synchroniserNotion(): Promise<SyncState> {
   }));
   let avertissement: string | undefined;
   // Shared kitty name (step 15); left out if the column is not there yet.
-  let { error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune })), { onConflict: "notion_id" });
-  if (e1 && /cagnotte_groupe/i.test(e1.message)) {
-    avertissement = "Cagnottes communes pas encore copiées : lancez le script « etape15-cagnotte-commune.sql » dans Supabase.";
+  let { error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive })), { onConflict: "notion_id" });
+  if (e1 && /cagnotte_groupe|archive/i.test(e1.message)) {
+    avertissement = "Cagnottes communes et archives pas encore copiées : lancez les scripts « etape15 » et « etape16 » dans Supabase.";
     ({ error: e1 } = await supabase.from("joueurs").upsert(complets, { onConflict: "notion_id" }));
   }
   if (e1 && /classement|palmares|column/i.test(e1.message)) {
@@ -90,12 +90,16 @@ export async function synchroniserNotion(): Promise<SyncState> {
       prenom: titulaire.prenom,
       role: gens.some((g) => g.admin) || isMe ? "admin" : "joueur",
       actif: gens.some((g) => g.actif) || isMe,
+      // Every fiche of this e-mail archived: the account is archived (no more login).
+      archive: !isMe && gens.every((g) => g.archive),
       notion_id: titulaire.notionId,
       synced_at: now,
     };
   });
   if (comptes.length) {
-    const { error: e2 } = await supabase.from("membres").upsert(comptes, { onConflict: "email" });
+    let { error: e2 } = await supabase.from("membres").upsert(comptes, { onConflict: "email" });
+    // Column « archive » comes with SQL step 16.
+    if (e2 && /archive/i.test(e2.message)) ({ error: e2 } = await supabase.from("membres").upsert(comptes.map((c) => { const r: Record<string, unknown> = { ...c }; delete r.archive; return r; }), { onConflict: "email" }));
     if (e2) return { error: "Enregistrement des comptes impossible : " + e2.message };
   }
   // An e-mail changed in Notion leaves the old account behind: accounts created by an earlier
