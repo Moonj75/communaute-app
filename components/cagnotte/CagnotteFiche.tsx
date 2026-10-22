@@ -40,7 +40,7 @@ export default function CagnotteFiche({ joueurId, nom, montant, groupe, mouvemen
         {...(mouvements ? { role: "button", tabIndex: 0, title: "Voir le détail", onClick: () => setOuvert(true), onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOuvert(true); } } } : {})}
       >
         <span className="fcg-ic" aria-hidden="true">💰</span>
-        <span className="fcg-txt"><span className="fcg-l">Cagnotte</span></span>
+        <span className="fcg-txt"><span className="fcg-l">Cagnotte</span>{mouvements ? <span className="fcg-det" aria-hidden="true">Détails ›</span> : null}</span>
         <b className="fcg-v num or-brillant">{euro.format(valeur)}</b>
       </section>
       {ouvert && mouvements ? (
