@@ -147,7 +147,7 @@ export async function synchroniserNotion(): Promise<SyncState> {
     }
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/fiche");
   return {
     ok: true,

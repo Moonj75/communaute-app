@@ -29,7 +29,7 @@ export async function basculerArchive(notionId: string, oui: boolean): Promise<{
       const tous = ((fam || []) as { archive: boolean }[]).every((x) => x.archive);
       await supabase.from("membres").update({ archive: tous }).eq("email", email);
     }
-    revalidatePath("/admin");
+    revalidatePath("/admin", "layout");
     const qui = [j.prenom, j.nom].filter(Boolean).join(" ");
     return { ok: true, message: oui ? `🗄️ ${qui} est archivé.` : `↩️ ${qui} est de retour dans les listes.` };
   } catch (e) {

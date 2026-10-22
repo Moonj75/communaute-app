@@ -45,7 +45,7 @@ export async function addMembre(_prev: AdminState, formData: FormData): Promise<
     const { error } = await supabase.from("membres").insert({ email, nom, prenom, role, notion_id: notionId });
     if (error && error.code !== "23505") return { error: "Joueur ajouté, mais le compte de connexion n'a pas pu être créé : " + error.message };
   }
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/staff/internes", "layout");
   const qui = [prenom, nom].filter(Boolean).join(" ");
   return { ok: email ? `${qui} est ajouté à la liste des joueurs et peut se connecter avec ${email}.` : `${qui} est ajouté à la liste des joueurs (sans compte de connexion). Il est déjà proposé dans les compétitions.` };
@@ -63,7 +63,7 @@ export async function updateMembre(formData: FormData) {
   if (email === profil.email && (patch.role === "joueur" || patch.actif === false)) return; // never lock yourself out
   if (await estSuperAdmin(supabase, email) && (patch.role === "joueur" || patch.actif === false)) return; // the super administrator always stays
   if (Object.keys(patch).length) await supabase.from("membres").update(patch).eq("email", email);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 }
 
 /** Removes a login account that no Notion fiche uses any more (e.g. an old e-mail address). */
@@ -77,7 +77,7 @@ export async function retirerMembre(formData: FormData) {
   if (count) return; // still used by a fiche: change the e-mail in Notion instead
   const { error } = await supabase.from("membres").delete().eq("email", email);
   if (error) await supabase.from("membres").update({ actif: false }).eq("email", email);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 }
 
 /** Quick add from the competition screen: a new player (no e-mail), returned so he can be placed at once. */
@@ -90,7 +90,7 @@ export async function ajouterJoueurRapide(prenom: string, nom: string, actif: bo
     const id = await creerJoueurNotion({ prenom: p, nom: n, email: null, actif, admin: false });
     const { error } = await supabase.from("joueurs").insert({ notion_id: id, email: null, nom: n, prenom: p, actif, synced_at: new Date().toISOString() });
     if (error) return { ok: false, message: error.message };
-    revalidatePath("/admin");
+    revalidatePath("/admin", "layout");
     const complet = [p, n].filter(Boolean).join(" ");
     return { ok: true, message: `${complet} est ajouté à la liste des joueurs.`, joueur: { id, nom: complet, actif } };
   } catch (e) {

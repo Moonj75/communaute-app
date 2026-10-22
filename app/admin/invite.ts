@@ -29,6 +29,6 @@ export async function inviterMembre(_prev: InviteState, formData: FormData): Pro
     return { error: "Envoi impossible : " + error.message };
   }
   await supabase.from("membres").update({ invite_le: new Date().toISOString() }).eq("email", email);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   return { ok: "Invitation envoyée ✓" };
 }

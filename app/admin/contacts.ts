@@ -10,5 +10,5 @@ export async function basculerContact(fd: FormData) {
   const id = String(fd.get("id") || "");
   const traite = String(fd.get("traite") || "") === "1";
   if (id) await supabase.from("contacts").update({ traite }).eq("id", id);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 }

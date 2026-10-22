@@ -17,7 +17,7 @@ export async function basculerValideur(notionId: string, oui: boolean): Promise<
     await majRolesNotion(notionId, roles);
     const { error } = await supabase.from("joueurs").update({ roles }).eq("notion_id", notionId);
     if (error) return { ok: false, message: "Enregistré dans Notion ; lance « Synchroniser » (" + error.message + ")." };
-    revalidatePath("/admin");
+    revalidatePath("/admin", "layout");
     revalidatePath("/internes");
     return { ok: true, message: oui ? "✓ Valideur" : "✓ Retiré", roles };
   } catch (e) {

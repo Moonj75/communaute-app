@@ -37,7 +37,7 @@ async function tous(supabase: DB): Promise<Ligne[]> {
   return (data || []) as Ligne[];
 }
 const fini = (message: string, montant?: number | null): RetourCagnotte => {
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/fiche");
   return { ok: true, message, montant };
 };
