@@ -5,6 +5,7 @@ import AddForm from "./AddForm";
 import Blocs from "@/components/Blocs";
 import SyncPanel from "./SyncPanel";
 import Cagnottes from "./Cagnottes";
+import Valideurs from "./Valideurs";
 import InviteCell from "./InviteCell";
 import { retirerMembre, updateMembre } from "./actions";
 import { commencerApercu } from "./apercu";
@@ -91,6 +92,11 @@ export default async function AdminPage() {
         { id: "cagnottes", titre: "Cagnottes", ic: "💶", contenu: (
           <section className="panel"><div className="hd"><h2>💶 Cagnottes des membres</h2><span className="muted small">Actifs et non actifs · reliées à Notion</span></div>
             <div className="bd"><Cagnottes joueurs={((joueurs || []) as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, cagnotte: j.cagnotte == null ? null : Number(j.cagnotte) }))} /></div>
+          </section>
+        ) },
+        { id: "valideurs", titre: "Valideurs", ic: "✅", contenu: (
+          <section className="panel"><div className="hd"><h2>✅ Valideurs des compétitions du club</h2><span className="muted small">Championnat et coupe · reliés à Notion</span></div>
+            <div className="bd"><Valideurs joueurs={((joueurs || []) as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, roles: j.roles, email: j.email }))} /></div>
           </section>
         ) },
         { id: "apercu", titre: "Voir comme un joueur", ic: "👁️", contenu: (
