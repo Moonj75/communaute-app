@@ -6,12 +6,16 @@ import Blocs from "@/components/Blocs";
 import SyncPanel from "./SyncPanel";
 import Cagnottes from "./Cagnottes";
 import Valideurs from "./Valideurs";
+import Mails from "./Mails";
+import { brevoPret } from "@/lib/brevo";
 import InviteCell from "./InviteCell";
 import { retirerMembre, updateMembre } from "./actions";
 import { commencerApercu } from "./apercu";
 import { basculerContact } from "./contacts";
 
 export const dynamic = "force-dynamic";
+// Sending a club e-mail to every member can take a little while.
+export const maxDuration = 60;
 
 type Membre = {
   email: string;
@@ -33,7 +37,7 @@ export default async function AdminPage() {
   const [{ data: membres }, { data: profils }, { data: joueurs }, supersRes, contactsRes] = await Promise.all([
     supabase.from("membres").select("email,nom,prenom,role,actif,synced_at,invite_le").order("nom"),
     supabase.from("profils").select("email"),
-    supabase.from("joueurs").select("notion_id,email,prenom,nom,actif,titulaire,roles,cagnotte"),
+    supabase.from("joueurs").select("*"),
     supabase.from("super_admins").select("email"),
     supabase.from("contacts").select("id,cree_le,prenom,nom,email,telephone,decouverte,message,traite").order("cree_le", { ascending: false }).limit(60),
   ]);
@@ -91,7 +95,12 @@ export default async function AdminPage() {
         ) },
         { id: "cagnottes", titre: "Cagnottes", ic: "💶", contenu: (
           <section className="panel"><div className="hd"><h2>💶 Cagnottes des membres</h2><span className="muted small">Actifs et non actifs · reliées à Notion</span></div>
-            <div className="bd"><Cagnottes joueurs={((joueurs || []) as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, cagnotte: j.cagnotte == null ? null : Number(j.cagnotte) }))} /></div>
+            <div className="bd"><Cagnottes joueurs={((joueurs || []) as (J & { notion_id: string; cagnotte_groupe?: string | null })[]).map((j) => ({ notion_id: j.notion_id, prenom: j.prenom, nom: j.nom, actif: j.actif, cagnotte: j.cagnotte == null ? null : Number(j.cagnotte), groupe: j.cagnotte_groupe || null }))} /></div>
+          </section>
+        ) },
+        { id: "mails", titre: "Mails du club", ic: "💌", contenu: (
+          <section className="panel"><div className="hd"><h2>💌 Écrire un mail aux membres</h2><span className="muted small">Fêtes, reprise de la saison, félicitations…</span></div>
+            <div className="bd"><Mails brevo={brevoPret()} joueurs={((joueurs || []) as (J & { notion_id: string })[]).map((j) => ({ notion_id: j.notion_id, email: j.email, prenom: j.prenom, nom: j.nom, actif: j.actif }))} /></div>
           </section>
         ) },
         { id: "valideurs", titre: "Valideurs", ic: "✅", contenu: (

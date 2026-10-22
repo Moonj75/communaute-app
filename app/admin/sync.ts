@@ -59,7 +59,12 @@ export async function synchroniserNotion(): Promise<SyncState> {
     palmares: liste[i].palmares,
   }));
   let avertissement: string | undefined;
-  let { error: e1 } = await supabase.from("joueurs").upsert(complets, { onConflict: "notion_id" });
+  // Shared kitty name (step 15); left out if the column is not there yet.
+  let { error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune })), { onConflict: "notion_id" });
+  if (e1 && /cagnotte_groupe/i.test(e1.message)) {
+    avertissement = "Cagnottes communes pas encore copiées : lancez le script « etape15-cagnotte-commune.sql » dans Supabase.";
+    ({ error: e1 } = await supabase.from("joueurs").upsert(complets, { onConflict: "notion_id" }));
+  }
   if (e1 && /classement|palmares|column/i.test(e1.message)) {
     avertissement = "Classements et palmarès pas encore copiés : lancez le script « etape6-fiche-notifications.sql » dans Supabase.";
     ({ error: e1 } = await supabase.from("joueurs").upsert(fiches, { onConflict: "notion_id" }));
