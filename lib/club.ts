@@ -514,3 +514,8 @@ export async function creerJoueurNotion(p: { prenom: string | null; nom: string;
   const pg = (await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS_JOUEURS }, properties } })) as Page;
   return pg.id;
 }
+
+/** Writes a player's « Cagnotte » (euros) in the Notion « Liste des joueurs »; null empties it. */
+export async function majCagnotteNotion(pageId: string, montant: number | null) {
+  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { Cagnotte: { number: montant } } } });
+}
