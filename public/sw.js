@@ -29,7 +29,12 @@ self.addEventListener("push", (event) => {
   const titre = data.title || "SC Lions d'Eugies";
   // Red dot on the app icon until the message is read in the app (Courrier).
   try { if (self.navigator && self.navigator.setAppBadge) self.navigator.setAppBadge(); } catch (e) {}
-  event.waitUntil(
+  // Kitty gain while the app is open: the app shows « +20 € » with its « ting ».
+  const cag = /^cag-/.test(data.tag || "") && data.montant > 0;
+  const prevenir = cag
+    ? self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => wins.forEach((w) => w.postMessage({ type: "cagnotte", montant: data.montant, libelle: data.libelle || "" })))
+    : Promise.resolve();
+  event.waitUntil(prevenir.then(() =>
     self.registration.showNotification(titre, {
       body: data.body || "",
       icon: "/icon-192.png",
@@ -38,7 +43,8 @@ self.addEventListener("push", (event) => {
       renotify: Boolean(data.tag),
       data: { url: data.url || "/", title: titre, body: data.body || "", tag: data.tag || "" },
       lang: "fr",
-    }),
+      vibrate: cag ? [60, 40, 60, 40, 200] : undefined,
+    })),
   );
 });
 
