@@ -90,6 +90,11 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
           const monte = derniereEtape ? 0 : avantBarrage ? Math.min(n, suivante.haut ?? 0) : e?.passage === "qualifies" ? e.qualifies : Math.ceil(n / 2);
           const finBarrage = avantBarrage ? Math.max(monte, n - (suivante.bas ?? 0)) : monte;
           const zoneBas = !derniereEtape && e?.passage !== "qualifies";
+          // Names given to the groups of the stage they go to (e.g. « Division 1 », « Division 2 ») for the legend.
+          const cible = avantBarrage ? c.etapes[k + 2] : suivante;
+          const nomsCible = (cible?.nomsGroupes || []).filter(Boolean);
+          const legHaut = nomsCible[0] || (avantBarrage ? "Division du haut" : "Poule du haut");
+          const legBas = nomsCible.length >= 2 ? nomsCible[nomsCible.length - 1] : avantBarrage ? "Division du bas" : "Poule du bas";
           const ligue = /diamond/i.test(g.nom) ? " lg-diamond" : /gold/i.test(g.nom) ? " lg-gold" : /silver/i.test(g.nom) ? " lg-silver" : /bronze/i.test(g.nom) ? " lg-bronze" : /fair play/i.test(g.nom) ? " lg-fair" : "";
           const niveau = k > 0 && c.etapes[k - 1]?.passage === "niveaux" && gs.length > 1 ? (gi === 0 ? "haut" : gi === gs.length - 1 ? "bas" : "milieu") : "";
           const joues = mg.filter((m) => m.joue).length;
@@ -127,7 +132,7 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
                     </tbody>
                   </table>
                 </div>
-                {monte && commence ? <p className="ci-leg"><span className="ci-leg-1">👑 1er</span><span className="ci-leg-h">{e?.passage === "qualifies" ? "Qualifiés" : avantBarrage ? "Montent directement" : "Montent dans la poule du haut"}</span>{avantBarrage && finBarrage > monte ? <span className="ci-leg-b">Barrage</span> : null}{zoneBas ? <span className="ci-leg-d">{avantBarrage ? "Descendent" : "Poule du bas"}</span> : null}<span><b className="ci-up">▲</b>/<b className="ci-down">▼</b> places au dernier match</span></p> : null}
+                {monte && commence ? <p className="ci-leg"><span className="ci-leg-1">👑 1er</span><span className="ci-leg-h" title={e?.passage === "qualifies" ? undefined : avantBarrage ? `Montent directement en ${legHaut}` : `Vont en ${legHaut}`}>{e?.passage === "qualifies" ? "Qualifiés" : `⬆ ${legHaut}`}</span>{avantBarrage && finBarrage > monte ? <span className="ci-leg-b" title={`Match de barrage : le gagnant va en ${legHaut}, le perdant en ${legBas}`}>⚔ Barrage</span> : null}{zoneBas ? <span className="ci-leg-d" title={`Vont en ${legBas}`}>⬇ {legBas}</span> : null}<span><b className="ci-up">▲</b>/<b className="ci-down">▼</b> places au dernier match</span></p> : null}
                 </div>
                 <div className="ci-duo-mx">
                                 <Grille joueurs={g.joueurs} matchs={mg} editable={editable && c.statut === "en_cours" && k === c.etape} moi={moi} />
