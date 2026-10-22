@@ -4465,3 +4465,37 @@ main.wrap:has(.og .ci-ecran) { padding-bottom: 0; margin-bottom: 0; }
 .cg-nom { white-space: normal; overflow: visible; line-height: 1.15; }
 .cg .input:focus { border-bottom-color: #c99700 !important; box-shadow: 0 2px 0 #c99700; outline: none; }
 .pill.sa-pill { background: linear-gradient(180deg, #ffe27a, #e0a800); color: #3a2a00; border-color: #c99700; font-weight: 800; }
+/* ===== Valideurs (vert validé = la couleur des scores validés) ===== */
+.vl { display: flex; flex-direction: column; gap: 10px; }
+.vl-li { grid-template-columns: minmax(0, 1fr) auto !important; }
+.vl-li.on { border-color: #22d10a; background: color-mix(in srgb, #39ff14 10%, var(--surface)); }
+.vl-b { border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); padding: 6px 12px; border-radius: 99px; font: inherit; font-weight: 800; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+.vl-b.on { border-color: #22d10a; background: color-mix(in srgb, #39ff14 30%, var(--surface)); color: #0b3d00; }
+/* ===== À valider (valideurs) ===== */
+.av { display: flex; flex-direction: column; gap: 10px; }
+.av-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 10px; }
+.av-c { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1.5px dashed #f08a00; box-shadow: 0 8px 18px -14px rgba(0,0,0,.5); }
+.av-c.desac { border-style: solid; border-color: #e06c00; }
+.av-c.moi { opacity: .75; }
+.av-ou { margin: 0; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.av-duel { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.av-duel b { font-family: var(--font-display); font-style: italic; font-size: 18px; }
+.av-duel i { font-style: normal; font-size: 12px; color: var(--muted); }
+.av-etat { margin: 0; font-size: 12.5px; font-weight: 700; color: #b86400; }
+.av-moi { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); }
+.av-props { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.av-prop { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, #ff9f1c 16%, var(--surface)); border: 1.5px solid #f08a00; }
+.av-prop small { font-size: 11px; color: var(--muted); font-weight: 700; }
+.av-prop span b { font-size: 20px; font-weight: 800; }
+.av-prop em { font-size: 12px; font-style: normal; }
+.av-prop strong { font-size: 12px; color: #1f7a08; }
+.av-prop:hover { background: color-mix(in srgb, #39ff14 18%, var(--surface)); border-color: #22d10a; }
+.av-autre { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border-radius: 12px; background: var(--sunk); }
+.av-autre small { font-size: 11px; color: var(--muted); font-weight: 700; }
+.av-conf-s { margin: 4px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; text-align: center; }
+.av-conf-s b { font-family: var(--font-display); font-style: italic; font-size: 18px; }
+.av-conf-s span { padding: 4px 14px; border-radius: 10px; background: #111; color: #fff; font-size: 24px; font-weight: 800; }
+.av-vide { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 24px; text-align: center; }
+.av-vide span { font-size: 34px; }
+.av-vide small { color: var(--muted); }
+.vl-li .vl-b { width: auto !important; min-width: 108px; height: auto !important; border-radius: 99px !important; overflow: visible; }
