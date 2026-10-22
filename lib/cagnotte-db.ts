@@ -98,3 +98,58 @@ export async function lireEvenementsLies(db: SupabaseClient): Promise<EvenementL
   } catch { /* competitions not installed */ }
   return out.sort((a, b) => (b.date || "9999").localeCompare(a.date || "9999"));
 }
+
+/** Kinds of expenses a player can pay with his kitty when he answers for a competition. */
+export const POSTES_EVENEMENT = ["Inscription tournoi", "Déplacement", "Hébergement", "Autre dépense"] as const;
+
+/**
+ * For the answer form of an event: the kitty available (balance − other requests still waiting)
+ * and what was already asked for this event. null = kitty history not installed.
+ */
+export async function cagnottePourEvenement(joueurId: string, evId: string) {
+  const { clientAdmin } = await import("./supabase/admin");
+  const db = clientAdmin();
+  if (!db) return null;
+  const { out } = await unites(db, [joueurId]);
+  const membres = out[0] || [joueurId];
+  const { data, error } = await db.from("cag_mouvements").select("*").in("joueur_id", membres);
+  if (error) return null;
+  const ms = (data || []) as Mouvement[];
+  const s = solde(ms);
+  const ici = ms.filter((m) => m.evenement_id === evId && m.joueur_id === joueurId && m.sens === "depense" && m.statut !== "refuse");
+  const autresAttente = ms.filter((m) => m.statut === "en_attente" && m.sens === "depense" && !(m.evenement_id === evId && m.joueur_id === joueurId)).reduce((x, m) => x + Number(m.montant), 0);
+  return {
+    solde: s,
+    /** What can still be asked for this event (this event's waiting requests are replaced when he answers again). */
+    disponible: Math.max(0, Math.round((s - autresAttente) * 100) / 100),
+    deja: ici.map((m) => ({ categorie: m.categorie, montant: Number(m.montant), statut: m.statut })),
+  };
+}
+
+/**
+ * Requests made from the answer form: the waiting requests of this player for this event are replaced
+ * by the new ones (validated ones stay). Total capped by the kitty available.
+ */
+export async function demandesEvenement(p: { joueurId: string; evId: string; evNom: string; email: string; postes: { categorie: string; montant: number }[] }) {
+  const { clientAdmin } = await import("./supabase/admin");
+  const db = clientAdmin();
+  if (!db) return { ok: false, message: "La cagnotte n'est pas encore configurée (clé serveur absente)." };
+  const info = await cagnottePourEvenement(p.joueurId, p.evId);
+  if (!info) return { ok: false, message: "La cagnotte détaillée n'est pas encore installée." };
+  // Remove this event's requests still waiting (he answers again, or no longer wants to use his kitty).
+  const { data: vieux } = await db.from("cag_mouvements").select("*").eq("joueur_id", p.joueurId).eq("evenement_id", p.evId).eq("statut", "en_attente");
+  for (const m of (vieux || []) as (Mouvement & { notion_id: string | null })[]) {
+    await db.from("cag_mouvements").update({ statut: "refuse", motif: "Remplacée par une nouvelle réponse", valide_le: new Date().toISOString() }).eq("id", m.id);
+    await journaliser(db, { ...m, statut: "refuse", motif: "Remplacée par une nouvelle réponse" }, null, m.notion_id);
+  }
+  const postes = p.postes.filter((x) => x.montant > 0).map((x) => ({ ...x, montant: Math.round(x.montant * 100) / 100 }));
+  if (!postes.length) return { ok: true, message: "", total: 0 };
+  const total = postes.reduce((s, x) => s + x.montant, 0);
+  if (total > info.disponible + 0.001) return { ok: false, message: `Tu ne peux pas demander plus que ta cagnotte disponible (${info.disponible.toFixed(2).replace(".", ",")} €).` };
+  const date = new Date().toISOString().slice(0, 10);
+  const { data, error } = await db.from("cag_mouvements").insert(postes.map((x) => ({ joueur_id: p.joueurId, sens: "depense", categorie: x.categorie, montant: x.montant, libelle: `${x.categorie} · ${p.evNom}`.slice(0, 120), statut: "en_attente", demande_par: p.email, date, evenement_id: p.evId, evenement: p.evNom.slice(0, 120) }))).select("*");
+  if (error) return { ok: false, message: error.message };
+  const { data: j } = await db.from("joueurs").select("cagnotte_groupe").eq("notion_id", p.joueurId).maybeSingle();
+  for (const m of (data || []) as Mouvement[]) await journaliser(db, m, (j?.cagnotte_groupe as string | null) || null);
+  return { ok: true, message: "", total };
+}
