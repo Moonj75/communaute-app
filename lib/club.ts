@@ -516,8 +516,11 @@ export async function creerJoueurNotion(p: { prenom: string | null; nom: string;
 }
 
 /** Writes a player's « Cagnotte » (euros) in the Notion « Liste des joueurs »; null empties it. */
-export async function majCagnotteNotion(pageId: string, montant: number | null) {
-  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { Cagnotte: { number: montant } } } });
+export async function majCagnotteNotion(pageId: string, montant: number | null, groupe?: string | null) {
+  const properties: Record<string, unknown> = { Cagnotte: { number: montant } };
+  // « Cagnotte commune »: the shared kitty's name, or empty for an own kitty (left as is when not given).
+  if (groupe !== undefined) properties["Cagnotte commune"] = { rich_text: groupe ? [{ type: "text", text: { content: groupe.slice(0, 80) } }] : [] };
+  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties } });
 }
 
 /** Writes a player's « Rôles » (multi-select) in the Notion « Liste des joueurs » (a new option is created by Notion). */
