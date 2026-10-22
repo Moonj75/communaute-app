@@ -8,6 +8,7 @@ import Centrer from "./Centrer";
 import Fleches from "./Fleches";
 import BandeauUrgent from "./BandeauUrgent";
 import BoiteCourrier from "./BoiteCourrier";
+import Gains from "./cagnotte/Gains";
 import { quitterApercu } from "@/app/admin/apercu";
 
 export default function Header({
@@ -83,6 +84,7 @@ export default function Header({
       </header>
       {name ? <BandeauUrgent /> : null}
       </div>
+      {name ? <Gains /> : null}
       {name ? <BarreBas isAdmin={profil?.role === "admin"} nom={name} inactif={profil?.role !== "admin" && profil?.actif === false} /> : <BarrePublique connecte={connecte} />}
       <MesureEntete />
       <Installer />
