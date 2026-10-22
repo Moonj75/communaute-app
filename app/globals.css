@@ -4624,3 +4624,17 @@ main.wrap:has(.og .ci-ecran) { padding-bottom: 0; margin-bottom: 0; }
 @media (max-width: 700px) { .ca-bar li { grid-template-columns: 48px minmax(0, 1fr); } }
 .cg-droite { display: inline-flex; align-items: center; gap: 6px; }
 .cg-h { border: 0; background: var(--sunk); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 15px; }
+/* Formulaire d'inscription : utiliser sa cagnotte */
+.cag-rep { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 16px; background: linear-gradient(160deg, color-mix(in srgb, #ffd54a 18%, var(--surface)), var(--surface)); border: 1.5px solid #e0a800; }
+.cag-rep-t { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 18px; }
+.cag-rep p { margin: 0; }
+.cag-rep ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cag-rep li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.cag-rep-p { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.cag-rep-p span { font-size: 20px; }
+.cag-max { border: 1px solid #c99700; background: color-mix(in srgb, #ffd54a 20%, var(--surface)); border-radius: 99px; padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.cag-max:disabled { opacity: .4; cursor: default; }
+.cag-rep-tot { font-size: 14px; }
+.cag-rep-tot b { font-size: 16px; }
+.cag-merci { padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, #ffd54a 18%, var(--surface)); border: 1px solid #e0a800; }
+.fcg-clic { cursor: pointer; transition: filter .15s; } .fcg-clic:hover { filter: brightness(1.04); } .fcg-clic:focus-visible { outline: 3px solid #00e5ff; outline-offset: 2px; }
