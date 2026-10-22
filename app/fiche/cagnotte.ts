@@ -29,7 +29,7 @@ export async function demanderDepense(p: { joueurId: string; categorie: string; 
     const db = clientAdmin();
     if (db) await journaliser(db, data as Mouvement, (fiche.cagnotte_groupe as string | null) || null);
     revalidatePath("/fiche");
-    revalidatePath("/admin");
+    revalidatePath("/admin", "layout");
     return { ok: true, message: `⏳ Demande envoyée (${euro.format(arrondi(n))}) : elle sera déduite dès qu'un responsable l'aura validée.` };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Envoi impossible." };
