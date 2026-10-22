@@ -16,6 +16,8 @@ export type JoueurNotion = {
   cagnotte: number | null;
   /** Shared kitty name (e.g. « Famille Devreese »); null = own kitty. */
   cagnotteCommune: string | null;
+  /** Former member, archived: out of the lists, no more login. */
+  archive: boolean;
   telephone: string | null;
   vehicule: string | null;
   categorie: string | null;
@@ -73,6 +75,7 @@ function parse(page: { id: string; properties: Record<string, Prop> }): JoueurNo
     roles,
     cagnotte: typeof p["Cagnotte"]?.number === "number" ? (p["Cagnotte"].number as number) : null,
     cagnotteCommune: text(p["Cagnotte commune"]),
+    archive: Boolean(p["Archivé"]?.checkbox),
     telephone: (p["Téléphone"]?.phone_number as string | null) || null,
     vehicule,
     categorie: text(p["Catégorie"]),

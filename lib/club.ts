@@ -527,3 +527,8 @@ export async function majCagnotteNotion(pageId: string, montant: number | null, 
 export async function majRolesNotion(pageId: string, roles: string[]) {
   await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { "Rôles": { multi_select: roles.map((name) => ({ name })) } } } });
 }
+
+/** Ticks or unticks « Archivé » on a player's fiche in the Notion « Liste des joueurs ». */
+export async function majArchiveNotion(pageId: string, archive: boolean) {
+  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { "Archivé": { checkbox: archive } } } });
+}

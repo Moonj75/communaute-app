@@ -9,6 +9,8 @@ export type Profil = {
   role: Role;
   /** false = member not active this season: limited « discovery » space. */
   actif?: boolean;
+  /** Former member, archived: no access to the app any more. */
+  archive?: boolean;
 };
 
 /** Signed-in user and their club profile (null when signed out or not yet linked). */
@@ -18,10 +20,14 @@ export async function getSessionProfil() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { supabase, user: null, profil: null as Profil | null };
-  let { data, error } = await supabase.from("profils").select("id,email,nom,prenom,role,actif").eq("id", user.id).maybeSingle();
-  // Column « actif » appears with SQL step 8: fall back gracefully before that.
+  let { data, error } = await supabase.from("profils").select("id,email,nom,prenom,role,actif,archive").eq("id", user.id).maybeSingle();
+  // Columns « actif » (SQL step 8) and « archive » (step 16): fall back gracefully before that.
+  if (error) ({ data, error } = await supabase.from("profils").select("id,email,nom,prenom,role,actif").eq("id", user.id).maybeSingle());
   if (error) ({ data } = await supabase.from("profils").select("id,email,nom,prenom,role").eq("id", user.id).maybeSingle());
-  return { supabase, user, profil: (data as Profil | null) ?? null };
+  const profil = (data as Profil | null) ?? null;
+  // An archived member is treated as signed out (administrators are never archived).
+  if (profil?.archive && profil.role !== "admin") return { supabase, user: null, profil: null as Profil | null };
+  return { supabase, user, profil };
 }
 
 export function displayName(p: Profil | null, fallbackEmail?: string | null) {
