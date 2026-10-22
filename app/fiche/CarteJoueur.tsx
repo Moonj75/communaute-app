@@ -3,6 +3,8 @@ import Photo from "./Photo";
 import type React from "react";
 import { couleurCategorie } from "@/lib/classements-types";
 import LogoFistf from "@/components/LogoFistf";
+import CagnotteFiche from "@/components/cagnotte/CagnotteFiche";
+import type { Bareme, EvenementLie, Mouvement } from "@/lib/cagnotte";
 
 export type Fiche = {
   notion_id: string;
@@ -41,7 +43,7 @@ const place = (n: number | null | undefined) => (n ? <>{n}<sup>{n === 1 ? "er" :
  * the honours scroll from right to left in a band at the bottom of the card. The kitty sits apart, below.
  * `places` = the player's places read from the latest imported rankings (always up to date).
  */
-export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famille: boolean; photoUrl: string | null; places?: PlacesVivantes }) {
+export function CarteJoueur({ f, famille, photoUrl, places, cag }: { f: Fiche; famille: boolean; photoUrl: string | null; places?: PlacesVivantes; /** Kitty history (null = not installed yet). */ cag?: { mouvements: Mouvement[] | null; bareme: Bareme[]; noms: Record<string, string>; evenements?: EvenementLie[] } }) {
   const full = [f.prenom, f.nom].filter(Boolean).join(" ");
   const cagnotte = Number(f.cagnotte) || 0;
   const titres = (f.palmares || "").split(/\n+/).map((t) => t.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
@@ -122,14 +124,7 @@ export function CarteJoueur({ f, famille, photoUrl, places }: { f: Fiche; famill
         </div>
       </div>
 
-      <section className="fc-cagnotte fx-cagnotte" aria-label="Cagnotte">
-        <span className="fcg-ic" aria-hidden="true">💰</span>
-        <span className="fcg-txt">
-          <span className="fcg-l">{f.cagnotte_groupe ? "Cagnotte commune" : "Ma cagnotte"}</span>
-          <span className="fcg-s">{f.cagnotte_groupe ? `👨‍👩‍👧 ${f.cagnotte_groupe} · déplacements du club` : "déplacements du club"}</span>
-        </span>
-        <b className="fcg-v num or-brillant">{euro.format(cagnotte)}</b>
-      </section>
+      <CagnotteFiche joueurId={f.notion_id} nom={full} montant={cagnotte} groupe={f.cagnotte_groupe || null} mouvements={cag?.mouvements ?? null} bareme={cag?.bareme || []} noms={cag?.noms || {}} evenements={cag?.evenements || []} />
     </article>
   );
 }

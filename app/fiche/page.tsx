@@ -4,6 +4,7 @@ import { displayName, getVue } from "@/lib/profil";
 import Blocs from "@/components/Blocs";
 import Notifs from "@/components/Notifs";
 import { CarteJoueur, COLS, type Fiche, type PlacesVivantes } from "./CarteJoueur";
+import { lireEvenementsLies, lireHistoriques } from "@/lib/cagnotte-db";
 import { listeDef } from "@/lib/classements-types";
 import { MesClassements } from "@/components/club/Classements";
 import { lireExtraits } from "@/lib/classements-lire";
@@ -47,6 +48,9 @@ export default async function FichePage() {
     };
   });
   const aClassements = extraits.some((x) => x.length);
+  // Kitty history of each fiche (own, or the whole shared kitty): read with the server key, limited to this account's fiches.
+  const [cags0, evenements] = await Promise.all([lireHistoriques(fiches.map((f) => ({ id: f.notion_id, groupe: f.cagnotte_groupe || null })), supabase), lireEvenementsLies(supabase)]);
+  const cags = cags0.map((c) => ({ ...c, evenements }));
   // A shared kitty (« Famille Devreese ») is counted once.
   const vus = new Set<string>();
   const total = fiches.reduce((s, f) => {
@@ -79,7 +83,7 @@ export default async function FichePage() {
                 titre: [f.prenom, f.nom].filter(Boolean).join(" "),
                 ic: f.titulaire || !famille ? "🦁" : "🐾",
                 badge: f.categorie || null,
-                contenu: <CarteJoueur f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} places={aClassements ? places[i] : undefined} />,
+                contenu: <CarteJoueur f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} places={aClassements ? places[i] : undefined} cag={cags[i]} />,
               },
               {
                 id: `cl-${f.notion_id.slice(0, 8)}`,
