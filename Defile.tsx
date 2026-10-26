@@ -71,7 +71,7 @@ export default function Defile({ tuiles }: { tuiles: Tuile[] }) {
       }}
     >
       {/* The frame never moves nor changes: only what is inside changes (fade). */}
-      <Link href={t.href} className="dfl-cadre">
+      <Link href={t.href} prefetch={false} className="dfl-cadre">
         {(prec !== null && prec !== i ? [prec, i] : [i]).map((k) => {
           const x = tuiles[k];
           const med = x.n && x.n <= 3 ? ["🥇", "🥈", "🥉"][x.n - 1] : null;

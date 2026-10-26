@@ -52,6 +52,8 @@ export default function VueAccueil(p: {
   const dateLongue = (d: string) => new Date(d.slice(0, 10) + "T12:00:00Z").toLocaleDateString("fr-BE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
   const rang = (n?: number | null) => (n ? <>{n}<sup>{n === 1 ? "er" : "e"}</sup></> : "—");
+  // Only the rankings where there is a place to show (no « Pas encore classé » frames in the rotation).
+  const avecPlace = <T extends { n: number | null }>(l: T[]) => { const f = l.filter((x) => x.n !== null); return f.length ? f : l.slice(0, 1); };
   const proche = (j: number) => (j <= 30 ? "proche" : j <= 60 ? "moyen" : "loin");
   const score = (
     <div className="vg ecran-fixe">
@@ -85,13 +87,13 @@ export default function VueAccueil(p: {
 
       {/* The rankings, one after the other in a single frame, then the club photo. */}
       <Defile
-        tuiles={[
+        tuiles={avecPlace([
           { id: "nat", quoi: famille ? `Place de ${qui}` : "Ma place", titre: "Classement national", ic: <span aria-hidden="true">🇧🇪</span>, k: "var(--n-national)", n: maNat?.rang ?? null, s: maNat ? `FBFTS · catégorie ${maNat.categorie || "?"}` : "Pas encore classé", href: "/fiche" },
           { id: "open", quoi: famille ? `Place de ${qui}` : "Ma place", titre: "Mondial FISTF · Open", ic: <LogoFistf taille={20} />, k: "var(--n-open)", n: monOpen?.rang ?? null, s: monOpen ? "Classement mondial toutes catégories" : "Pas encore classé", href: "/fiche" },
           { id: "cat", quoi: famille ? `Place de ${qui}` : "Ma place", titre: `Mondial FISTF · ${maCat ? listeDef(maCat.liste).court : "catégorie"}`, ic: <LogoFistf taille={20} />, k: "var(--n-categorie)", n: maCat?.rang ?? null, s: maCat ? "Classement mondial de ma catégorie" : "Pas encore classé", href: "/fiche" },
           { id: "club-nat", quoi: "Le club", titre: "Clubs de Belgique", ic: <span aria-hidden="true">🦁</span>, k: "var(--n-club)", n: clubNat?.rang ?? now?.national ?? null, s: clubNat ? `${pts(clubNat.points)} pts · ${libelleMois(clubNat.mois)}` : "Classement FBFTS des clubs", href: "#bloc-club" },
           { id: "club-int", quoi: "Le club", titre: "Équipes · Mondial FISTF", ic: <LogoFistf taille={20} />, k: "var(--n-open)", n: equipe?.rang ?? null, s: equipe ? `Eugies ${equipe.prenom || "Team A"}${autresEq.length ? ` · ${autresEq.map((e) => `${e.prenom} ${e.rang}e`).join(" · ")}` : ""}` : "Pas encore classé", href: "#bloc-club" },
-        ]}
+        ])}
       />
       <PhotoAccueil />
 
