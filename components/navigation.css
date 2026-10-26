@@ -1,0 +1,5 @@
+/* Page en cours d'ouverture depuis le menu : un fin trait doré court en haut de l'écran (rien d'autre ne bouge). */
+.nav-attente { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9999; pointer-events: none; overflow: hidden; background: rgba(201,162,39,.18); }
+.nav-attente::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 40%; background: linear-gradient(90deg, transparent, #ffd84d, #c9a227, transparent); animation: nav-attente 1s ease-in-out infinite; }
+@keyframes nav-attente { from { left: -40%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .nav-attente::after { animation-duration: 2.5s; } }

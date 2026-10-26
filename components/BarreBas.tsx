@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import "./navigation.css";
 import { useEffect, useRef, useState } from "react";
 import Icone from "./Icone";
 import NavSection from "./NavSection";
@@ -66,11 +67,25 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
   const router = useRouter();
   useEffect(() => {
     // Kept ready: prepared again every 4 minutes (a prepared page stays fresh for 5).
-    const preparer = () => ["/club/classements", "/club/classements?l=FBFTS-Clubs", "/club/classements?l=WR-Open"].forEach((h) => router.prefetch(h));
+    // The main pages too, completely (data included): changing section from the menu is then immediate.
+    const preparer = () => {
+      if (document.visibilityState !== "visible") return;
+      ["/club/classements", "/club/classements?l=FBFTS-Clubs", "/club/classements?l=WR-Open"].forEach((h) => router.prefetch(h));
+      items.filter((i) => !i.href.includes("#") && !i.href.startsWith("/club/classements")).forEach((i) => router.prefetch(i.href, { kind: "full" } as never));
+    };
     const t = window.setTimeout(preparer, 1500);
     const iv = window.setInterval(preparer, 4 * 60 * 1000);
     return () => { window.clearTimeout(t); window.clearInterval(iv); };
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, inactif]);
+  // Staff pages: prepared as soon as the menu opens (before the finger reaches the line).
+  useEffect(() => {
+    if (!ouvert || !isAdmin) return;
+    STAFF.forEach((i) => router.prefetch(i.href, { kind: "full" } as never));
+  }, [ouvert, isAdmin, router]);
+  // A thin gold line runs at the top while the chosen page is coming: the tap is seen at once.
+  const [vers, setVers] = useState<string | null>(null);
+  useEffect(() => setVers(null), [path]);
   // The menu closes by itself after a few seconds without being touched.
   const minuteur = useRef<number | null>(null);
   const relancer = () => {
@@ -87,6 +102,7 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
   const choisir = (href: string) => {
     setOuvert(false);
     const cible = new URL(href, window.location.href);
+    if (cible.pathname !== window.location.pathname) setVers(cible.pathname);
     if (cible.pathname === window.location.pathname && !cible.hash) {
       window.dispatchEvent(new Event("blocs-premier"));
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -107,6 +123,7 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
 
   return (
     <>
+      {vers ? <div className="nav-attente" role="progressbar" aria-label="Chargement de la page" /> : null}
       {/* Main menu: hidden; a small button at the top left opens it from the left side. */}
       <button type="button" className={`menu-bouton${ouvert ? " ouvert" : ""}`} aria-expanded={ouvert} aria-label={ouvert ? "Fermer le menu" : "Ouvrir le menu"} onClick={() => setOuvert((o) => !o)}>
         <Icone n={ouvert ? "fermer" : "menu"} />
