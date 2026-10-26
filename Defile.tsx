@@ -36,17 +36,23 @@ export default function Defile({ tuiles }: { tuiles: Tuile[] }) {
   const [i, setI] = useState(0);
   const [pause, setPause] = useState(false);
   const [tour, setTour] = useState(0);
+  // The previous ranking stays a moment under the new one, which fades in over it (one single smooth step).
+  const [prec, setPrec] = useState<number | null>(null);
   const x0 = useRef<number | null>(null);
   const n = tuiles.length;
   useEffect(() => {
     if (pause || n < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = window.setTimeout(() => { setI((v) => (v + 1) % n); setTour((x) => x + 1); }, DUREE);
+    const t = window.setTimeout(() => { setPrec(i); setI((v) => (v + 1) % n); setTour((x) => x + 1); }, DUREE);
     return () => clearTimeout(t);
   }, [pause, n, i, tour]);
+  useEffect(() => {
+    if (prec === null) return;
+    const t = window.setTimeout(() => setPrec(null), 500);
+    return () => clearTimeout(t);
+  }, [prec, tour]);
   if (!n) return null;
-  const choisir = (k: number) => { setI(((k % n) + n) % n); setTour((x) => x + 1); };
+  const choisir = (k: number) => { const v = ((k % n) + n) % n; if (v === i) return; setPrec(i); setI(v); setTour((x) => x + 1); };
   const t = tuiles[i];
-  const podium = t.n && t.n <= 3 ? ["🥇", "🥈", "🥉"][t.n - 1] : null;
 
   return (
     <div
@@ -66,18 +72,23 @@ export default function Defile({ tuiles }: { tuiles: Tuile[] }) {
     >
       {/* The frame never moves nor changes: only what is inside changes (fade). */}
       <Link href={t.href} className="dfl-cadre">
-        <span key={`${t.id}-${tour}`} className="dfl-in">
-          <span className="dfl-halo" aria-hidden="true" />
-          <span className="dfl-tete">
-            <span className="dfl-q">{t.quoi}</span>
-            <span className="dfl-titre">{t.ic}<span>{t.titre}</span></span>
-          </span>
-          <span className="dfl-coeur">
-            {podium ? <span className="dfl-med" aria-hidden="true">{podium}</span> : null}
-            <Place n={t.n} />
-          </span>
-          <span className="dfl-s">{t.s}</span>
-        </span>
+        {(prec !== null && prec !== i ? [prec, i] : [i]).map((k) => {
+          const x = tuiles[k];
+          const med = x.n && x.n <= 3 ? ["🥇", "🥈", "🥉"][x.n - 1] : null;
+          return (
+            <span key={`${x.id}-${k === i ? tour : "avant"}`} className={`dfl-in${k === i ? " entre" : " avant"}`} style={{ "--k": x.k } as React.CSSProperties} aria-hidden={k !== i}>
+              <span className="dfl-tete">
+                <span className="dfl-q">{x.quoi}</span>
+                <span className="dfl-titre">{x.ic}<span>{x.titre}</span></span>
+              </span>
+              <span className="dfl-coeur">
+                {med ? <span className="dfl-med" aria-hidden="true">{med}</span> : null}
+                <Place n={x.n} />
+              </span>
+              <span className="dfl-s">{x.s}</span>
+            </span>
+          );
+        })}
         <span className="dfl-barre" aria-hidden="true"><i key={`${t.id}-${tour}`} style={{ animationDuration: `${DUREE}ms` }} /></span>
       </Link>
       <div className="dfl-pts" role="tablist" aria-label="Choisir un classement">

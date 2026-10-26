@@ -4892,3 +4892,13 @@ html:not(.mesure-ok) .vg.ecran-fixe { opacity: 0; }
 @media (max-height: 800px) { .dfl-in { padding: 0 12px 10px; } .dfl-in .dfl-tete { width: calc(100% + 24px); } }
 @media (prefers-reduced-motion: reduce) { .dfl-in { animation: none; } }
 .dfl-titre > span:last-child { padding-right: .18em; }
+/* Accueil : TOUT est fixe sauf l'intérieur du cadre, qui change en un seul fondu enchaîné (aucun zoom, aucune rotation, aucun flottement). */
+.dfl-in { background: radial-gradient(120% 90% at 50% 120%, color-mix(in srgb, var(--k) 30%, transparent), transparent 60%), linear-gradient(160deg, #221d1b, #0b0a0a 70%); }
+.dfl-in .dfl-tete { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--k) 42%, transparent) 20%, color-mix(in srgb, var(--k) 42%, transparent) 80%, transparent); border-bottom-color: color-mix(in srgb, var(--k) 60%, transparent); }
+.dfl-in.entre { z-index: 2; animation: dfl-fondu .45s ease-out both; }
+.dfl-in.avant { z-index: 1; animation: none; }
+.dfl-in, .dfl-in * { will-change: auto; }
+.dfl-v { animation: none !important; transform: none !important; filter: none !important; background: none !important; -webkit-background-clip: border-box; background-clip: border-box; color: #fff !important; -webkit-text-fill-color: #fff; text-shadow: 0 0 22px color-mix(in srgb, var(--k) 85%, transparent), 0 3px 10px rgba(0,0,0,.5); }
+.dfl-med { animation: none !important; }
+.dfl-halo { display: none; }
+.acc-photo { animation: none !important; }
