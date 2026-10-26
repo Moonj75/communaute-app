@@ -3,6 +3,7 @@ import Photo from "./Photo";
 import type React from "react";
 import { couleurCategorie } from "@/lib/classements-types";
 import LogoFistf from "@/components/LogoFistf";
+import { categorieFinale } from "@/lib/categories";
 import CagnotteFiche from "@/components/cagnotte/CagnotteFiche";
 import type { Bareme, EvenementLie, Mouvement } from "@/lib/cagnotte";
 
@@ -18,6 +19,8 @@ export type Fiche = {
   /** Shared kitty (« Famille Devreese »), when there is one. */
   cagnotte_groupe?: string | null;
   telephone: string | null;
+  /** Date of birth (step 18): gives the age category. */
+  date_naissance?: string | null;
   categorie: string | null;
   serie: string | null;
   synced_at: string | null;
@@ -52,7 +55,7 @@ export function CarteJoueur({ f, famille, photoUrl, places, cag }: { f: Fiche; f
   const duree = Math.max(16, tour.reduce((n, t) => n + t.length, 0) * 0.28);
   // The player's age category, from the « Catégorie » column of Notion (Open, Vétéran, Femme, U20, U16, U12);
   // otherwise the FISTF category where he is ranked; otherwise Open.
-  const cat = f.categorie || places?.categorie?.nom || "Open";
+  const cat = categorieFinale(f.categorie, f.date_naissance) || places?.categorie?.nom || "Open";
   const kCat = couleurCategorie(cat);
   const kIc = places?.categorie ? couleurCategorie(places.categorie.nom) : undefined;
   return (
@@ -78,7 +81,6 @@ export function CarteJoueur({ f, famille, photoUrl, places, cag }: { f: Fiche; f
                 <span key={r} className="fx-pill">{r}</span>
               ))}
             </div>
-            <span className="fx-tel">📞 {f.telephone || "—"}</span>
           </div>
         </header>
 

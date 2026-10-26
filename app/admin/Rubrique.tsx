@@ -10,6 +10,8 @@ import { lireEvenementsLies } from "@/lib/cagnotte-db";
 import Valideurs from "./Valideurs";
 import Mails from "./Mails";
 import Archives from "./Archives";
+import DemandesEmail from "./DemandesEmail";
+import type { DemandeEmail } from "@/lib/changement-email";
 import { brevoPret } from "@/lib/brevo";
 import InviteCell from "./InviteCell";
 import { retirerMembre, updateMembre } from "./actions";
@@ -19,7 +21,7 @@ import { basculerContact } from "./contacts";
 export type Rubrique = "joueurs" | "communication" | "finances" | "valideurs" | "technique";
 /** Each staff heading of the menu: its title, its intro and the parts it shows. */
 const RUBRIQUES: Record<Rubrique, { titre: string; intro: string; kicker: string; blocs: string[] }> = {
-  joueurs: { kicker: "Staff · Joueurs", titre: "Joueurs & comptes", intro: "Ajouter un joueur, comptes de connexion, aperçu joueur, archives.", blocs: ["comptes", "ajouter", "apercu", "archives"] },
+  joueurs: { kicker: "Staff · Joueurs", titre: "Joueurs & comptes", intro: "Ajouter un joueur, comptes de connexion, aperçu joueur, archives.", blocs: ["emails", "comptes", "ajouter", "apercu", "archives"] },
   communication: { kicker: "Staff · Communication", titre: "Mails & contacts", intro: "Écrire aux membres et répondre aux visiteurs.", blocs: ["mails", "contacts", "lien-notifs"] },
   finances: { kicker: "Staff · Finances", titre: "Cagnottes", intro: "Gains, dépenses, demandes à valider et barème des tâches.", blocs: ["cagnottes"] },
   valideurs: { kicker: "Staff · Compétitions", titre: "Valideurs", intro: "Qui peut valider les scores des compétitions du club.", blocs: ["valideurs"] },
@@ -46,7 +48,7 @@ export default async function PageAdmin({ rubrique }: { rubrique: Rubrique }) {
   if (!user) redirect("/login");
   if (profil?.role !== "admin") redirect("/");
 
-  const [{ data: membres }, { data: profils }, { data: joueurs }, supersRes, mvtRes, barRes, contactsRes] = await Promise.all([
+  const [{ data: membres }, { data: profils }, { data: joueurs }, supersRes, mvtRes, barRes, demRes, contactsRes] = await Promise.all([
     supabase.from("membres").select("email,nom,prenom,role,actif,synced_at,invite_le").order("nom"),
     supabase.from("profils").select("email"),
     supabase.from("joueurs").select("*"),
@@ -54,6 +56,7 @@ export default async function PageAdmin({ rubrique }: { rubrique: Rubrique }) {
     // Only what this heading shows is loaded.
     veut("cagnottes") ? supabase.from("cag_mouvements").select("*").order("date", { ascending: false }).limit(5000) : vide,
     veut("cagnottes") ? supabase.from("cag_bareme").select("*").order("ordre") : vide,
+    veut("emails") ? supabase.from("demandes_email").select("*").order("cree_le", { ascending: false }).limit(40) : vide,
     veut("contacts") ? supabase.from("contacts").select("id,cree_le,prenom,nom,email,telephone,decouverte,message,traite").order("cree_le", { ascending: false }).limit(60) : vide,
   ]);
   type Contact = { id: string; cree_le: string; prenom: string; nom: string | null; email: string; telephone: string | null; decouverte: string | null; message: string | null; traite: boolean };
@@ -65,6 +68,9 @@ export default async function PageAdmin({ rubrique }: { rubrique: Rubrique }) {
   const evenements = mouvements && veut("cagnottes") ? await lireEvenementsLies(supabase) : [];
   const demandes = (mouvements || []).filter((m) => m.statut === "en_attente").length;
   const contacts = (contactsRes.data || []) as Contact[];
+  // E-mail change requests (step 19): null = not installed yet.
+  const demandesEmail = demRes.error ? null : ((demRes.data || []) as DemandeEmail[]);
+  const emailsAttente = (demandesEmail || []).filter((d) => d.statut === "en_attente");
   const aTraiter = contacts.filter((c) => !c.traite).length;
   type J = { email: string | null; prenom: string | null; nom: string; actif: boolean; titulaire: boolean; roles: string[] | null; cagnotte: number | null };
   // Archived members (step 16) are left out of the lists below (cagnottes, validators, mails).
@@ -114,6 +120,11 @@ export default async function PageAdmin({ rubrique }: { rubrique: Rubrique }) {
             )}
           </div>
         </section>
+        ) },
+        { id: "emails", titre: "Changements d'e-mail", ic: "📧", badge: emailsAttente.length || null, contenu: (
+          <section className="panel"><div className="hd"><h2>📧 Changements d&apos;adresse e-mail</h2><span className="muted small">Demandés par les membres dans « Mon profil »</span></div>
+            <div className="bd">{demandesEmail ? <DemandesEmail demandes={emailsAttente} historique={demandesEmail.filter((d) => d.statut !== "en_attente").slice(0, 15)} /> : <p className="notice err">Lance d&apos;abord le script « etape19-changement-email » dans Supabase.</p>}</div>
+          </section>
         ) },
         { id: "cagnottes", titre: "Cagnottes", ic: "💶", badge: demandes || null, contenu: (
           <section className="panel"><div className="hd"><h2>💶 Cagnottes des membres</h2><span className="muted small">Gains, dépenses, historique · reliées à Notion</span></div>

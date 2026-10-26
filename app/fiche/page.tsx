@@ -20,7 +20,8 @@ export default async function FichePage() {
   const lire = (cols: string) =>
     supabase.from("joueurs").select(cols).eq("email", email).order("titulaire", { ascending: false }).order("prenom");
   // Newer columns may not exist yet if a SQL step was not run: fall back gracefully.
-  let res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares,cagnotte_groupe");
+  let res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares,cagnotte_groupe,date_naissance");
+  if (res.error) res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares,cagnotte_groupe");
   if (res.error) res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares");
   if (res.error) res = await lire(COLS + ",photo_path");
   if (res.error) res = await lire(COLS);

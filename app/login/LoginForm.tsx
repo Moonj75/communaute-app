@@ -1,23 +1,59 @@
 "use client";
 
-import { useActionState } from "react";
-import { sendMagicLink, type LoginState } from "./actions";
+import { useActionState, useEffect, useRef } from "react";
+import { sendMagicLink, verifierCode, type CodeState, type LoginState } from "./actions";
 
 const initial: LoginState = { status: "idle" };
+const initialCode: CodeState = { status: "idle" };
+
+/** Step 2: the code of the e-mail, typed here (works in the installed app, whatever opens the mail). */
+function SaisieCode({ email, recommencer }: { email: string; recommencer: () => void }) {
+  const [state, action, pending] = useActionState(verifierCode, initialCode);
+  const champ = useRef<HTMLInputElement>(null);
+  useEffect(() => { champ.current?.focus(); }, []);
+  return (
+    <form action={action} className="login-code">
+      <div className="notice ok" role="status">
+        <b>📬 Mail envoyé à {email}.</b>
+        <br />
+        Il contient un <b>code à 6 chiffres</b> : tape-le ci-dessous. Pense à regarder dans les courriers indésirables.
+      </div>
+      {state.status === "error" ? <div className="notice err" role="alert">{state.message}</div> : null}
+      <input type="hidden" name="email" value={email} />
+      <label className="f">
+        Code reçu par e-mail
+        <input
+          ref={champ}
+          className="input login-chiffres"
+          name="code"
+          required
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9 ]{6,12}"
+          maxLength={12}
+          placeholder="123456"
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "");
+            if (v.length === 6 && !pending) e.target.form?.requestSubmit();
+          }}
+        />
+      </label>
+      <button className="btn primary" type="submit" disabled={pending} style={{ minHeight: 50, fontSize: 15 }}>
+        {pending ? "Vérification…" : "Entrer dans mon espace"}
+      </button>
+      <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+        Tu peux aussi cliquer sur le lien du mail, mais seulement si tu l&apos;ouvres sur cet appareil, dans ce navigateur.
+        Avec l&apos;application installée, utilise le code.
+      </p>
+      <button type="button" className="btn ghost" onClick={recommencer}>↺ Changer d&apos;adresse ou renvoyer un code</button>
+    </form>
+  );
+}
 
 export default function LoginForm({ error }: { error?: string }) {
   const [state, action, pending] = useActionState(sendMagicLink, initial);
 
-  if (state.status === "sent") {
-    return (
-      <div className="notice ok" role="status" style={{ marginTop: 16 }}>
-        <b>📬 Lien envoyé à {state.email}.</b>
-        <br />
-        Ouvrez l&apos;e-mail sur cet appareil et cliquez sur le lien pour entrer. Pensez à regarder dans les
-        courriers indésirables.
-      </div>
-    );
-  }
+  if (state.status === "sent") return <SaisieCode email={state.email || ""} recommencer={() => window.location.assign("/login")} />;
 
   return (
     <form action={action}>
@@ -41,10 +77,10 @@ export default function LoginForm({ error }: { error?: string }) {
         />
       </label>
       <button className="btn primary" type="submit" disabled={pending} style={{ minHeight: 50, fontSize: 15 }}>
-        {pending ? "Envoi en cours…" : "Recevoir mon lien de connexion"}
+        {pending ? "Envoi en cours…" : "Recevoir mon code de connexion"}
       </button>
       <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-        Pas de mot de passe : vous recevez un lien sécurisé par e-mail, valable une heure.
+        Pas de mot de passe : tu reçois par e-mail un code à 6 chiffres, valable une heure.
       </p>
     </form>
   );

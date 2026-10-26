@@ -19,6 +19,14 @@ export type JoueurNotion = {
   /** Former member, archived: out of the lists, no more login. */
   archive: boolean;
   telephone: string | null;
+  /** Contact details (« Mon profil »). */
+  naissance: string | null;
+  adresse: string | null;
+  codePostal: string | null;
+  ville: string | null;
+  nationalite: string | null;
+  licence: string | null;
+  codeFistf: string | null;
   vehicule: string | null;
   categorie: string | null;
   serie: string | null;
@@ -77,6 +85,13 @@ function parse(page: { id: string; properties: Record<string, Prop> }): JoueurNo
     cagnotteCommune: text(p["Cagnotte commune"]),
     archive: Boolean(p["Archivé"]?.checkbox),
     telephone: (p["Téléphone"]?.phone_number as string | null) || null,
+    naissance: ((p["Date de naissance"]?.date as { start?: string } | null)?.start || "").slice(0, 10) || null,
+    adresse: text(p["Adresse"]),
+    codePostal: text(p["Code postal"]),
+    ville: text(p["Ville"]),
+    nationalite: text(p["Nationalité"]),
+    licence: text(p["Licence nationale"]),
+    codeFistf: text(p["Code FISTF"]),
     vehicule,
     categorie: text(p["Catégorie"]),
     serie: text(p["Série"]),

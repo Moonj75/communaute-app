@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { categorieFinale } from "@/lib/categories";
+import { majCategorieNotion } from "@/lib/club";
 import { getSessionProfil } from "@/lib/profil";
 import { lireJoueurs, type JoueurNotion } from "@/lib/notion";
 
@@ -24,6 +26,9 @@ export type SyncState = {
  * - people sharing one e-mail form a family account: one row in `membres`,
  *   named after the person ticked « Titulaire du compte » in Notion.
  */
+/** Contact details copied in the app (« Mon profil »), SQL step 18. */
+const coordonnees = (j: JoueurNotion) => ({ date_naissance: j.naissance, adresse: j.adresse, code_postal: j.codePostal, ville: j.ville, nationalite: j.nationalite, licence: j.licence, code_fistf: j.codeFistf });
+
 export async function synchroniserNotion(): Promise<SyncState> {
   const { supabase, profil } = await getSessionProfil();
   if (profil?.role !== "admin") return { error: "Action réservée aux administrateurs." };
@@ -48,7 +53,8 @@ export async function synchroniserNotion(): Promise<SyncState> {
     cagnotte: j.cagnotte,
     telephone: j.telephone,
     vehicule: j.vehicule,
-    categorie: j.categorie,
+    // Age category from the date of birth (« Femme » set in Notion stays).
+    categorie: categorieFinale(j.categorie, j.naissance),
     serie: j.serie,
     synced_at: now,
   }));
@@ -60,7 +66,11 @@ export async function synchroniserNotion(): Promise<SyncState> {
   }));
   let avertissement: string | undefined;
   // Shared kitty name (step 15); left out if the column is not there yet.
-  let { error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive })), { onConflict: "notion_id" });
+  let { error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive, ...coordonnees(liste[i]) })), { onConflict: "notion_id" });
+  if (e1 && /date_naissance|adresse|code_postal|ville|nationalite|licence|code_fistf/i.test(e1.message)) {
+    avertissement = "Coordonnées pas encore copiées : lancez le script « etape18-profil » dans Supabase.";
+    ({ error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive })), { onConflict: "notion_id" }));
+  }
   if (e1 && /cagnotte_groupe|archive/i.test(e1.message)) {
     avertissement = "Cagnottes communes et archives pas encore copiées : lancez les scripts « etape15 » et « etape16 » dans Supabase.";
     ({ error: e1 } = await supabase.from("joueurs").upsert(complets, { onConflict: "notion_id" }));
@@ -70,6 +80,11 @@ export async function synchroniserNotion(): Promise<SyncState> {
     ({ error: e1 } = await supabase.from("joueurs").upsert(fiches, { onConflict: "notion_id" }));
   }
   if (e1) return { error: "Enregistrement des fiches impossible : " + e1.message };
+  // The age category computed from the date of birth is written back in Notion where it differs (5 at a time).
+  const aCorriger = liste.filter((j) => { const c = categorieFinale(j.categorie, j.naissance); return c && c !== j.categorie; });
+  for (let i = 0; i < aCorriger.length; i += 5) {
+    await Promise.all(aCorriger.slice(i, i + 5).map((j) => majCategorieNotion(j.notionId, categorieFinale(j.categorie, j.naissance)!).catch(() => null)));
+  }
   // Fiches removed from Notion disappear from the app too.
   const ids = fiches.map((f) => f.notion_id);
   if (ids.length) {

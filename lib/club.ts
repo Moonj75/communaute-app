@@ -528,6 +528,31 @@ export async function majRolesNotion(pageId: string, roles: string[]) {
   await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { "Rôles": { multi_select: roles.map((name) => ({ name })) } } } });
 }
 
+/** A member's contact details in the Notion « Liste des joueurs » (« Mon profil »), and his age category. */
+export async function majCoordonneesNotion(pageId: string, c: { telephone: string | null; naissance: string | null; adresse: string | null; codePostal: string | null; ville: string | null; nationalite: string | null; categorie?: string | null }) {
+  const t = (v: string | null) => ({ rich_text: v ? [{ type: "text", text: { content: v.slice(0, 200) } }] : [] });
+  const properties: Record<string, unknown> = {
+    "Téléphone": { phone_number: c.telephone || null },
+    "Date de naissance": { date: c.naissance ? { start: c.naissance } : null },
+    "Adresse": t(c.adresse),
+    "Code postal": t(c.codePostal),
+    "Ville": t(c.ville),
+    "Nationalité": t(c.nationalite),
+  };
+  if (c.categorie) properties["Catégorie"] = { select: { name: c.categorie } };
+  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties } });
+}
+
+/** Changes the « Email » of a player's fiche in Notion (validated e-mail change). */
+export async function majEmailNotion(pageId: string, email: string) {
+  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { Email: { email } } } });
+}
+
+/** Sets the age category (« Catégorie ») of a player in Notion. */
+export async function majCategorieNotion(pageId: string, categorie: string) {
+  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { "Catégorie": { select: { name: categorie } } } } });
+}
+
 /** Ticks or unticks « Archivé » on a player's fiche in the Notion « Liste des joueurs ». */
 export async function majArchiveNotion(pageId: string, archive: boolean) {
   await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { "Archivé": { checkbox: archive } } } });

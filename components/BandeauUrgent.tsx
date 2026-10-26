@@ -51,6 +51,10 @@ export default async function BandeauUrgent() {
         const { count } = await supabase.from("cag_mouvements").select("id", { count: "exact", head: true }).eq("statut", "en_attente");
         if (count) l.push({ ic: "💶", txt: `${count} demande${count > 1 ? "s" : ""} de cagnotte à valider`, quoi: `${count} demande${count > 1 ? "s" : ""} de cagnotte`, detail: "À valider · Staff → Finances", href: "/admin/finances", niveau: "moyen" });
       } catch { /* kitty history not installed yet */ }
+      try {
+        const { count } = await supabase.from("demandes_email").select("id", { count: "exact", head: true }).eq("statut", "en_attente");
+        if (count) l.push({ ic: "📧", txt: `${count} changement${count > 1 ? "s" : ""} d'adresse e-mail à valider`, quoi: `${count} changement${count > 1 ? "s" : ""} d'e-mail`, detail: "À valider · Staff → Joueurs & comptes", href: "/admin#bloc-emails", niveau: "moyen" });
+      } catch { /* step 19 not installed yet */ }
     }
     if (!l.length) return null;
     return <Defilant items={l} />;

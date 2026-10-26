@@ -6,7 +6,7 @@ import LogoFistf from "@/components/LogoFistf";
 
 const ordinal = (n: number) => (n === 1 ? "1er" : `${n}e`);
 
-function Evo({ e }: { e: string | null }) {
+export function Evo({ e }: { e: string | null }) {
   const t = tendance(e);
   return t ? <span className={`evo ${t.cls}`}>{t.txt}</span> : <span className="evo" />;
 }
@@ -17,7 +17,7 @@ export function LogoClub() {
   return <img className="logo-club" src="/crest.png" alt="SC Lions d'Eugies" title="SC Lions d'Eugies" width={22} height={22} />;
 }
 
-function clubCourt(l: LigneClassement) {
+export function clubCourt(l: LigneClassement) {
   if (!l.club) return "—";
   return l.liste === "FBFTS" ? l.club.toUpperCase() : l.club;
 }
@@ -90,7 +90,7 @@ export function TableClassement({ lignes, def, moi = [], compact = false, ancre 
 }
 
 /** Colour of a place: the player's national category (FBFTS) or the FISTF list (Open, Vétérans, U20…). */
-function couleurRang(l: LigneClassement, def: ListeDef) {
+export function couleurRang(l: LigneClassement, def: ListeDef) {
   if (def.id === "FBFTS") return couleurCategorie(l.categorie);
   if (def.source === "fistf" && def.type === "joueurs") return couleurCategorie(def.court);
   return undefined;

@@ -6,6 +6,8 @@ import ClubDuo from "./ClubDuo";
 import type React from "react";
 import { libelleMois, listeDef, pts, type LigneClassement } from "@/lib/classements-types";
 import LogoFistf from "@/components/LogoFistf";
+import Defile from "./Defile";
+import PhotoAccueil from "./PhotoAccueil";
 
 export type Gens = { prenom: string | null; cagnotte: number | null; roles: string[] | null; actif: boolean }[];
 
@@ -81,42 +83,17 @@ export default function VueAccueil(p: {
         </Link>
       ) : null}
 
-      {/* The 5 ranking tiles, grouped, narrower and centred, a little apart from the competition above. */}
-      <div className="acc-cl" aria-label="Classements">
-      {/* My places: national, international (Open), international in my category. */}
-      <div className="acc-ligne l3">
-        <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-national)" } as React.CSSProperties}>
-          <span className="acc-l">🇧🇪 National</span>
-          <b className="acc-v num">{rang(maNat?.rang)}</b>
-          <span className="acc-s">{maNat ? `Catégorie ${maNat.categorie || "?"}` : "non classé"}</span>
-        </Link>
-        <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-open)" } as React.CSSProperties}>
-          <span className="acc-l"><LogoFistf /> International</span>
-          <b className="acc-v num">{rang(monOpen?.rang)}</b>
-          <span className="acc-s">FISTF Open</span>
-        </Link>
-        <Link className="acc-c" href="/fiche" style={{ "--k": "var(--n-categorie)" } as React.CSSProperties}>
-          <span className="acc-l"><LogoFistf /> Catégorie</span>
-          <b className="acc-v num">{rang(maCat?.rang)}</b>
-          <span className="acc-s">{maCat ? `FISTF ${listeDef(maCat.liste).court}` : "non classé"}</span>
-        </Link>
-      </div>
-      {famille ? <p className="acc-qui">Places de {qui}</p> : null}
-
-      {/* The club's places. */}
-      <div className="acc-ligne l2">
-        <a className="acc-c" href="#bloc-club" style={{ "--k": "var(--n-club)" } as React.CSSProperties}>
-          <span className="acc-l">🦁 Club · national</span>
-          <b className="acc-v num">{clubNat ? rang(clubNat.rang) : rang(now?.national)}</b>
-          <span className="acc-s">{clubNat ? `${pts(clubNat.points)} pts · ${libelleMois(clubNat.mois)}` : "clubs belges"}</span>
-        </a>
-        <a className="acc-c" href="#bloc-club" style={{ "--k": "var(--n-open)" } as React.CSSProperties}>
-          <span className="acc-l"><LogoFistf /> Club · international</span>
-          <b className="acc-v num">{rang(equipe?.rang)}</b>
-          <span className="acc-s">{equipe ? `Eugies ${equipe.prenom || "Team A"}${autresEq.length ? ` · ${autresEq.map((e) => `${e.prenom} ${e.rang}e`).join(" · ")}` : ""}` : "pas encore classé"}</span>
-        </a>
-      </div>
-      </div>
+      {/* The rankings, one after the other in a single frame, then the club photo. */}
+      <Defile
+        tuiles={[
+          { id: "nat", quoi: famille ? `Place de ${qui}` : "Ma place", titre: "Classement national", ic: <span aria-hidden="true">🇧🇪</span>, k: "var(--n-national)", n: maNat?.rang ?? null, s: maNat ? `FBFTS · catégorie ${maNat.categorie || "?"}` : "Pas encore classé", href: "/fiche" },
+          { id: "open", quoi: famille ? `Place de ${qui}` : "Ma place", titre: "Mondial FISTF · Open", ic: <LogoFistf taille={20} />, k: "var(--n-open)", n: monOpen?.rang ?? null, s: monOpen ? "Classement mondial toutes catégories" : "Pas encore classé", href: "/fiche" },
+          { id: "cat", quoi: famille ? `Place de ${qui}` : "Ma place", titre: `Mondial FISTF · ${maCat ? listeDef(maCat.liste).court : "catégorie"}`, ic: <LogoFistf taille={20} />, k: "var(--n-categorie)", n: maCat?.rang ?? null, s: maCat ? "Classement mondial de ma catégorie" : "Pas encore classé", href: "/fiche" },
+          { id: "club-nat", quoi: "Le club", titre: "Clubs de Belgique", ic: <span aria-hidden="true">🦁</span>, k: "var(--n-club)", n: clubNat?.rang ?? now?.national ?? null, s: clubNat ? `${pts(clubNat.points)} pts · ${libelleMois(clubNat.mois)}` : "Classement FBFTS des clubs", href: "#bloc-club" },
+          { id: "club-int", quoi: "Le club", titre: "Équipes · Mondial FISTF", ic: <LogoFistf taille={20} />, k: "var(--n-open)", n: equipe?.rang ?? null, s: equipe ? `Eugies ${equipe.prenom || "Team A"}${autresEq.length ? ` · ${autresEq.map((e) => `${e.prenom} ${e.rang}e`).join(" · ")}` : ""}` : "Pas encore classé", href: "#bloc-club" },
+        ]}
+      />
+      <PhotoAccueil />
 
       <a className="acc-c acc-entr" href="#bloc-entrainements" style={{ "--k": "var(--n-temps)" } as React.CSSProperties}>
         <span className="acc-l">🎯 Prochain entraînement</span>

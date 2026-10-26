@@ -153,6 +153,8 @@ export default function Blocs({ blocs, initial, page, actions, pages, pageActuel
       // A table wider than the screen first gets a smaller font (down to 10 px) so that, as far as possible,
       // everything is visible without scrolling sideways; only then does it scroll (name column fixed).
       sc.querySelectorAll<HTMLElement>(".scroll-x").forEach((b) => {
+        // Tables laid out once and for all (rankings page): never resized, so nothing jumps.
+        if (b.closest(".ecran-fixe")) return;
         const t = b.querySelector<HTMLElement>("table");
         if (!t || b.offsetParent === null) return;
         t.style.fontSize = "";
@@ -184,7 +186,7 @@ export default function Blocs({ blocs, initial, page, actions, pages, pageActuel
       // Long lists (much taller) are left as they are: they scroll.
       const contenu = [...sc.querySelectorAll<HTMLElement>(":scope > .scene-bloc:not([hidden]) > .scene-c")][0] || (sc.classList.contains("solo") ? sc : null);
       // A part already laid out to fit the screen by itself (club championship) is never shrunk.
-      if (contenu && !sc.closest(".tout") && !contenu.querySelector(".ci-ecran")) {
+      if (contenu && !sc.closest(".tout") && !contenu.querySelector(".ci-ecran, .ecran-fixe")) {
         contenu.style.zoom = "";
         const cs = getComputedStyle(document.documentElement);
         const bas = (parseFloat(cs.getPropertyValue("--dock-h")) || 84) + 14;

@@ -16,6 +16,7 @@ const JOUEUR: Item[] = [
   { href: "/internes", label: "Compétitions du club", ic: "coupe", c: "magenta", g: "Compétitions" },
   { href: "/club/classements", label: "Classements", ic: "podium", opt: true, desc: "Belges et mondiaux", c: "indigo", g: "Compétitions" },
   { href: "/fiche", label: "Ma fiche", ic: "joueur", c: "violet", g: "Moi" },
+  { href: "/profil", label: "Mon profil", ic: "carte", c: "violet", g: "Moi" },
   { href: "/courrier", label: "Courrier", ic: "mail", c: "or", g: "Moi" },
 ];
 /** Staff side: six headings, each page in one place only. */
