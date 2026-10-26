@@ -1,55 +1,38 @@
 "use server";
 
 import { getSessionProfil } from "@/lib/profil";
-import { pousser, type Abonnement } from "@/lib/push";
-import { clientAdmin } from "@/lib/supabase/admin";
-import { deposer } from "@/lib/courrier";
+import type { Message } from "@/lib/courrier";
 
-export type RetourNotif = { ok: boolean; message?: string };
+const COLS = "id,cree_le,type,de_email,de_nom,a_email,pour_staff,titre,texte,lien,parent,lu";
+const sans = (t: string) => t.replace(/^[^\p{L}\p{N}]+/u, "").trim();
 
-function expliquer(msg: string) {
-  return /push_abonnements|relation|does not exist/i.test(msg)
-    ? "Les notifications ne sont pas encore activées : un administrateur doit lancer le script « etape6 » dans Supabase."
-    : "Enregistrement impossible, réessaie dans un instant.";
-}
-
-export async function abonner(sub: { endpoint?: string; keys?: { p256dh?: string; auth?: string } }, appareil: string): Promise<RetourNotif> {
-  const { supabase, user } = await getSessionProfil();
-  if (!user?.email) return { ok: false, message: "Reconnecte-toi." };
-  if (!sub.endpoint?.startsWith("https://") || !sub.keys?.p256dh || !sub.keys?.auth) return { ok: false, message: "Abonnement invalide." };
-  const { error } = await supabase.from("push_abonnements").upsert(
-    { endpoint: sub.endpoint, email: user.email.toLowerCase(), p256dh: sub.keys.p256dh, auth: sub.keys.auth, appareil: appareil.slice(0, 120), /* date of the last (re)registration */ created_at: new Date().toISOString() },
-    { onConflict: "endpoint" },
-  );
-  return error ? { ok: false, message: expliquer(error.message) } : { ok: true };
-}
-
-export async function desabonner(endpoint: string): Promise<RetourNotif> {
-  const { supabase, user } = await getSessionProfil();
-  if (!user) return { ok: false, message: "Reconnecte-toi." };
-  await supabase.from("push_abonnements").delete().eq("endpoint", endpoint);
-  return { ok: true };
-}
-
-/** Sends a test notification to all devices of the signed-in person. */
-export async function mEnvoyerUnTest(): Promise<RetourNotif> {
-  const { supabase, user } = await getSessionProfil();
-  if (!user?.email) return { ok: false, message: "Reconnecte-toi." };
-  const { data } = await supabase.from("push_abonnements").select("endpoint,email,p256dh,auth").eq("email", user.email.toLowerCase());
-  // A copy in the Courrier too, so the notification can be read again in the app.
+/**
+ * The full message behind a notification (by its id, or the newest one with that title in my mail),
+ * marked as read. Called in the background while the window is already on screen.
+ */
+export async function ouvrirMessage(q: { id?: string | null; titre?: string | null }): Promise<Message | null> {
   try {
-    const db = clientAdmin();
-    if (db) await deposer(db, [user.email], { type: "notification", titre: "🦁 Notifications activées", texte: "Tu recevras ici les ouvertures d'inscriptions et les rappels du club.", lien: "/" });
-  } catch {}
-  try {
-    const r = await pousser(supabase, (data || []) as Abonnement[], [user.email], {
-      title: "🦁 Notifications activées",
-      body: "Tu recevras ici les ouvertures d'inscriptions et les rappels du club.",
-      url: "/",
-      tag: "test",
-    });
-    return r.envoyes ? { ok: true, message: `Envoyée sur ${r.envoyes} appareil(s) ✓` } : { ok: false, message: "Aucun appareil abonné." };
-  } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "Erreur" };
+    const { supabase, user, profil } = await getSessionProfil();
+    if (!user?.email) return null;
+    const moi = user.email.toLowerCase();
+    let m: Message | null = null;
+    if (q.id && /^[0-9a-f-]{36}$/i.test(q.id)) {
+      const { data } = await supabase.from("messages").select(COLS).eq("id", q.id).maybeSingle();
+      m = (data as Message) || null;
+    } else if (q.titre) {
+      const cle = sans(q.titre);
+      const { data } = await supabase
+        .from("messages")
+        .select(COLS)
+        .or(`a_email.eq.${moi}${profil?.role === "admin" ? ",pour_staff.eq.true" : ""}`)
+        .ilike("titre", `%${cle.slice(0, 60).replace(/[%_,()]/g, " ")}%`)
+        .order("cree_le", { ascending: false })
+        .limit(5);
+      m = ((data || []) as Message[]).find((x) => sans(x.titre) === cle) || ((data || []) as Message[])[0] || null;
+    }
+    if (m && !m.lu) await supabase.from("messages").update({ lu: true }).eq("id", m.id);
+    return m;
+  } catch {
+    return null;
   }
 }

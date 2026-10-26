@@ -18,7 +18,7 @@ export async function abonner(sub: { endpoint?: string; keys?: { p256dh?: string
   if (!user?.email) return { ok: false, message: "Reconnecte-toi." };
   if (!sub.endpoint?.startsWith("https://") || !sub.keys?.p256dh || !sub.keys?.auth) return { ok: false, message: "Abonnement invalide." };
   const { error } = await supabase.from("push_abonnements").upsert(
-    { endpoint: sub.endpoint, email: user.email.toLowerCase(), p256dh: sub.keys.p256dh, auth: sub.keys.auth, appareil: appareil.slice(0, 120) },
+    { endpoint: sub.endpoint, email: user.email.toLowerCase(), p256dh: sub.keys.p256dh, auth: sub.keys.auth, appareil: appareil.slice(0, 120), /* date of the last (re)registration */ created_at: new Date().toISOString() },
     { onConflict: "endpoint" },
   );
   return error ? { ok: false, message: expliquer(error.message) } : { ok: true };
