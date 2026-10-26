@@ -5,7 +5,8 @@ const nextConfig: NextConfig = {
   // All page information (manifest, icons, title) goes in <head> for every browser. Without this, Next puts it
   // later in the page, and Android Chrome then ignores the manifest: the app could not be installed.
   htmlLimitedBots: /.*/,
-  experimental: { serverActions: { bodySizeLimit: "3mb" } },
+  // A page already seen stays ready 60 s (going back and forth between sections is instant).
+  experimental: { serverActions: { bodySizeLimit: "3mb" }, staleTimes: { dynamic: 60, static: 300 } },
   // Safety rules sent with every page: the app cannot be shown inside another site (clickjacking),
   // the browser does not guess file types, only https, and no camera / micro / location.
   async headers() {
