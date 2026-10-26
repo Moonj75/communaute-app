@@ -4902,3 +4902,25 @@ html:not(.mesure-ok) .vg.ecran-fixe { opacity: 0; }
 .dfl-med { animation: none !important; }
 .dfl-halo { display: none; }
 .acc-photo { animation: none !important; }
+/* Every ranking of the frame has exactly the same layout (a long name, a « — » or a logo never shifts anything). */
+.dfl-in .dfl-tete { height: 58px; box-sizing: border-box; justify-content: center; overflow: hidden; }
+.dfl-in .dfl-q { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.dfl-in .dfl-titre { line-height: 1.1; height: 24px; }
+.dfl-in .dfl-titre img, .dfl-in .dfl-titre .logo-fistf { width: 20px; height: 20px; flex: none; display: block; }
+.dfl-in .dfl-titre > span:first-child { width: 22px; flex: none; text-align: center; }
+.dfl-in .dfl-coeur { align-items: center; }
+.dfl-in .dfl-v { line-height: 1; height: 76px; display: inline-flex; align-items: center; }
+.dfl-in .dfl-v.vide { font-size: 76px; opacity: .45; }
+.dfl-in .dfl-s { height: 16px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@media (max-height: 800px) {
+  .dfl-in .dfl-tete { height: 48px; }
+  .dfl-in .dfl-titre { height: 21px; }
+  .dfl-in .dfl-v, .dfl-in .dfl-v.vide { font-size: 58px; height: 62px; }
+}
+/* Accueil : plus AUCUNE hauteur calculée par le téléphone pendant l'affichage (c'était ce qui faisait « sauter » tout l'écran).
+   La page suit son ordre naturel ; seule la photo s'adapte à la hauteur fixe de l'écran (svh ne bouge jamais). */
+.vg.ecran-fixe { height: auto !important; min-height: 0 !important; }
+.vg.ecran-fixe > .acc-photo { flex: none; height: clamp(70px, calc(100svh - 716px), 230px); }
+@media (max-height: 800px) { .vg.ecran-fixe > .acc-photo { height: clamp(56px, calc(100svh - 672px), 200px); } }
+.vg.ecran-fixe > .acc-photo img { height: 100%; max-height: none; }
+html:not(.mesure-ok) .vg.ecran-fixe { opacity: 1; }
