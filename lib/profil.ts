@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type Role = "admin" | "joueur";
@@ -13,8 +14,9 @@ export type Profil = {
   archive?: boolean;
 };
 
-/** Signed-in user and their club profile (null when signed out or not yet linked). */
-export async function getSessionProfil() {
+/** Signed-in user and their club profile (null when signed out or not yet linked).
+ *  Read once per page: the header, the « À faire » band, the mailbox… all share the same answer. */
+export const getSessionProfil = cache(async function getSessionProfil() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,7 +30,7 @@ export async function getSessionProfil() {
   // An archived member is treated as signed out (administrators are never archived).
   if (profil?.archive && profil.role !== "admin") return { supabase, user: null, profil: null as Profil | null };
   return { supabase, user, profil };
-}
+});
 
 export function displayName(p: Profil | null, fallbackEmail?: string | null) {
   if (p?.prenom) return p.prenom;
@@ -42,7 +44,7 @@ export const COOKIE_APERCU = "lions_apercu";
  * Like getSessionProfil, but an administrator can « see as » a member (cookie set from /admin).
  * In preview the returned user e-mail and profile are the member's, with the player role.
  */
-export async function getVue() {
+export const getVue = cache(async function getVue() {
   const base = await getSessionProfil();
   const none = { ...base, apercu: null as { email: string; nom: string } | null };
   if (!base.user || base.profil?.role !== "admin") return none;
@@ -58,7 +60,7 @@ export async function getVue() {
     profil,
     apercu: { email: m.email as string, nom: [m.prenom, m.nom].filter(Boolean).join(" ") },
   };
-}
+});
 
 /** Signed-in member who is not active this season (admins are never limited). */
 export function estInactif(p: Profil | null | undefined) {
