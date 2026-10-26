@@ -4870,3 +4870,25 @@ main.wrap:has(.og .ci-ecran) { padding-bottom: 0; margin-bottom: 0; }
 .vg.ecran-fixe > * { flex: none; }
 .vg.ecran-fixe > .acc-photo { flex: 1 1 0; min-height: 0; width: 100%; max-width: none; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
 .vg.ecran-fixe > .acc-photo img { height: 100%; width: auto; max-width: min(86%, 440px); max-height: 250px; aspect-ratio: 16 / 9; object-fit: cover; }
+/* Real heights by default (phone), so the first display is already right. */
+:root { --entete-h: 71px; --bande-h: 45px; }
+/* Home: height of the small viewport (stable when the browser bar shows/hides), shown once measured. */
+.vg.ecran-fixe { height: calc(100svh - var(--haut-fixe, 116px) - var(--dock-h, 84px) - 28px); transition: opacity .25s ease; }
+html:not(.mesure-ok) .vg.ecran-fixe { opacity: 0; }
+.acc-photo { animation-name: acc-flotte-doux; }
+@keyframes acc-flotte-doux { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.vg.ecran-fixe { min-height: 430px; }
+/* Cadre des classements de l'accueil : le cadre est fixe (même fond, même bordure, aucune animation), seul l'intérieur change. */
+.dfl-cadre { display: block; padding: 0; animation: none !important; transition: none;
+  background: linear-gradient(160deg, #221d1b, #0b0a0a 70%);
+  border: 1px solid color-mix(in srgb, #c9a227 70%, transparent);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset, 0 18px 36px -20px rgba(0,0,0,.6); }
+.dfl-in { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr auto; justify-items: center; gap: 2px; padding: 0 16px 12px; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 120%, color-mix(in srgb, var(--k) 30%, transparent), transparent 60%);
+  animation: dfl-fondu .4s ease-out both; }
+.dfl-in .dfl-tete, .dfl-in .dfl-titre, .dfl-in .dfl-s { animation: none; }
+.dfl-in .dfl-tete { width: calc(100% + 32px); }
+.dfl-pts button { transition: width .3s ease, background .3s ease; }
+@media (max-height: 800px) { .dfl-in { padding: 0 12px 10px; } .dfl-in .dfl-tete { width: calc(100% + 24px); } }
+@media (prefers-reduced-motion: reduce) { .dfl-in { animation: none; } }
+.dfl-titre > span:last-child { padding-right: .18em; }
