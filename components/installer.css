@@ -1,0 +1,23 @@
+/* Page « Installer l'appli » : une seule carte claire, un gros bouton doré, 3 étapes numérotées. */
+.gi { max-width: 520px; margin: 14px auto 120px; display: flex; flex-direction: column; gap: 14px; min-height: 60vh; }
+.gi-carte { background: linear-gradient(160deg, #221d1b, #0b0a0a 75%); color: #fff; border: 1px solid rgba(201,162,39,.55); border-radius: 22px; padding: 22px 20px 20px; text-align: center; box-shadow: 0 18px 36px -22px rgba(0,0,0,.7); }
+.gi-logo { display: block; margin: 0 auto 8px; border-radius: 18px; box-shadow: 0 0 0 2px rgba(201,162,39,.6), 0 8px 22px -8px rgba(255,196,0,.5); }
+.gi-k { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #ffd84d; }
+.gi-t { margin: 4px 0 14px; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 26px; line-height: 1.05; text-transform: uppercase; color: #fff; }
+.gi-go { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 56px; margin: 0 0 16px; border: 0; border-radius: 16px; background: linear-gradient(180deg, #ffd84d, #e0a800); color: #1a1400; font: 800 18px/1.1 var(--font-display, system-ui); letter-spacing: .02em; text-transform: uppercase; text-decoration: none; cursor: pointer; box-shadow: 0 10px 22px -10px rgba(255,196,0,.8), inset 0 1px 0 rgba(255,255,255,.5); }
+.gi-go:active { transform: translateY(1px); }
+.gi-go.gi-sec { min-height: 46px; font-size: 14px; background: transparent; color: #ffd84d; border: 1px solid rgba(255,216,77,.6); box-shadow: none; }
+.gi-pas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.gi-pas li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; line-height: 1.35; color: rgba(255,255,255,.92); }
+.gi-pas b { color: #ffd84d; }
+.gi-n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #ffd84d; color: #1a1400; font-weight: 800; font-size: 15px; }
+.gi-ic { white-space: nowrap; }
+.gi-note { margin: 14px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.06); font-size: 13.5px; line-height: 1.4; color: rgba(255,255,255,.8); text-align: left; }
+.gi-note a { color: #ffd84d; font-weight: 700; }
+.gi-qr { display: block; margin: 16px auto 0; background: #fff; padding: 8px; border-radius: 12px; }
+.gi-apres { text-align: left; }
+.gi-apres h3 { margin: 0 0 12px; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 18px; text-transform: uppercase; color: #ffd84d; }
+.gi-partage { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; font-size: 13.5px; text-align: center; }
+.gi-partage b { font-size: 15px; }
+.gi-copier { border: 1px solid rgba(201,162,39,.7); background: #161311; color: #ffd84d; border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 13.5px; cursor: pointer; }
+.gi-note .gi-copier { margin-top: 6px; }

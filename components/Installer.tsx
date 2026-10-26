@@ -20,8 +20,12 @@ export default function Installer() {
   useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone;
     if (standalone) return;
+    // The install page shows everything itself.
+    if (window.location.pathname === "/installer") return;
+    // Closed with ✕: hidden one week, then shown again (until the app is installed).
     try {
-      if (localStorage.getItem("installer-ferme") === "1") return;
+      const f = localStorage.getItem("installer-ferme");
+      if (f && (f === "1" ? false : Date.now() - Number(f) < 7 * 24 * 3600 * 1000)) return;
     } catch {}
     const ua = navigator.userAgent;
     const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
@@ -47,10 +51,12 @@ export default function Installer() {
 
   const fermer = () => {
     setNav(null);
-    try { localStorage.setItem("installer-ferme", "1"); } catch {}
+    try { localStorage.setItem("installer-ferme", String(Date.now())); } catch {}
   };
   const telecharger = async () => {
-    if (!evt) { setGuide(true); return; }
+    // No install window from the browser: the install page shows what to do on THIS phone
+    // (and gets out of Messenger, Facebook, WhatsApp… in one tap).
+    if (!evt) { window.location.href = "/installer"; return; }
     await evt.prompt();
     const r = await evt.userChoice;
     setEvt(null);
