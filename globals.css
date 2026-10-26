@@ -4924,3 +4924,7 @@ html:not(.mesure-ok) .vg.ecran-fixe { opacity: 0; }
 @media (max-height: 800px) { .vg.ecran-fixe > .acc-photo { height: clamp(48px, calc(100svh - 712px), 150px); } }
 .vg.ecran-fixe > .acc-photo img { height: 100%; max-height: none; }
 html:not(.mesure-ok) .vg.ecran-fixe { opacity: 1; }
+/* Accueil avec le bandeau « À faire » (≈ 60 px de plus en haut) : la photo rétrécit d'autant,
+   et disparaît sur les téléphones trop courts, pour que l'entraînement reste visible sans défiler. */
+body:has(.urg) .vg.ecran-fixe > .acc-photo { height: clamp(60px, calc(100svh - 824px), 170px); }
+@media (max-height: 900px) { body:has(.urg) .vg.ecran-fixe > .acc-photo { display: none; } }
