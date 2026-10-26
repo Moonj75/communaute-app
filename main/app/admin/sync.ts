@@ -1,0 +1,179 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { categorieFinale } from "@/lib/categories";
+import { majCategorieNotion } from "@/lib/club";
+import { getSessionProfil } from "@/lib/profil";
+import { lireJoueurs, type JoueurNotion } from "@/lib/notion";
+
+export type SyncState = {
+  ok?: boolean;
+  error?: string;
+  personnes?: number;
+  comptes?: number;
+  familles?: string[];
+  inactifs?: number;
+  sansEmail?: string[];
+  at?: string;
+  photos?: number;
+  avertissement?: string;
+  anciens?: number;
+};
+
+/**
+ * Copies the Notion « Liste des joueurs » into the app (admin only).
+ * - every person becomes a row of `joueurs` (one fiche per person);
+ * - people sharing one e-mail form a family account: one row in `membres`,
+ *   named after the person ticked « Titulaire du compte » in Notion.
+ */
+/** Contact details copied in the app (« Mon profil »), SQL step 18. */
+const coordonnees = (j: JoueurNotion) => ({ date_naissance: j.naissance, adresse: j.adresse, code_postal: j.codePostal, ville: j.ville, nationalite: j.nationalite, licence: j.licence, code_fistf: j.codeFistf });
+
+export async function synchroniserNotion(): Promise<SyncState> {
+  const { supabase, profil } = await getSessionProfil();
+  if (profil?.role !== "admin") return { error: "Action réservée aux administrateurs." };
+
+  let liste: JoueurNotion[];
+  try {
+    liste = await lireJoueurs();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Lecture de Notion impossible." };
+  }
+  const now = new Date().toISOString();
+
+  // 1. One fiche per person.
+  const fiches = liste.map((j) => ({
+    notion_id: j.notionId,
+    email: j.email,
+    nom: j.nom,
+    prenom: j.prenom,
+    actif: j.actif,
+    titulaire: j.titulaire,
+    roles: j.roles,
+    cagnotte: j.cagnotte,
+    telephone: j.telephone,
+    vehicule: j.vehicule,
+    // Age category from the date of birth (« Femme » set in Notion stays).
+    categorie: categorieFinale(j.categorie, j.naissance),
+    serie: j.serie,
+    synced_at: now,
+  }));
+  const complets = fiches.map((f, i) => ({
+    ...f,
+    classement_belge: liste[i].classementBelge,
+    classement_international: liste[i].classementInternational,
+    palmares: liste[i].palmares,
+  }));
+  let avertissement: string | undefined;
+  // Shared kitty name (step 15); left out if the column is not there yet.
+  let { error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive, ...coordonnees(liste[i]) })), { onConflict: "notion_id" });
+  if (e1 && /date_naissance|adresse|code_postal|ville|nationalite|licence|code_fistf/i.test(e1.message)) {
+    avertissement = "Coordonnées pas encore copiées : lancez le script « etape18-profil » dans Supabase.";
+    ({ error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive })), { onConflict: "notion_id" }));
+  }
+  if (e1 && /cagnotte_groupe|archive/i.test(e1.message)) {
+    avertissement = "Cagnottes communes et archives pas encore copiées : lancez les scripts « etape15 » et « etape16 » dans Supabase.";
+    ({ error: e1 } = await supabase.from("joueurs").upsert(complets, { onConflict: "notion_id" }));
+  }
+  if (e1 && /classement|palmares|column/i.test(e1.message)) {
+    avertissement = "Classements et palmarès pas encore copiés : lancez le script « etape6-fiche-notifications.sql » dans Supabase.";
+    ({ error: e1 } = await supabase.from("joueurs").upsert(fiches, { onConflict: "notion_id" }));
+  }
+  if (e1) return { error: "Enregistrement des fiches impossible : " + e1.message };
+  // The age category computed from the date of birth is written back in Notion where it differs (5 at a time).
+  const aCorriger = liste.filter((j) => { const c = categorieFinale(j.categorie, j.naissance); return c && c !== j.categorie; });
+  for (let i = 0; i < aCorriger.length; i += 5) {
+    await Promise.all(aCorriger.slice(i, i + 5).map((j) => majCategorieNotion(j.notionId, categorieFinale(j.categorie, j.naissance)!).catch(() => null)));
+  }
+  // Fiches removed from Notion disappear from the app too.
+  const ids = fiches.map((f) => f.notion_id);
+  if (ids.length) {
+    await supabase.from("joueurs").delete().not("notion_id", "in", `(${ids.map((i) => `"${i}"`).join(",")})`);
+  }
+
+  // 2. One login account per e-mail (family = several fiches).
+  const parEmail = new Map<string, JoueurNotion[]>();
+  for (const j of liste) if (j.email) parEmail.set(j.email, [...(parEmail.get(j.email) || []), j]);
+  const familles: string[] = [];
+  const comptes = [...parEmail.entries()].map(([email, gens]) => {
+    const titulaire = gens.find((g) => g.titulaire) || gens.find((g) => g.actif) || gens[0];
+    if (gens.length > 1) familles.push(`${titulaire.nomComplet} (+ ${gens.filter((g) => g !== titulaire).map((g) => g.prenom || g.nomComplet).join(", ")})`);
+    const isMe = email === profil.email;
+    return {
+      email,
+      nom: titulaire.nom,
+      prenom: titulaire.prenom,
+      role: gens.some((g) => g.admin) || isMe ? "admin" : "joueur",
+      actif: gens.some((g) => g.actif) || isMe,
+      // Every fiche of this e-mail archived: the account is archived (no more login).
+      archive: !isMe && gens.every((g) => g.archive),
+      notion_id: titulaire.notionId,
+      synced_at: now,
+    };
+  });
+  if (comptes.length) {
+    let { error: e2 } = await supabase.from("membres").upsert(comptes, { onConflict: "email" });
+    // Column « archive » comes with SQL step 16.
+    if (e2 && /archive/i.test(e2.message)) ({ error: e2 } = await supabase.from("membres").upsert(comptes.map((c) => { const r: Record<string, unknown> = { ...c }; delete r.archive; return r; }), { onConflict: "email" }));
+    if (e2) return { error: "Enregistrement des comptes impossible : " + e2.message };
+  }
+  // An e-mail changed in Notion leaves the old account behind: accounts created by an earlier
+  // sync whose e-mail is no longer on any fiche are removed (accounts added by hand are kept).
+  let anciens = 0;
+  const gardes = new Set([...parEmail.keys(), profil.email]);
+  const { data: syncs } = await supabase.from("membres").select("email").not("synced_at", "is", null);
+  const perimes = ((syncs || []) as { email: string }[]).map((m) => m.email).filter((e) => !gardes.has(e));
+  if (perimes.length) {
+    const { error: e3 } = await supabase.from("membres").delete().in("email", perimes);
+    if (e3) await supabase.from("membres").update({ actif: false }).in("email", perimes);
+    anciens = perimes.length;
+  }
+
+  // 3. Photos added or changed directly in Notion → copied into the app.
+  let photos = 0;
+  if (!avertissement) {
+    const { data: etat } = await supabase.from("joueurs").select("notion_id,photo_path,photo_notion");
+    const connus = new Map(((etat || []) as { notion_id: string; photo_path: string | null; photo_notion: string | null }[]).map((r) => [r.notion_id, r]));
+    for (const j of liste) {
+      if (photos >= 12) break; // keep the sync quick; the rest comes next time
+      const r = connus.get(j.notionId);
+      if (!r) continue;
+      try {
+        if (j.photo && j.photo.nom !== r.photo_notion) {
+          const img = await fetch(j.photo.url, { cache: "no-store" });
+          if (!img.ok) continue;
+          const blob = await img.blob();
+          if (blob.size > 2 * 1024 * 1024) continue;
+          const path = `${j.notionId}/${Date.now()}.jpg`;
+          const up = await supabase.storage.from("photos").upload(path, blob, { contentType: blob.type || "image/jpeg" });
+          if (up.error) continue;
+          await supabase.from("joueurs").update({ photo_path: path, photo_notion: j.photo.nom }).eq("notion_id", j.notionId);
+          if (r.photo_path) await supabase.storage.from("photos").remove([r.photo_path]);
+          photos++;
+        } else if (!j.photo && r.photo_notion) {
+          // Photo removed in Notion → removed in the app too.
+          await supabase.from("joueurs").update({ photo_path: null, photo_notion: null }).eq("notion_id", j.notionId);
+          if (r.photo_path) await supabase.storage.from("photos").remove([r.photo_path]);
+          photos++;
+        }
+      } catch {
+        /* one bad picture must not stop the sync */
+      }
+    }
+  }
+
+  revalidatePath("/admin", "layout");
+  revalidatePath("/fiche");
+  return {
+    ok: true,
+    personnes: fiches.length,
+    comptes: comptes.length,
+    familles,
+    inactifs: comptes.filter((c) => !c.actif).length,
+    sansEmail: liste.filter((j) => !j.email && j.actif).map((j) => j.nomComplet),
+    at: now,
+    photos,
+    avertissement,
+    anciens,
+  };
+}
