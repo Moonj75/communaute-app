@@ -4920,7 +4920,7 @@ html:not(.mesure-ok) .vg.ecran-fixe { opacity: 0; }
 /* Accueil : plus AUCUNE hauteur calculée par le téléphone pendant l'affichage (c'était ce qui faisait « sauter » tout l'écran).
    La page suit son ordre naturel ; seule la photo s'adapte à la hauteur fixe de l'écran (svh ne bouge jamais). */
 .vg.ecran-fixe { height: auto !important; min-height: 0 !important; }
-.vg.ecran-fixe > .acc-photo { flex: none; height: clamp(70px, calc(100svh - 716px), 230px); }
-@media (max-height: 800px) { .vg.ecran-fixe > .acc-photo { height: clamp(56px, calc(100svh - 672px), 200px); } }
+.vg.ecran-fixe > .acc-photo { flex: none; height: clamp(60px, calc(100svh - 760px), 170px); }
+@media (max-height: 800px) { .vg.ecran-fixe > .acc-photo { height: clamp(48px, calc(100svh - 712px), 150px); } }
 .vg.ecran-fixe > .acc-photo img { height: 100%; max-height: none; }
 html:not(.mesure-ok) .vg.ecran-fixe { opacity: 1; }
