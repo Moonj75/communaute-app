@@ -37,6 +37,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <span><b>Découvrir le club</b><small>Infos et prochains entraînements, sans connexion</small></span>
             <span aria-hidden="true">→</span>
           </Link>
+          <Link className="decouvrir" href="/installer">
+            <span aria-hidden="true">📲</span>
+            <span><b>Installer l&apos;appli</b><small>Sur ton téléphone, en 3 étapes</small></span>
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
       </div>
     </>
