@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import "./accueil.css";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type Tuile = {
@@ -71,12 +72,12 @@ export default function Defile({ tuiles }: { tuiles: Tuile[] }) {
       }}
     >
       {/* The frame never moves nor changes: only what is inside changes (fade). */}
-      <Link href={t.href} prefetch={false} className="dfl-cadre">
+      <Link href={t.href} prefetch={false} className="dfl-cadre" style={{ position: "relative", display: "block", overflow: "hidden" }}>
         {(prec !== null && prec !== i ? [prec, i] : [i]).map((k) => {
           const x = tuiles[k];
           const med = x.n && x.n <= 3 ? ["🥇", "🥈", "🥉"][x.n - 1] : null;
           return (
-            <span key={`${x.id}-${k === i ? tour : "avant"}`} className={`dfl-in${k === i ? " entre" : " avant"}`} style={{ "--k": x.k } as React.CSSProperties} aria-hidden={k !== i}>
+            <span key={`${x.id}-${k === i ? tour : "avant"}`} className={`dfl-in${k === i ? " entre" : " avant"}`} style={{ "--k": x.k, position: "absolute", inset: 0 } as React.CSSProperties} aria-hidden={k !== i}>
               <span className="dfl-tete">
                 <span className="dfl-q">{x.quoi}</span>
                 <span className="dfl-titre">{x.ic}<span>{x.titre}</span></span>

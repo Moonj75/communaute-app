@@ -1,0 +1,91 @@
+/* Écran d'accueil stable : chargé avec le cadre des classements, pour ne plus dépendre de globals.css. */
+.acc-photo { width: min(82%, 420px, 40dvh); margin: 4px auto -10px; pointer-events: none; animation: acc-flotte 7s ease-in-out infinite; }
+/* Accueil stable : le cadre des classements garde toujours la même taille (rien ne grossit ni ne se réajuste) */
+.dfl-cadre { height: 168px; min-height: 0; animation: dfl-fondu .35s ease-out both; }
+@keyframes dfl-fondu { from { opacity: 0; } to { opacity: 1; } }
+.dfl-titre { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: dfl-fondu .35s ease-out both; }
+.dfl-titre > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.dfl-s { animation: dfl-fondu .35s .1s ease-out both; }
+.dfl-coeur { height: 84px; min-height: 0; }
+/* The place still grows in, but inside its own box: the frame does not move. */
+@keyframes dfl-zoom { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+.dfl-v { transform-origin: center; will-change: transform; }
+.dfl-halo { animation: dfl-fondu .6s ease-out both; opacity: .75; }
+.dfl-cadre { height: 180px; padding-bottom: 12px; }
+/* Small phones (short screens): everything still fits on one screen, without any zoom. */
+@media (max-height: 800px) {
+  .dfl { margin-top: 10px; gap: 6px; }
+  .dfl-cadre { height: 150px; padding-bottom: 10px; }
+  .dfl-tete { padding: 6px 12px 5px; }
+  .dfl-q { font-size: 9px; }
+  .dfl-titre { font-size: 18px; }
+  .dfl-coeur { height: 66px; }
+  .dfl-v { font-size: 58px; }
+  .dfl-med { font-size: 32px; }
+  .dfl-s { font-size: 11.5px; }
+  .acc-photo { width: min(70%, 380px, 30dvh); margin: 0 auto -12px; }
+  .vg > .acc-entr { margin-top: 8px; }
+}
+/* Accueil sur un seul écran, sans zoom : la photo prend la place qui reste (elle rapetisse sur un petit écran). */
+.vg.ecran-fixe { height: calc(100dvh - var(--haut-fixe, 236px) - var(--dock-h, 90px) - 28px); min-height: 500px; }
+.vg.ecran-fixe > * { flex: none; }
+.vg.ecran-fixe > .acc-photo { flex: 1 1 0; min-height: 0; width: 100%; max-width: none; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+.vg.ecran-fixe > .acc-photo img { height: 100%; width: auto; max-width: min(86%, 440px); max-height: 250px; aspect-ratio: 16 / 9; object-fit: cover; }
+/* Real heights by default (phone), so the first display is already right. */
+:root { --entete-h: 71px; --bande-h: 45px; }
+/* Home: height of the small viewport (stable when the browser bar shows/hides), shown once measured. */
+.vg.ecran-fixe { height: calc(100svh - var(--haut-fixe, 116px) - var(--dock-h, 84px) - 28px); transition: opacity .25s ease; }
+html:not(.mesure-ok) .vg.ecran-fixe { opacity: 0; }
+.acc-photo { animation-name: acc-flotte-doux; }
+@keyframes acc-flotte-doux { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.vg.ecran-fixe { min-height: 430px; }
+/* Cadre des classements de l'accueil : le cadre est fixe (même fond, même bordure, aucune animation), seul l'intérieur change. */
+.dfl-cadre { display: block; padding: 0; animation: none !important; transition: none;
+  background: linear-gradient(160deg, #221d1b, #0b0a0a 70%);
+  border: 1px solid color-mix(in srgb, #c9a227 70%, transparent);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset, 0 18px 36px -20px rgba(0,0,0,.6); }
+.dfl-in { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr auto; justify-items: center; gap: 2px; padding: 0 16px 12px; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 120%, color-mix(in srgb, var(--k) 30%, transparent), transparent 60%);
+  animation: dfl-fondu .4s ease-out both; }
+.dfl-in .dfl-tete, .dfl-in .dfl-titre, .dfl-in .dfl-s { animation: none; }
+.dfl-in .dfl-tete { width: calc(100% + 32px); }
+.dfl-pts button { transition: width .3s ease, background .3s ease; }
+@media (max-height: 800px) { .dfl-in { padding: 0 12px 10px; } .dfl-in .dfl-tete { width: calc(100% + 24px); } }
+@media (prefers-reduced-motion: reduce) { .dfl-in { animation: none; } }
+.dfl-titre > span:last-child { padding-right: .18em; }
+/* Accueil : TOUT est fixe sauf l'intérieur du cadre, qui change en un seul fondu enchaîné (aucun zoom, aucune rotation, aucun flottement). */
+.dfl-in { background: radial-gradient(120% 90% at 50% 120%, color-mix(in srgb, var(--k) 30%, transparent), transparent 60%), linear-gradient(160deg, #221d1b, #0b0a0a 70%); }
+.dfl-in .dfl-tete { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--k) 42%, transparent) 20%, color-mix(in srgb, var(--k) 42%, transparent) 80%, transparent); border-bottom-color: color-mix(in srgb, var(--k) 60%, transparent); }
+.dfl-in.entre { z-index: 2; animation: dfl-fondu .45s ease-out both; }
+.dfl-in.avant { z-index: 1; animation: none; }
+.dfl-in, .dfl-in * { will-change: auto; }
+.dfl-v { animation: none !important; transform: none !important; filter: none !important; background: none !important; -webkit-background-clip: border-box; background-clip: border-box; color: #fff !important; -webkit-text-fill-color: #fff; text-shadow: 0 0 22px color-mix(in srgb, var(--k) 85%, transparent), 0 3px 10px rgba(0,0,0,.5); }
+.dfl-med { animation: none !important; }
+.dfl-halo { display: none; }
+.acc-photo { animation: none !important; }
+/* Every ranking of the frame has exactly the same layout (a long name, a « — » or a logo never shifts anything). */
+.dfl-in .dfl-tete { height: 58px; box-sizing: border-box; justify-content: center; overflow: hidden; }
+.dfl-in .dfl-q { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.dfl-in .dfl-titre { line-height: 1.1; height: 24px; }
+.dfl-in .dfl-titre img, .dfl-in .dfl-titre .logo-fistf { width: 20px; height: 20px; flex: none; display: block; }
+.dfl-in .dfl-titre > span:first-child { width: 22px; flex: none; text-align: center; }
+.dfl-in .dfl-coeur { align-items: center; }
+.dfl-in .dfl-v { line-height: 1; height: 76px; display: inline-flex; align-items: center; }
+.dfl-in .dfl-v.vide { font-size: 76px; opacity: .45; }
+.dfl-in .dfl-s { height: 16px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@media (max-height: 800px) {
+  .dfl-in .dfl-tete { height: 48px; }
+  .dfl-in .dfl-titre { height: 21px; }
+  .dfl-in .dfl-v, .dfl-in .dfl-v.vide { font-size: 58px; height: 62px; }
+}
+/* Accueil : plus AUCUNE hauteur calculée par le téléphone pendant l'affichage (c'était ce qui faisait « sauter » tout l'écran).
+   La page suit son ordre naturel ; seule la photo s'adapte à la hauteur fixe de l'écran (svh ne bouge jamais). */
+.vg.ecran-fixe { height: auto !important; min-height: 0 !important; }
+.vg.ecran-fixe > .acc-photo { flex: none; height: clamp(60px, calc(100svh - 760px), 170px); }
+@media (max-height: 800px) { .vg.ecran-fixe > .acc-photo { height: clamp(48px, calc(100svh - 712px), 150px); } }
+.vg.ecran-fixe > .acc-photo img { height: 100%; max-height: none; }
+html:not(.mesure-ok) .vg.ecran-fixe { opacity: 1; }
+/* Accueil avec le bandeau « À faire » (≈ 60 px de plus en haut) : la photo rétrécit d'autant,
+   et disparaît sur les téléphones trop courts, pour que l'entraînement reste visible sans défiler. */
+body:has(.urg) .vg.ecran-fixe > .acc-photo { height: clamp(60px, calc(100svh - 824px), 170px); }
+@media (max-height: 900px) { body:has(.urg) .vg.ecran-fixe > .acc-photo { display: none; } }
