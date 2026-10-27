@@ -16,6 +16,8 @@ export default function VueAccueil(p: {
   salut: string;
   isAdmin: boolean;
   lie: boolean;
+  /** Every fiche of the account is « sans compétitions officielles »: no « Mes inscriptions » button. */
+  sansCompet?: boolean;
   email: string;
   gens: Gens;
   prochaine: { nom: string; date: string; lieu: string | null } | null;
@@ -71,7 +73,7 @@ export default function VueAccueil(p: {
             </span>
           ) : null}
           <span className="vg-act">
-            <Link className="btn primary" href="/inscriptions">🏁 Mes inscriptions</Link>
+            {p.sansCompet ? null : <Link className="btn primary" href="/inscriptions">🏁 Mes inscriptions</Link>}
             <Link className="btn" href="/calendrier">📅 Calendrier</Link>
           </span>
         </div>
