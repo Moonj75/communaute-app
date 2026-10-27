@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Message } from "@/lib/courrier";
 import { ouvrirMessage } from "./actions";
+import CarteCourrier from "@/components/CarteCourrier";
+import MailCarte from "@/components/MailCarte";
 
 type Genre = "relance" | "notification" | "message";
 const GENRES = {
@@ -68,13 +70,12 @@ export default function FenetreNotif() {
           <button type="button" className="fm-x" onClick={fermer} aria-label="Fermer">✕</button>
         </header>
         <div className="fm-corps">
-          <h3 className="fm-titre">{titre}</h3>
           <p className="fm-meta">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/crest.png" alt="" width={22} height={22} />
             <span><b>{m?.de_nom || "SC Lions d'Eugies"}</b> · <span className="fm-quand">{quand}</span></span>
           </p>
-          {texte ? <div className="fm-texte">{texte.split(/\n+/).map((l, i) => <p key={i}>{l}</p>)}</div> : null}
+          {m?.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={type} titre={titre} texte={texte} de={m?.de_nom} />}
         </div>
         <footer className="fm-pied">
           {lien ? <Link className="btn primary fm-go" href={lien}>{bouton(lien)}</Link> : null}

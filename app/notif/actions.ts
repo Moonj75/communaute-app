@@ -17,8 +17,10 @@ export async function ouvrirMessage(q: { id?: string | null; titre?: string | nu
     const moi = user.email.toLowerCase();
     let m: Message | null = null;
     if (q.id && /^[0-9a-f-]{36}$/i.test(q.id)) {
-      const { data } = await supabase.from("messages").select(COLS).eq("id", q.id).maybeSingle();
-      m = (data as Message) || null;
+      let r = await supabase.from("messages").select(COLS + ",carte").eq("id", q.id).maybeSingle();
+      if (r.error) r = await supabase.from("messages").select(COLS).eq("id", q.id).maybeSingle();
+      const data = r.data;
+      m = (data as unknown as Message) || null;
     } else if (q.titre) {
       const cle = sans(q.titre);
       const { data } = await supabase
