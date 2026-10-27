@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import type { Message } from "@/lib/courrier";
 import { effacerMessages, marquerLu } from "./actions";
 import Ecrire from "./Ecrire";
+import MailCarte from "@/components/MailCarte";
+import CarteCourrier from "@/components/CarteCourrier";
 
 const IC: Record<string, string> = { message: "✉️", relance: "⏰", notification: "🔔" };
 const LIB: Record<string, string> = { message: "Message", relance: "Relance", notification: "Notification" };
@@ -68,7 +70,7 @@ export default function Liste({ messages, vide, repondre, comptes, effacable = f
             </button>
             {on ? (
               <div className="cr-corps">
-                {m.texte ? <p className="pre">{m.texte}</p> : null}
+                {m.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={m.type} titre={m.titre} texte={m.texte} de={m.de_nom} />}
                 {m.lien && m.lien !== "/courrier" ? <Link className="btn primary" href={m.lien}>Ouvrir →</Link> : null}
                 {effacable ? <button type="button" className="btn cr-eff" disabled={enCours} onClick={() => effacer([m.id])}>🗑️ Effacer</button> : null}
                 {repondre && m.type === "message" ? (

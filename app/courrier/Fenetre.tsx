@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Message } from "@/lib/courrier";
 import { marquerLu } from "./actions";
+import MailCarte from "@/components/MailCarte";
+import CarteCourrier from "@/components/CarteCourrier";
 
 const GENRES = {
   relance: { ic: "⏰", nom: "Relance du club", c: "relance" },
@@ -86,13 +88,12 @@ export default function Fenetre({ messages }: { messages: Message[] }) {
           <button type="button" className="fm-x" onClick={fermer} aria-label="Fermer">✕</button>
         </header>
         <div className="fm-corps">
-          <h3 className="fm-titre">{titre}</h3>
           <p className="fm-meta">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/crest.png" alt="" width={22} height={22} />
             <span><b>{de}</b> · <span className="fm-quand">{quand}</span></span>
           </p>
-          {texte ? <div className="fm-texte">{texte.split(/\n+/).map((l, i) => <p key={i}>{l}</p>)}</div> : null}
+          {m?.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={m?.type || (g.c === "msg" ? "message" : g.c === "relance" ? "relance" : "notification")} titre={titre} texte={texte} de={de} />}
         </div>
         <footer className="fm-pied">
           {lien ? <Link className="btn primary fm-go" href={lien}>{bouton(lien)}</Link> : null}
