@@ -18,8 +18,8 @@ export function Pastille({ s }: { s: SeanceE }) {
 }
 
 /** The next session: its four roles (with « I confirm » for the person concerned), and the programme of the day. */
-export default function Seance({ s, noms, mesFiches, admin, entraineur, exercices }: {
-  s: SeanceE; noms: Record<string, string>; mesFiches: MaFiche[]; admin: boolean; entraineur: boolean; exercices: Exercice[];
+export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe = true, exercices }: {
+  s: SeanceE; noms: Record<string, string>; mesFiches: MaFiche[]; admin: boolean; entraineur: boolean; equipe?: boolean; exercices: Exercice[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -49,6 +49,12 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, exercice
           <Pastille s={s} />
         </header>
         {s.annule && s.motif ? <p className="en-motif">{s.motif}</p> : null}
+        {!equipe ? (
+          <p className="muted small en-lim">
+            {statutEffectif(s) === "Confirmé" ? "✅ L'entraînement aura lieu." : statutEffectif(s) === "Annulé" ? "❌ Pas d'entraînement ce jour-là." : `La séance est confirmée ou annulée le lundi ${jm(lim.jour)} à 21h00. Tu recevras une notification.`}
+          </p>
+        ) : null}
+        {equipe ? (<>
         <ul className="en-roles">
           {ROLES.map((r) => {
             const p = s.postes[r.id];
@@ -77,6 +83,7 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, exercice
               ? `Les personnes prévues valident jusqu'au vendredi ${jm(limT.jour)} à 21h00. Ensuite, les places non confirmées sont proposées aux suppléants jusqu'au lundi ${jm(lim.jour)} à 21h00.`
               : `Places non confirmées ouvertes aux suppléants jusqu'au lundi ${jm(lim.jour)} à 21h00. Sans entraîneur, ouvreur et fermeur confirmés, l'entraînement est annulé.`}
         </p>
+        </>) : null}
         {admin ? (
           <div className="en-admin">
             <input className="input" placeholder="Motif (si annulation)" value={motif} onChange={(e) => setMotif(e.target.value)} />
@@ -88,6 +95,7 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, exercice
         {info ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
       </section>
 
+      {entraineur ? (
       <section className="en-carte">
         <header className="en-tete">
           <div>
@@ -137,6 +145,7 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, exercice
           <p className="muted small">L&apos;entraîneur n&apos;a pas encore choisi les exercices.</p>
         )}
       </section>
+      ) : null}
     </div>
   );
 }
