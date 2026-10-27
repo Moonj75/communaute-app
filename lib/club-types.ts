@@ -120,7 +120,9 @@ export type FicheLogistique = {
 
 export type InfoPublique = { id: string; titre: string; texte: string | null; icone: string | null; lien: string | null };
 
-export type JoueurLite = { notionId: string; nom: string; email: string | null; actif: boolean };
+export type JoueurLite = { notionId: string; nom: string; email: string | null; actif: boolean; /** Status « sans compétitions officielles ». */ sansCompet?: boolean };
+/** Takes part in the official competitions: in the forms, reminders and form statistics. */
+export const competiteur = (j: JoueurLite) => j.actif && !j.sansCompet;
 
 export const TALLY_URL = "https://tally.so/r/vGkvr4";
 export const DECISION_OUI = "✅ On y va";

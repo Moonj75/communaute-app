@@ -5,6 +5,7 @@ import { displayName, getVue, estInactif } from "@/lib/profil";
 import { essayer, lireCalendrier, lireParticipations } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
 import { lireEligibles } from "@/lib/eligibles";
+import { competiteur } from "@/lib/club-types";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,11 @@ export default async function InscriptionsPage() {
     <>
       <Header subtitle="Mes inscriptions" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
-        <VueInscriptions evs={cal.data || []} parts={parts.data || []} famille={famille.filter((j) => j.actif)} erreur={cal.erreur || parts.erreur} elig={elig} />
+        {famille.length && !famille.some(competiteur) ? (
+          <div className="notice">Ton statut au club est « sans compétitions officielles » : tu n&apos;as aucun formulaire de compétition à remplir. Tout le reste de l&apos;appli reste ouvert pour toi.</div>
+        ) : (
+          <VueInscriptions evs={cal.data || []} parts={parts.data || []} famille={famille.filter(competiteur)} erreur={cal.erreur || parts.erreur} elig={elig} />
+        )}
       </main>
     </>
   );

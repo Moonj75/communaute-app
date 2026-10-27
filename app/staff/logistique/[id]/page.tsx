@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import { displayName, getSessionProfil } from "@/lib/profil";
 import { essayer, lireActifs, lireCalendrier, lireFicheEdition } from "@/lib/club";
-import { dateMoyenne } from "@/lib/club-types";
+import { competiteur, dateMoyenne } from "@/lib/club-types";
 import { chargerJoueurs } from "@/lib/donnees";
 import Editeur from "./Editeur";
 
@@ -38,7 +38,7 @@ export default async function FichePage({ params }: { params: Promise<{ id: stri
               initiales={fiche.data.valeurs}
               masquesInit={fiche.data.masques}
               actifs={actifs.data || []}
-              joueurs={joueurs.filter((j) => j.actif).map((j) => ({ id: j.notionId, nom: j.nom }))}
+              joueurs={joueurs.filter(competiteur).map((j) => ({ id: j.notionId, nom: j.nom }))}
             />
           </>
         )}

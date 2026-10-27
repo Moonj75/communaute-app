@@ -8,6 +8,7 @@ import { droitsValideur } from "@/lib/valideurs";
 import { lireEligibles } from "@/lib/eligibles";
 import { lireNonLus } from "@/lib/courrier";
 import Defilant from "./Defilant";
+import { competiteur } from "@/lib/club-types";
 
 /** Scrolling band under the top banner with what the player must do now; nothing → no band. */
 export default async function BandeauUrgent() {
@@ -32,7 +33,7 @@ export default async function BandeauUrgent() {
       admin ? essayer(lireTaches) : Promise.resolve({ data: null, erreur: null }),
       lireEligibles(supabase),
     ]);
-    const l = urgences(cal.data || [], parts.data || [], famille.filter((j) => j.actif), taches.data, undefined, elig, nonLus);
+    const l = urgences(cal.data || [], parts.data || [], famille.filter(competiteur), taches.data, undefined, elig, nonLus);
     // Club competitions: matches still to play when the stage ends soon.
     try {
       const enCours = await lireEnCours(supabase);

@@ -66,7 +66,12 @@ export async function synchroniserNotion(): Promise<SyncState> {
   }));
   let avertissement: string | undefined;
   // Shared kitty name (step 15); left out if the column is not there yet.
-  let { error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive, ...coordonnees(liste[i]) })), { onConflict: "notion_id" });
+  // Status « sans compétitions officielles » (SQL step 20); left out if the column is not there yet.
+  let { error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive, sans_competition: liste[i].sansCompetition, ...coordonnees(liste[i]) })), { onConflict: "notion_id" });
+  if (e1 && /sans_competition/i.test(e1.message)) {
+    avertissement = "Statut « sans compétitions officielles » pas encore copié : lancez le script « etape20-sans-competitions » dans Supabase.";
+    ({ error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive, ...coordonnees(liste[i]) })), { onConflict: "notion_id" }));
+  }
   if (e1 && /date_naissance|adresse|code_postal|ville|nationalite|licence|code_fistf/i.test(e1.message)) {
     avertissement = "Coordonnées pas encore copiées : lancez le script « etape18-profil » dans Supabase.";
     ({ error: e1 } = await supabase.from("joueurs").upsert(complets.map((f, i) => ({ ...f, cagnotte_groupe: liste[i].cagnotteCommune, archive: liste[i].archive })), { onConflict: "notion_id" }));

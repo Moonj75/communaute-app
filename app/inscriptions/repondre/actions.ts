@@ -4,7 +4,7 @@ import { revalidateTag } from "next/cache";
 import { estInactif, getVue } from "@/lib/profil";
 import { enregistrerReponse, lireCalendrier, lireParticipations, NotionErreur, TAGS } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
-import { concerne, indexReponses, libelleTally, modifiable } from "@/lib/club-types";
+import { competiteur, concerne, indexReponses, libelleTally, modifiable } from "@/lib/club-types";
 import { lireEligibles } from "@/lib/eligibles";
 import { demandesEvenement, POSTES_EVENEMENT } from "@/lib/cagnotte-db";
 
@@ -33,6 +33,7 @@ export async function envoyerReponse(_p: RetourReponse | null, fd: FormData): Pr
   const famille = await chargerJoueurs(supabase, admin ? null : user.email);
   const joueur = famille.find((j) => j.notionId === jId);
   if (!joueur) return { ok: false, message: "Ce joueur ne fait pas partie de ton compte." };
+  if (!admin && !competiteur(joueur)) return { ok: false, message: "Ce membre est « sans compétitions officielles » : il n'a pas de formulaire à remplir." };
 
   try {
     const [evs, parts] = await Promise.all([lireCalendrier(), lireParticipations()]);

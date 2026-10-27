@@ -48,7 +48,7 @@ function groupes(l: Item[]): [string, Item[]][] {
   return [...m.entries()];
 }
 
-export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: boolean; nom?: string; inactif?: boolean }) {
+export default function BarreBas({ isAdmin, nom, inactif = false, sansCompet = false }: { isAdmin: boolean; nom?: string; inactif?: boolean; sansCompet?: boolean }) {
   const path = usePathname() || "/";
   const [ouvert, setOuvert] = useState(false);
   // The longest matching address wins (« /admin/finances » is not « /admin »).
@@ -59,7 +59,9 @@ export default function BarreBas({ isAdmin, nom, inactif = false }: { isAdmin: b
   // Discovery space (member not active): no answers to competitions; calendar is on the home page.
   const items = inactif
     ? JOUEUR.filter((i) => i.href !== "/inscriptions").map((i) => (i.href === "/calendrier" ? { ...i, href: "/#bloc-calendrier" } : i.opt ? { ...i, opt: false } : i))
-    : JOUEUR;
+    : sansCompet
+      ? JOUEUR.filter((i) => i.href !== "/inscriptions")
+      : JOUEUR;
 
   useEffect(() => setOuvert(false), [path]);
   // The rankings are prepared in the background a moment after the app opens, so the

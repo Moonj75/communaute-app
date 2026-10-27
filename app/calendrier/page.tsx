@@ -4,6 +4,7 @@ import VueCalendrier from "@/components/club/VueCalendrier";
 import { displayName, getVue, estInactif } from "@/lib/profil";
 import { essayer, lireCalendrier, lireFiches, lireParticipations, nomsJoueurs } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
+import { competiteur } from "@/lib/club-types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function CalendrierPage({ searchParams }: { searchParams: P
     <>
       <Header subtitle="Calendrier des compétitions" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
-        <VueCalendrier fiches={fiches.data || undefined} noms={noms.data || undefined} joueurs={joueurs} evs={cal.data || []} parts={parts.data || []} famille={famille} m={sp.m} e={sp.e} erreur={cal.erreur} />
+        <VueCalendrier fiches={fiches.data || undefined} noms={noms.data || undefined} joueurs={joueurs} evs={cal.data || []} parts={parts.data || []} famille={famille.filter(competiteur)} m={sp.m} e={sp.e} erreur={cal.erreur} />
       </main>
     </>
   );

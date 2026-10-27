@@ -10,8 +10,11 @@ import BandeauUrgent from "./BandeauUrgent";
 import BoiteCourrier from "./BoiteCourrier";
 import Gains from "./cagnotte/Gains";
 import { quitterApercu } from "@/app/admin/apercu";
+import { getVue } from "@/lib/profil";
+import { chargerJoueurs } from "@/lib/donnees";
+import { competiteur } from "@/lib/club-types";
 
-export default function Header({
+export default async function Header({
   subtitle,
   profil,
   name,
@@ -27,6 +30,17 @@ export default function Header({
   /** Visitor pages: a session exists (the gold button leads to « Mon espace »). */
   connecte?: boolean;
 }) {
+  // Account whose fiches are all « sans compétitions officielles »: no « Inscriptions » in the menu.
+  let sansCompet = false;
+  if (name) {
+    try {
+      const v = await getVue();
+      if (v.user) {
+        const f = await chargerJoueurs(v.supabase, v.user.email);
+        sansCompet = f.length > 0 && !f.some(competiteur);
+      }
+    } catch { /* the menu stays complete */ }
+  }
   return (
     <>
       <div className="entete" id="entete">
@@ -85,7 +99,7 @@ export default function Header({
       {name ? <BandeauUrgent /> : null}
       </div>
       {name ? <Gains /> : null}
-      {name ? <BarreBas isAdmin={profil?.role === "admin"} nom={name} inactif={profil?.role !== "admin" && profil?.actif === false} /> : <BarrePublique connecte={connecte} />}
+      {name ? <BarreBas isAdmin={profil?.role === "admin"} nom={name} inactif={profil?.role !== "admin" && profil?.actif === false} sansCompet={sansCompet} /> : <BarrePublique connecte={connecte} />}
       <MesureEntete />
       <Installer />
       <Centrer />

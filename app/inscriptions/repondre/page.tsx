@@ -5,7 +5,7 @@ import { displayName, getVue, estInactif } from "@/lib/profil";
 import { essayer, lireCalendrier, lireParticipations } from "@/lib/club";
 import { chargerJoueurs } from "@/lib/donnees";
 import { lireEligibles } from "@/lib/eligibles";
-import { concerne, compteARebours, dateCourte, dateMoyenne, estLoin, indexReponses, modifiable, moisCourt, phase, surDeuxJours } from "@/lib/club-types";
+import { competiteur, concerne, compteARebours, dateCourte, dateMoyenne, estLoin, indexReponses, modifiable, moisCourt, phase, surDeuxJours } from "@/lib/club-types";
 import Formulaire from "./Formulaire";
 import { cagnottePourEvenement } from "@/lib/cagnotte-db";
 
@@ -21,7 +21,7 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
   const [cal, parts, maFamille, elig] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email), lireEligibles(supabase)]);
   // Staff can open the form for any player (link « Répondre pour… » from the dashboard).
   const famille = admin && sp.j && !maFamille.some((j) => j.notionId === sp.j) ? await chargerJoueurs(supabase, null) : maFamille;
-  const actifs = famille.filter((j) => j.actif || (admin && j.notionId === sp.j));
+  const actifs = famille.filter((j) => competiteur(j) || (admin && j.notionId === sp.j));
   const ev = (cal.data || []).find((x) => x.id === sp.e);
   const joueur = actifs.find((j) => j.notionId === sp.j) || (actifs.length === 1 ? actifs[0] : null);
 

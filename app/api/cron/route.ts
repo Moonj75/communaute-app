@@ -49,11 +49,12 @@ export async function GET(req: NextRequest) {
     lieu: e.lieu || "",
   });
   // Archived members get no reminder.
-  const joueurs: JoueurLite[] = ((rj.data || []) as { notion_id: string; prenom: string | null; nom: string; email: string | null; actif: boolean; archive?: boolean }[]).filter((j) => !j.archive).map((j) => ({
+  const joueurs: JoueurLite[] = ((rj.data || []) as { notion_id: string; prenom: string | null; nom: string; email: string | null; actif: boolean; archive?: boolean; sans_competition?: boolean }[]).filter((j) => !j.archive).map((j) => ({
     notionId: j.notion_id,
     nom: [j.prenom, j.nom].filter(Boolean).join(" "),
     email: j.email,
     actif: j.actif,
+    sansCompet: Boolean(j.sans_competition),
   }));
   const staff = new Set(((rm.data || []) as { email: string; role: string; actif: boolean }[]).filter((m) => m.role === "admin" && m.actif).map((m) => m.email));
   const abonnes = (ra.data || []) as Abonnement[];

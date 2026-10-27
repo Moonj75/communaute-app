@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Evenement, FicheLogistique as FicheLogistiqueT, JoueurLite, Participation } from "@/lib/club-types";
+import { competiteur } from "@/lib/club-types";
 import { Anneau, couleurObjectif, Rythme } from "./Graphes";
 import FicheLogistique from "./FicheLogistique";
 import {
@@ -28,7 +29,8 @@ const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 
 export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraichir, fiches, noms, elig }: Props) {
   const today = aujourdhui();
-  const actifs = joueurs.filter((j) => j.actif);
+  // Members « sans compétitions officielles » are left out of the forms and their statistics.
+  const actifs = joueurs.filter(competiteur);
   const N = actifs.length;
   const idx = indexReponses(parts, evs, joueurs);
   const suivis = evs.filter(

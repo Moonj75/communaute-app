@@ -18,6 +18,8 @@ export type JoueurNotion = {
   cagnotteCommune: string | null;
   /** Former member, archived: out of the lists, no more login. */
   archive: boolean;
+  /** « Sans compétitions officielles » ticked: never in the competition forms. */
+  sansCompetition: boolean;
   telephone: string | null;
   /** Contact details (« Mon profil »). */
   naissance: string | null;
@@ -84,6 +86,7 @@ function parse(page: { id: string; properties: Record<string, Prop> }): JoueurNo
     cagnotte: typeof p["Cagnotte"]?.number === "number" ? (p["Cagnotte"].number as number) : null,
     cagnotteCommune: text(p["Cagnotte commune"]),
     archive: Boolean(p["Archivé"]?.checkbox),
+    sansCompetition: Boolean(p["Sans compétitions officielles"]?.checkbox),
     telephone: (p["Téléphone"]?.phone_number as string | null) || null,
     naissance: ((p["Date de naissance"]?.date as { start?: string } | null)?.start || "").slice(0, 10) || null,
     adresse: text(p["Adresse"]),

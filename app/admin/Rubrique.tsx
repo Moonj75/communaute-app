@@ -248,6 +248,7 @@ export default async function PageAdmin({ rubrique }: { rubrique: Rubrique }) {
                       {(parEmail.get(m.email) || []).map((j) => (
                         <div key={(j.prenom || "") + j.nom} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", padding: "2px 0", opacity: j.actif ? 1 : 0.55 }}>
                           <b>{j.prenom || j.nom}</b>
+                          {(j as J & { sans_competition?: boolean }).sans_competition ? <span className="pill" title="Pas dans les formulaires de compétition, les relances ni les statistiques">sans compét. officielles</span> : null}
                           {(parEmail.get(m.email) || []).length > 1 && j.titulaire ? <span className="pill adm">titulaire</span> : null}
                           {(j.roles || []).map((r) => <span key={r} className="pill">{r}</span>)}
                           {j.cagnotte != null ? <span className="pill on num">{euro.format(Number(j.cagnotte))}</span> : null}
