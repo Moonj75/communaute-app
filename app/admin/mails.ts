@@ -65,7 +65,7 @@ export async function envoyerMailClub(p: EnvoiMail): Promise<RetourMail> {
     const emails = personnes.map((x) => x.email);
     if (p.parCourrier) {
       const qui = [profil.prenom, profil.nom].filter(Boolean).join(" ") || "Le club";
-      await deposer(supabase, emails, { type: "message", titre: `${sujet}`, texte: [c.titre, c.texte, c.signature].filter(Boolean).join("\n\n"), lien: c.lien || null, de_email: user.email, de_nom: qui });
+      await deposer(supabase, emails, { type: "message", titre: `${sujet}`, texte: [c.titre, c.texte, c.signature].filter(Boolean).join("\n\n"), lien: c.lien || null, de_email: user.email, de_nom: qui, carte: c });
       bilan.push(`📬 déposé dans ${emails.length} courrier${emails.length > 1 ? "s" : ""}`);
     }
     if (p.parNotif && pushPret()) {
