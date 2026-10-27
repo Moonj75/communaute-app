@@ -10,6 +10,19 @@ export const ROLES: { id: RoleSeance; nom: string; ic: string; notion: string; v
   { id: "buvette", nom: "Buvette", ic: "🍺", notion: "Buvette", valide: "Buvette validée", tag: "🍺 Buvette", supp: "🔁 Suppléant buvette", requis: false },
 ];
 
+/** Groups of the training crew that staff can notify directly (Staff → Notifications). */
+export const GROUPES_ENT: { id: string; nom: string; tags: (r: (typeof ROLES)[number]) => string[] }[] = [
+  { id: "tous", nom: "🎯 Toute l'équipe entraînements", tags: (r) => [r.tag, r.supp] },
+  { id: "titulaires", nom: "★ Entraîneurs, ouvreurs, fermeurs, buvette", tags: (r) => [r.tag] },
+  { id: "entraineur", nom: "🎓 Entraîneurs (+ suppléants)", tags: (r) => (r.id === "entraineur" ? [r.tag, r.supp] : []) },
+  { id: "ouvreur", nom: "🔑 Ouvreurs (+ suppléants)", tags: (r) => (r.id === "ouvreur" ? [r.tag, r.supp] : []) },
+  { id: "fermeur", nom: "🔒 Fermeurs (+ suppléants)", tags: (r) => (r.id === "fermeur" ? [r.tag, r.supp] : []) },
+  { id: "ouvferm", nom: "🔑🔒 Ouvreurs et fermeurs (+ suppléants)", tags: (r) => (r.id === "ouvreur" || r.id === "fermeur" ? [r.tag, r.supp] : []) },
+  { id: "buvette", nom: "🍺 Buvette (+ suppléants)", tags: (r) => (r.id === "buvette" ? [r.tag, r.supp] : []) },
+  { id: "suppleants", nom: "🔁 Tous les suppléants", tags: (r) => [r.supp] },
+];
+export const rolesDuGroupe = (id: string) => ROLES.flatMap((r) => GROUPES_ENT.find((g) => g.id === id)?.tags(r) || []);
+
 export type Poste = { ids: string[]; ok: boolean };
 export type StatutSeance = "Prévu" | "Confirmé" | "Annulé";
 
