@@ -106,6 +106,8 @@ export const complet = (s: SeanceE) => ROLES.filter((r) => r.requis).every((r) =
 export function statutEffectif(s: SeanceE, now = maintenantBxl()): StatutSeance {
   if (s.annule || s.statut === "Annulé") return "Annulé";
   if (s.statut === "Confirmé") return "Confirmé";
+  // Sessions of a planning not published yet are never decided automatically.
+  if (!s.publie) return "Prévu";
   return limitePassee(s.date, now) ? (complet(s) ? "Confirmé" : "Annulé") : "Prévu";
 }
 

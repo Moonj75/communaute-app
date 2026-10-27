@@ -50,7 +50,8 @@ export async function traiterEntrainements(db: SupabaseClient) {
   }
 
   for (const s of seances) {
-    if (s.annule || s.statut !== "Prévu") continue;
+    // Only the sessions of a published planning are handled automatically (substitutes, decision).
+    if (s.annule || s.statut !== "Prévu" || !s.publie) continue;
     const lim = limiteDe(s.date);
     if (limitePassee(s.date, now)) {
       // Decision.
