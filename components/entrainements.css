@@ -1,0 +1,74 @@
+/* Espace « Entraînements » : séance du jour, planning des rôles, fiches d'exercices. */
+.en { display: flex; flex-direction: column; gap: 14px; }
+.en-carte { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 24px -18px rgba(0,0,0,.35); }
+.en-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.en-k { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.en-date { margin: 2px 0 0; font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 22px; line-height: 1.1; text-transform: capitalize; color: var(--fg); }
+.en-h { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
+.en-motif { margin: 0; font-size: 14px; font-weight: 700; color: var(--no); }
+.en-st { flex: none; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.en-st.prevu { background: var(--gold-soft, #fff4bf); color: var(--gold-ink, #5a4700); }
+.en-st.ok { background: #c8ff2e; color: #142000; }
+.en-st.ko { background: var(--no-soft); color: var(--no); }
+
+.en-roles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.en-roles li { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "ic rn" "ic qui" "ic etat" "bt bt"; column-gap: 8px; align-items: center; padding: 10px; border-radius: 14px; background: var(--sunk); border: 2px solid transparent; }
+.en-roles li.ok { border-color: #8fdc00; background: color-mix(in srgb, #c8ff2e 22%, var(--surface)); }
+.en-roles li.vide { opacity: .8; border-style: dashed; border-color: var(--line); }
+.en-roles li.moi { box-shadow: 0 0 0 2px #00e5ff inset; }
+.en-ric { grid-area: ic; font-size: 26px; }
+.en-rn { grid-area: rn; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.en-rn small { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.en-qui { grid-area: qui; font-size: 15px; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.en-roles .en-etat { grid-area: etat; font-size: 12px; color: var(--muted); }
+.en-roles .btn { grid-area: bt; margin-top: 6px; }
+.en-mini { padding: 6px 10px !important; font-size: 13px !important; min-height: 0 !important; }
+.en-lim { margin: 0; }
+.en-admin { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.en-admin .input { flex: 1 1 180px; min-width: 0; }
+
+.en-prog { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; counter-reset: p; }
+.en-prog li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--sunk); counter-increment: p; }
+.en-prog li::before { content: counter(p); flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--fg); color: var(--surface); }
+.en-code { flex: none; display: inline-block; min-width: 44px; padding: 2px 8px; border-radius: 8px; background: #161311; color: #f7dd6b; font: 800 13px/1.4 var(--font-display, system-ui); text-align: center; letter-spacing: .04em; }
+.en-pt { flex: 1; min-width: 0; font-weight: 700; color: var(--fg); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a.en-pt:hover { text-decoration: underline; }
+.en-btns { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.en-prog-edit { display: flex; flex-direction: column; gap: 10px; }
+
+.en-mois { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.en-mois::-webkit-scrollbar { display: none; }
+.en-mois button { flex: none; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-weight: 700; font-size: 13px; text-transform: capitalize; cursor: pointer; }
+.en-mois button small { color: var(--muted); font-weight: 600; }
+.en-mois button.on { border-color: #00e5ff; box-shadow: 0 0 0 2px #00e5ff inset; }
+
+.en-tab-cadre { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.en-tab { width: 100%; border-collapse: collapse; font-size: 13px; }
+.en-tab th, .en-tab td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.en-tab thead th { position: sticky; top: 0; background: var(--sunk); font-size: 12px; white-space: nowrap; }
+.en-tab tbody tr:last-child > * { border-bottom: 0; }
+.en-tab .en-d { position: sticky; left: 0; background: var(--surface); white-space: nowrap; z-index: 1; }
+.en-tab .en-d b { display: block; font-size: 15px; }
+.en-tab .en-d .en-st { font-size: 10px; padding: 2px 6px; }
+.en-cel { min-width: 120px; }
+.en-cel.ok { background: color-mix(in srgb, #c8ff2e 18%, transparent); }
+.en-cel.moi { box-shadow: 0 0 0 2px #00e5ff inset; }
+.en-sel { width: 100%; max-width: 150px; padding: 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 13px; }
+.en-nom { font-weight: 700; }
+.en-cel .en-etat { margin-left: 4px; }
+.en-ok { margin-top: 4px; display: block; padding: 4px 8px; border-radius: 8px; border: 1px solid #8fdc00; background: transparent; color: var(--fg); font-weight: 800; font-size: 12px; cursor: pointer; }
+.en-ok.on { background: #c8ff2e; color: #142000; }
+.en-err { display: block; color: var(--no); font-size: 11px; }
+@media (max-width: 520px) { .en-thn { display: none; } .en-cel { min-width: 96px; } .en-sel { max-width: 110px; } }
+
+.en-ex { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.en-ex a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: inherit; }
+.en-ex a:hover { border-color: #00e5ff; }
+.en-video { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; }
+.en-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.en-bloc { display: flex; flex-direction: column; gap: 4px; }
+.en-txt { margin: 0; white-space: pre-line; line-height: 1.45; }
+.en-form { display: flex; flex-direction: column; gap: 10px; }
+.en-ligne { display: flex; gap: 10px; flex-wrap: wrap; }
+.en-ligne .f { flex: 1 1 140px; }
+.en-ligne .en-court { flex: 0 1 110px; }

@@ -5,6 +5,7 @@ import BarrePublique from "./BarrePublique";
 import MesureEntete from "./MesureEntete";
 import Installer from "./Installer";
 import Centrer from "./Centrer";
+import RetourAccueil from "./RetourAccueil";
 import Fleches from "./Fleches";
 import BandeauUrgent from "./BandeauUrgent";
 import BoiteCourrier from "./BoiteCourrier";
@@ -103,6 +104,7 @@ export default async function Header({
       <MesureEntete />
       <Installer />
       <Centrer />
+      {name ? <RetourAccueil /> : null}
       <Fleches />
       {name ? <BoiteCourrier /> : null}
       {!name && valeurs ? (

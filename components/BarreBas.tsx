@@ -16,6 +16,7 @@ const JOUEUR: Item[] = [
   { href: "/inscriptions", label: "Inscriptions", ic: "drapeau", c: "orange", g: "Compétitions" },
   { href: "/internes", label: "Compétitions du club", ic: "coupe", c: "magenta", g: "Compétitions" },
   { href: "/club/classements", label: "Classements", ic: "podium", opt: true, desc: "Belges et mondiaux", c: "indigo", g: "Compétitions" },
+  { href: "/entrainements", label: "Entraînements", ic: "cible", c: "canard", g: "Club" },
   { href: "/fiche", label: "Ma fiche", ic: "joueur", c: "violet", g: "Moi" },
   { href: "/profil", label: "Mon profil", ic: "carte", c: "violet", g: "Moi" },
   { href: "/courrier", label: "Courrier", ic: "mail", c: "or", g: "Moi" },
@@ -35,7 +36,7 @@ const STAFF: Item[] = [
   { href: "/admin/technique", label: "Synchro & sauvegarde", ic: "reglage", desc: "Notion, sauvegarde", c: "bronze", g: "Technique" },
 ];
 /** Small icon of each heading. */
-const IC_GROUPE: Record<string, string> = { "Compétitions": "coupe", "Moi": "joueur", "Compétitions & déplacements": "drapeau", "Communication": "voix", "Joueurs": "groupe", "Finances": "euro", "Organisation": "planning", "Technique": "reglage" };
+const IC_GROUPE: Record<string, string> = { "Compétitions": "coupe", "Club": "cible", "Moi": "joueur", "Compétitions & déplacements": "drapeau", "Communication": "voix", "Joueurs": "groupe", "Finances": "euro", "Organisation": "planning", "Technique": "reglage" };
 
 /**
  * Floating dock at the bottom of the screen (always visible): main pages, then a round button
