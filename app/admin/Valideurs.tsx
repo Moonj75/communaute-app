@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ROLE_VALIDEUR } from "@/lib/internes";
+import { estValideur } from "@/lib/internes";
 import { basculerValideur } from "./valideurs";
 
 type J = { notion_id: string; prenom: string | null; nom: string; actif: boolean; roles: string[] | null; email: string | null };
@@ -9,7 +9,7 @@ const sansAccent = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 
 /** Choosing the validators of the club competitions (usually active members). */
 export default function Valideurs({ joueurs }: { joueurs: J[] }) {
-  const [oui, setOui] = useState<Record<string, boolean>>(() => Object.fromEntries(joueurs.map((j) => [j.notion_id, (j.roles || []).includes(ROLE_VALIDEUR)])));
+  const [oui, setOui] = useState<Record<string, boolean>>(() => Object.fromEntries(joueurs.map((j) => [j.notion_id, estValideur(j.roles)])));
   const [voirTous, setVoirTous] = useState(false);
   const [cherche, setCherche] = useState("");
   const [enCours, setEnCours] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function Valideurs({ joueurs }: { joueurs: J[] }) {
   };
   return (
     <div className="vl">
-      <p className="muted small">Un valideur voit, dans « Compétitions du club », les scores en attente et peut les valider (avec confirmation), comme un administrateur, sauf ses propres matchs. Le rôle est enregistré dans Notion (« Rôles » → ✅ Valideur). <b>{nb} valideur{nb > 1 ? "s" : ""}</b>.</p>
+      <p className="muted small">Un valideur voit, dans « Compétitions du club », les scores en attente et peut les valider (avec confirmation), comme un administrateur, sauf ses propres matchs. Le rôle est enregistré dans Notion (« Rôles » → ✅ Valideur chpt interne). <b>{nb} valideur{nb > 1 ? "s" : ""}</b>.</p>
       <div className="cg-tete">
         <div className="rp-liste-choix" role="radiogroup" aria-label="Quels membres montrer">
           <button type="button" className={`rp-seg${!voirTous ? " on" : ""}`} onClick={() => setVoirTous(false)}>Membres actifs</button>
