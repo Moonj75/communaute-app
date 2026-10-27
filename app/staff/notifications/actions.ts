@@ -2,7 +2,8 @@
 
 import { getSessionProfil } from "@/lib/profil";
 import { pousser, type Abonnement } from "@/lib/push";
-import { lireCalendrier, lireParticipations } from "@/lib/club";
+import { lireCalendrier, lireMembresRoles, lireParticipations } from "@/lib/club";
+import { rolesDuGroupe } from "@/lib/entrainements-types";
 import { chargerJoueurs } from "@/lib/donnees";
 import { comptesActifs, inscritsOui, sansReponse } from "@/lib/audiences";
 import { lireEligibles } from "@/lib/eligibles";
@@ -29,6 +30,12 @@ export async function envoyerManuel(_prev: RetourEnvoi | null, fd: FormData): Pr
     else if (cible === "staff") {
       const { data } = await supabase.from("membres").select("email").eq("role", "admin").eq("actif", true);
       emails = new Set(((data || []) as { email: string }[]).map((m) => m.email));
+    } else if (cible.startsWith("ent:")) {
+      // A group of the training crew, read from Notion (roles).
+      const voulus = rolesDuGroupe(cible.slice(4));
+      const membres = await lireMembresRoles();
+      emails = new Set(membres.filter((m) => m.actif && !m.archive && m.email && (m.roles || []).some((r) => voulus.includes(r))).map((m) => m.email!.toLowerCase()));
+      url = "/entrainements";
     } else if (cible.startsWith("attente:") || cible.startsWith("oui:")) {
       const id = cible.split(":")[1];
       const [evs, parts] = await Promise.all([lireCalendrier(), lireParticipations()]);

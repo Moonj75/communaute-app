@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { envoyerManuel, type RetourEnvoi } from "./actions";
 import Apercu from "./Apercu";
+import { GROUPES_ENT } from "@/lib/entrainements-types";
 
 /** Ready-made messages: choosing one fills the title and the text (they can still be changed). */
 const MODELES = [
@@ -12,6 +13,8 @@ const MODELES = [
   { id: "infos", nom: "📍 Infos pratiques", titre: "📍 Infos pour {competition}", texte: "Rendez-vous à … à …h. Pense à ta licence et à ton matériel." },
   { id: "entrainement", nom: "🎯 Entraînement", titre: "🎯 Entraînement ce …", texte: "Rendez-vous à la Maison du Peuple à …h. Viens nombreux !" },
   { id: "annule", nom: "❌ Annulation", titre: "❌ Entraînement annulé", texte: "L'entraînement de … est annulé. On se retrouve la semaine prochaine." },
+  { id: "equipe", nom: "📅 Équipe : prenez vos dates", titre: "📅 Planning des entraînements", texte: "Il reste des places libres ce mois-ci. Ouvre l'appli → Entraînements et prends tes dates." },
+  { id: "valider", nom: "✅ Équipe : pensez à valider", titre: "✅ Pense à valider ta place", texte: "Ouvre l'appli → Entraînements et touche « Je valide » pour ta prochaine séance." },
 ];
 
 export default function FormEnvoi({ evenements, cible }: { evenements: { id: string; nom: string; court: string }[]; cible?: string }) {
@@ -28,7 +31,7 @@ export default function FormEnvoi({ evenements, cible }: { evenements: { id: str
 
   const ev = evenements.find((e) => dest.endsWith(":" + e.id));
   const libelleDest =
-    dest === "tous" ? "tous les joueurs actifs" : dest === "staff" ? "le staff (administrateurs)" : ev ? `${dest.startsWith("attente:") ? "ceux qui n'ont pas répondu" : "les inscrits « Oui »"} · ${ev.nom}` : dest;
+    dest === "tous" ? "tous les joueurs actifs" : dest === "staff" ? "le staff (administrateurs)" : dest.startsWith("ent:") ? GROUPES_ENT.find((g) => `ent:${g.id}` === dest)?.nom || dest : ev ? `${dest.startsWith("attente:") ? "ceux qui n'ont pas répondu" : "les inscrits « Oui »"} · ${ev.nom}` : dest;
   const choisirModele = (id: string) => {
     const m = MODELES.find((x) => x.id === id);
     if (!m) return;
@@ -47,6 +50,9 @@ export default function FormEnvoi({ evenements, cible }: { evenements: { id: str
             <select className="input" name="cible" value={dest} onChange={(e) => { setDest(e.target.value); setVerif(false); }}>
               <option value="tous">Tous les joueurs actifs</option>
               <option value="staff">Le staff (administrateurs)</option>
+              <optgroup label="Équipe entraînements">
+                {GROUPES_ENT.map((g) => <option key={g.id} value={`ent:${g.id}`}>{g.nom}</option>)}
+              </optgroup>
               {evenements.length ? (
                 <optgroup label="Pas encore répondu">
                   {evenements.map((e) => <option key={"a" + e.id} value={`attente:${e.id}`}>Sans réponse · {e.nom}</option>)}
