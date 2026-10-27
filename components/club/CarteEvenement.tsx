@@ -164,7 +164,7 @@ export default function CarteEvenement({
       </p>
 
       <div className="ce-qui">
-        <span className="ce-qt">Participent ({oui.length}){valides.size ? <span className="ce-qv"> · <i className="ce-pv" aria-hidden="true" /> {valides.size} validé{valides.size > 1 ? "s" : ""}</span> : null}</span>
+        <span className="ce-qt">Participent ({oui.length}){valides.size ? <span className="ce-qv"> · <i className="ce-pv" aria-hidden="true" /> {valides.size} validé{valides.size > 1 ? "s" : ""}</span> : null}<LegendeJours n={jourDe1.size} /></span>
         <div className="ce-chips">
           {oui.length ? oui.map((n) => (
             <span key={n} className={`ce-chip o${valides.has(n) ? " valide" : ""}`} title={valides.has(n) ? "Participation validée définitivement" : undefined}><Avatar nom={n} />{n}<JourBadge j={jourDe1.get(n)} />{valides.has(n) ? <i className="ce-lock" aria-label="validé">🔒</i> : null}{referents.includes(n) ? <i className="ce-ref" title="Référent volontaire">🧭</i> : null}</span>
@@ -190,16 +190,26 @@ export default function CarteEvenement({
   );
 }
 
-/** Big « S » (saturday only) or « D » (sunday only) next to a name; nothing when the player comes both days. */
+/** Round « S » (saturday only) or « D » (sunday only) badge next to a name; nothing when the player comes both days. */
 function JourBadge({ j }: { j?: "S" | "D" }) {
   if (!j) return null;
   return (
     <b
       title={j === "S" ? "Samedi uniquement" : "Dimanche uniquement"}
       aria-label={j === "S" ? "samedi uniquement" : "dimanche uniquement"}
-      style={{ display: "inline-grid", placeItems: "center", minWidth: 20, height: 20, marginLeft: 6, padding: "0 5px", borderRadius: 6, font: "900 13px/1 var(--font-display, system-ui)", letterSpacing: 0, background: j === "S" ? "#5b2bd6" : "#ff8a00", color: j === "S" ? "#fff" : "#1a0d00", boxShadow: "0 0 0 2px rgba(0,0,0,.25)" }}
+      style={{ display: "inline-grid", placeItems: "center", width: 24, height: 24, marginLeft: 6, flex: "none", borderRadius: "50%", font: "900 14px/1 var(--font-display, system-ui)", fontStyle: "normal", background: j === "S" ? "#1e5bff" : "#8a2be2", color: "#fff", border: "2px solid #fff", boxShadow: "0 0 0 2px " + (j === "S" ? "#1e5bff" : "#8a2be2") + ", 0 2px 6px rgba(0,0,0,.35)" }}
     >
       {j}
     </b>
+  );
+}
+
+/** Legend shown only when somebody comes one day only. */
+function LegendeJours({ n }: { n: number }) {
+  if (!n) return null;
+  return (
+    <span className="small" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: 8, fontWeight: 600, color: "var(--muted)" }}>
+      <JourBadge j="S" /> samedi seul <JourBadge j="D" /> dimanche seul
+    </span>
   );
 }
