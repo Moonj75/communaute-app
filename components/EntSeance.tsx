@@ -18,8 +18,8 @@ export function Pastille({ s }: { s: SeanceE }) {
 }
 
 /** The next session: its four roles (with « I confirm » for the person concerned), and the programme of the day. */
-export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe = true, exercices }: {
-  s: SeanceE; noms: Record<string, string>; mesFiches: MaFiche[]; admin: boolean; entraineur: boolean; equipe?: boolean; exercices: Exercice[];
+export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe = true, staff = false, exercices }: {
+  s: SeanceE; noms: Record<string, string>; mesFiches: MaFiche[]; admin: boolean; entraineur: boolean; equipe?: boolean; staff?: boolean; exercices: Exercice[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -28,7 +28,9 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe =
   const [prog, setProg] = useState<string[]>(s.exercices);
   const [motif, setMotif] = useState("");
   const ph = phase(s.date);
-  const ferme = ph === "clos" || s.annule;
+  // Once confirmed (by hand or on Monday 21:00), only staff can still change it.
+  const confirme = statutEffectif(s) === "Confirmé";
+  const ferme = ph === "clos" || s.annule || (confirme && !staff);
   const lim = limiteDe(s.date);
   const limT = limiteTitulaires(s.date);
   const miens = new Set(mesFiches.map((f) => f.id));
@@ -77,14 +79,16 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe =
           })}
         </ul>
         <p className="muted small en-lim">
-          {ferme
+          {confirme
+            ? "✅ Entraînement confirmé : les rôles sont figés. Pour un changement, contacte le staff."
+            : ferme
             ? "Validation close (lundi 21h00 passé)."
             : ph === "titulaires"
               ? `Les personnes prévues valident jusqu'au vendredi ${jm(limT.jour)} à 21h00. Ensuite, les places non confirmées sont proposées aux suppléants jusqu'au lundi ${jm(lim.jour)} à 21h00.`
               : `Places non confirmées ouvertes aux suppléants jusqu'au lundi ${jm(lim.jour)} à 21h00. Sans entraîneur, ouvreur et fermeur confirmés, l'entraînement est annulé.`}
         </p>
         </>) : null}
-        {admin ? (
+        {admin && (staff || !confirme) ? (
           <div className="en-admin">
             <input className="input" placeholder="Motif (si annulation)" value={motif} onChange={(e) => setMotif(e.target.value)} />
             <button type="button" className="btn" disabled={pending} onClick={() => agir(() => changerStatut(s.id, "Confirmé", ""))}>Confirmer</button>
@@ -163,7 +167,7 @@ export function CellulePoste({ s, role, noms, mesFiches, admin, pool }: {
   const moi = id && mesFiches.some((f) => f.id === id);
   const ph = phase(s.date);
   // Staff can always change a role, even after Monday 21:00 or on a cancelled session.
-  const ferme = !admin && (ph === "clos" || s.annule);
+  const ferme = !admin && (ph === "clos" || s.annule || statutEffectif(s) === "Confirmé");
   const libre = !id;
   // After the Friday before: an unconfirmed role can be taken by a substitute.
   const supps = ph === "suppleants" && !p.ok && !moi ? mesFiches.filter((f) => f.supps.includes(role) || f.roles.includes(role)) : [];

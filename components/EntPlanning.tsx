@@ -56,6 +56,7 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, equipe
           <button type="button" className="btn" disabled={pending} onClick={() => agir(() => creerMois(m))}>📅 Créer les vendredis</button>
           <button type="button" className="btn" disabled={pending || !liste.length} onClick={() => agir(() => completerMois(m))}>🔄 Compléter automatiquement</button>
           <button type="button" className="btn" disabled={pending} onClick={() => agir(actualiserNotion)}>🔄 Mettre à jour depuis Notion</button>
+          {admin ? <a className="btn" href="/staff/notifications?cible=ent%3Atous#bloc-envoyer">📣 Notifier l&apos;équipe</a> : null}
           <button type="button" className="btn primary" disabled={pending || !liste.length} onClick={() => agir(() => publierMois(m))}>{publie ? "📣 Publier à nouveau" : "📣 Publier le planning"}</button>
         </div>
       ) : null}
