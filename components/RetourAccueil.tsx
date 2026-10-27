@@ -24,7 +24,10 @@ export default function RetourAccueil() {
     const garder = () => path === "/" || GARDER.some((g) => path.startsWith(g));
     const retour = () => {
       const t = lire();
-      if (t && Date.now() - t > DELAI && !garder()) router.replace("/");
+      if (t && Date.now() - t > DELAI) {
+        if (!garder()) router.replace("/");
+        else if (path === "/" && window.location.hash) { history.replaceState(null, "", "/"); window.dispatchEvent(new Event("blocs-premier")); }
+      }
       noter();
     };
     // Every opening of the app (it was closed, or the phone reloaded it): home screen first.
@@ -33,7 +36,11 @@ export default function RetourAccueil() {
     try { ouverte = sessionStorage.getItem("lions-ouverte") === "1"; sessionStorage.setItem("lions-ouverte", "1"); } catch { /* storage unavailable */ }
     // Installed app only: a link opened in the browser (shared page, mail) still lands where it points.
     const appli = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
-    if (!ouverte && appli && !garder()) router.replace("/");
+    if (!ouverte && appli) {
+      if (!garder()) router.replace("/");
+      // Home already open but on another part (#bloc-…): back to its first part.
+      else if (path === "/" && window.location.hash) { history.replaceState(null, "", "/"); window.dispatchEvent(new Event("blocs-premier")); }
+    }
     noter();
     const vis = () => (document.visibilityState === "visible" ? retour() : noter());
     document.addEventListener("visibilitychange", vis);
