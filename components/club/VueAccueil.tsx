@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Blocs from "@/components/Blocs";
 import type { ClassementClub, Evenement, Resultat, Seance } from "@/lib/club-types";
-import { BlocEntrainements, BlocResultats } from "./VueClub";
+import { BlocResultats } from "./VueClub";
 import ClubDuo from "./ClubDuo";
 import type React from "react";
 import { libelleMois, listeDef, pts, type LigneClassement } from "@/lib/classements-types";
@@ -123,7 +123,7 @@ export default function VueAccueil(p: {
         blocs={[
           { id: "vue", titre: "Vue générale", ic: "🏁", contenu: score },
           { id: "club", titre: "Le club", ic: "🏆", badge: natAuto ? `${natAuto}e` : now?.national ? `${now.national}e` : null, contenu: <><ClubDuo nat={p.clubsComplet?.nat || []} equipes={p.clubsComplet?.equipes || []} eug={eug} moi={p.moi} /><p className="sec-title">Derniers résultats</p><BlocResultats resultats={p.resultats} evs={p.evs} noms={p.noms} /></> },
-          { id: "entrainements", titre: "Entraînements", ic: "🎯", badge: p.seances.filter((s) => !s.annule).length || null, contenu: <BlocEntrainements seances={p.seances} noms={p.noms} /> },
+          { id: "entrainements", titre: "Entraînements", ic: "🎯", href: "/entrainements", contenu: null },
         ]}
       />
       <p className="foot">Connecté en tant que {p.email}.</p>

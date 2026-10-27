@@ -67,6 +67,8 @@ export default function CarteEvenement({
   const oui: string[] = [], peut: string[] = [];
   let non = 0, voitures = 0;
   const referents: string[] = [];
+  // Two-day event: « S » saturday only, « D » sunday only, nothing for both days.
+  const jourDe1 = new Map<string, "S" | "D">();
   // Players who validated their form for good: circled in fluo green.
   const valides = new Set<string>();
   rep.forEach((p, id) => {
@@ -75,7 +77,13 @@ export default function CarteEvenement({
       if (p.valide) valides.add(nom(id));
       if (p.vehicule === "Oui") voitures++;
       if (p.referent === "Oui") referents.push(nom(id));
-    } else if (p.statut === "Peut-être") peut.push(nom(id));
+      if (/^samedi/i.test(p.jours || "")) jourDe1.set(nom(id), "S");
+      else if (/^dimanche/i.test(p.jours || "")) jourDe1.set(nom(id), "D");
+    } else if (p.statut === "Peut-être") {
+      peut.push(nom(id));
+      if (/^samedi/i.test(p.jours || "")) jourDe1.set(nom(id), "S");
+      else if (/^dimanche/i.test(p.jours || "")) jourDe1.set(nom(id), "D");
+    }
     else if (p.statut === "Non") non++;
   });
   oui.sort(tri);
@@ -159,7 +167,7 @@ export default function CarteEvenement({
         <span className="ce-qt">Participent ({oui.length}){valides.size ? <span className="ce-qv"> · <i className="ce-pv" aria-hidden="true" /> {valides.size} validé{valides.size > 1 ? "s" : ""}</span> : null}</span>
         <div className="ce-chips">
           {oui.length ? oui.map((n) => (
-            <span key={n} className={`ce-chip o${valides.has(n) ? " valide" : ""}`} title={valides.has(n) ? "Participation validée définitivement" : undefined}><Avatar nom={n} />{n}{valides.has(n) ? <i className="ce-lock" aria-label="validé">🔒</i> : null}{referents.includes(n) ? <i className="ce-ref" title="Référent volontaire">🧭</i> : null}</span>
+            <span key={n} className={`ce-chip o${valides.has(n) ? " valide" : ""}`} title={valides.has(n) ? "Participation validée définitivement" : undefined}><Avatar nom={n} />{n}<JourBadge j={jourDe1.get(n)} />{valides.has(n) ? <i className="ce-lock" aria-label="validé">🔒</i> : null}{referents.includes(n) ? <i className="ce-ref" title="Référent volontaire">🧭</i> : null}</span>
           )) : <span className="muted small">Personne pour l&apos;instant. Sois le premier !</span>}
         </div>
       </div>
@@ -168,7 +176,7 @@ export default function CarteEvenement({
           <span className="ce-qt">Peut-être ({peut.length})</span>
           <div className="ce-chips">
             {peut.map((n) => (
-              <span key={n} className="ce-chip m"><Avatar nom={n} />{n}</span>
+              <span key={n} className="ce-chip m"><Avatar nom={n} />{n}<JourBadge j={jourDe1.get(n)} /></span>
             ))}
           </div>
         </div>
@@ -179,5 +187,19 @@ export default function CarteEvenement({
         <a className="btn ce-fiche" href={lienFiche}>🧳 Fiche logistique</a>
       ) : null}
     </section>
+  );
+}
+
+/** Big « S » (saturday only) or « D » (sunday only) next to a name; nothing when the player comes both days. */
+function JourBadge({ j }: { j?: "S" | "D" }) {
+  if (!j) return null;
+  return (
+    <b
+      title={j === "S" ? "Samedi uniquement" : "Dimanche uniquement"}
+      aria-label={j === "S" ? "samedi uniquement" : "dimanche uniquement"}
+      style={{ display: "inline-grid", placeItems: "center", minWidth: 20, height: 20, marginLeft: 6, padding: "0 5px", borderRadius: 6, font: "900 13px/1 var(--font-display, system-ui)", letterSpacing: 0, background: j === "S" ? "#5b2bd6" : "#ff8a00", color: j === "S" ? "#fff" : "#1a0d00", boxShadow: "0 0 0 2px rgba(0,0,0,.25)" }}
+    >
+      {j}
+    </b>
   );
 }
