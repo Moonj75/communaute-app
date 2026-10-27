@@ -11,7 +11,7 @@ type Personne = { id: string; nom: string };
  * (then hidden from players). When every line is green, saving publishes the sheet for the players
  * (Notion status « Prête »); if a line goes back to empty, saving hides it again.
  */
-export default function Editeur(p: { id: string; url: string; statut: string | null; initiales: Record<string, Valeur>; masquesInit: string[]; actifs: Personne[]; joueurs: Personne[] }) {
+export default function Editeur(p: { id: string; url: string; statut: string | null; initiales: Record<string, Valeur>; masquesInit: string[]; actifs: Personne[]; joueurs: Personne[]; /** Validated volunteers for main referent. */ volontaires?: Personne[]; tous?: Personne[] }) {
   const [v, setV] = useState<Record<string, Valeur>>(p.initiales);
   const [masques, setMasques] = useState<string[]>(p.masquesInit);
   const [statut, setStatut] = useState(p.statut);
@@ -91,14 +91,21 @@ export default function Editeur(p: { id: string; url: string; statut: string | n
           </span>
         );
       case "ref": {
-        const liste = c.source === "actifs" ? p.actifs : p.joueurs;
+        const refP = c.cle === "refPrincipal" && p.volontaires;
+        const base = refP ? p.volontaires! : c.source === "actifs" ? p.actifs : p.joueurs;
+        // The person already chosen stays visible even if no longer in the list.
+        const actuel = (x as string) || "";
+        const liste = actuel && !base.some((o) => o.id === actuel) ? [...base, { id: actuel, nom: [...(p.tous || []), ...p.actifs, ...p.joueurs].find((o) => o.id === actuel)?.nom || "?" }] : base;
         return (
-          <select className="input" disabled={dis} value={(x as string) || ""} onChange={(e) => changer(c.cle, e.currentTarget.value || null)}>
-            <option value="">— Choisir —</option>
-            {liste.map((o) => (
-              <option key={o.id} value={o.id}>{o.nom}</option>
-            ))}
-          </select>
+          <>
+            <select className="input" disabled={dis} value={actuel} onChange={(e) => changer(c.cle, e.currentTarget.value || null)}>
+              <option value="">{refP && !base.length ? "— Aucun volontaire validé —" : "— Choisir —"}</option>
+              {liste.map((o) => (
+                <option key={o.id} value={o.id}>{o.nom}</option>
+              ))}
+            </select>
+            {refP ? <small className="muted">Seuls les joueurs inscrits qui ont coché « référent principal » et validé leur réponse sont proposés.</small> : null}
+          </>
         );
       }
       default:

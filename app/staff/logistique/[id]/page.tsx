@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import { displayName, getSessionProfil } from "@/lib/profil";
-import { essayer, lireActifs, lireCalendrier, lireFicheEdition } from "@/lib/club";
-import { competiteur, dateMoyenne } from "@/lib/club-types";
+import { essayer, lireActifs, lireCalendrier, lireFicheEdition, lireParticipations } from "@/lib/club";
+import { competiteur, dateMoyenne, indexReponses } from "@/lib/club-types";
 import { chargerJoueurs } from "@/lib/donnees";
 import Editeur from "./Editeur";
 
@@ -14,8 +14,13 @@ export default async function FichePage({ params }: { params: Promise<{ id: stri
   if (!user) redirect("/login");
   if (profil?.role !== "admin") redirect("/");
   const { id } = await params;
-  const [fiche, cal, actifs, joueurs] = await Promise.all([essayer(() => lireFicheEdition(id)), essayer(lireCalendrier), essayer(lireActifs), chargerJoueurs(supabase, null)]);
+  const [fiche, cal, actifs, joueurs, parts] = await Promise.all([essayer(() => lireFicheEdition(id)), essayer(lireCalendrier), essayer(lireActifs), chargerJoueurs(supabase, null), essayer(lireParticipations)]);
   const ev = fiche.data?.evenementId ? (cal.data || []).find((e) => e.id === fiche.data!.evenementId) : null;
+  // Main referent: only players who said « Oui » to coming AND to being referent, and validated their answer.
+  const reps = ev ? indexReponses(parts.data || [], cal.data || [], joueurs).get(ev.id) : undefined;
+  const volontaires = joueurs
+    .filter((j) => { const r = reps?.get(j.notionId); return r?.statut === "Oui" && r.referent === "Oui" && r.valide; })
+    .map((j) => ({ id: j.notionId, nom: j.nom }));
 
   return (
     <>
@@ -39,6 +44,8 @@ export default async function FichePage({ params }: { params: Promise<{ id: stri
               masquesInit={fiche.data.masques}
               actifs={actifs.data || []}
               joueurs={joueurs.filter(competiteur).map((j) => ({ id: j.notionId, nom: j.nom }))}
+              volontaires={volontaires}
+              tous={joueurs.map((j) => ({ id: j.notionId, nom: j.nom }))}
             />
           </>
         )}
