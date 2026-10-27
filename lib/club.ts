@@ -703,3 +703,25 @@ export async function enregistrerExercice(e: { id?: string | null; code: string;
   if (e.id) await notion(`pages/${e.id}`, { method: "PATCH", body: { properties } });
   else await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS.exercices }, properties } });
 }
+
+/** Members with their club roles, straight from Notion (1 minute cache, « Mettre à jour » empties it). */
+export type MembreRoles = { notion_id: string; prenom: string | null; nom: string; email: string | null; roles: string[]; actif: boolean; archive: boolean };
+export async function lireMembresRoles(): Promise<MembreRoles[]> {
+  const ds = process.env.NOTION_DS_JOUEURS || "3e329252-8add-80cc-96fe-000bc0a144e4";
+  const pages = await toutLire(ds, 60, TAGS.entrainements);
+  return pages.map((pg) => {
+    const p = pg.properties;
+    const complet = (texte(p["Nom complet"]) || "").replace(/\s*\(\d+\)\s*$/, "").trim();
+    const prenom = texte(p["Prénom"]);
+    const nom = prenom && complet.toLowerCase().startsWith(prenom.toLowerCase()) ? complet.slice(prenom.length).trim() || complet : complet;
+    return {
+      notion_id: pg.id,
+      prenom,
+      nom,
+      email: ((p["Email"]?.email as string | null) || "").trim().toLowerCase() || null,
+      roles: multi(p["Rôles"]),
+      actif: coche(p["Actif"]),
+      archive: coche(p["Archivé"]),
+    };
+  });
+}
