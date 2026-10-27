@@ -1,4 +1,6 @@
 import "server-only";
+import type { Exercice as ExerciceT, RoleSeance, SeanceE } from "./entrainements-types";
+import { ROLES, limiteDe } from "./entrainements-types";
 import { CHAMPS, PROP_MASQUES, lireMasques, type Valeur } from "./logistique";
 import type { ClassementClub, FicheLogistique, InfoPublique, Evenement, Participation, Reponse, Resultat, Seance, Tache } from "./club-types";
 
@@ -13,12 +15,14 @@ export const DS = {
   fiches: process.env.NOTION_DS_FICHES || "21bba989-5753-4053-9ab0-5549eba395ce",
   infos: process.env.NOTION_DS_INFOS || "bffe6a83-4398-43a7-a60d-5272d88784c3",
   listeActifs: process.env.NOTION_DS_LISTE_ACTIFS || "94e0d7b9-bb04-4a29-84a0-dc3cc5616432",
+  exercices: process.env.NOTION_DS_EXERCICES || "e5f14fe9-fb66-49cc-9812-86570dadfc4d",
 };
 export const TAGS = {
   calendrier: "notion-calendrier",
   participations: "notion-participations",
   taches: "notion-taches",
   club: "notion-club",
+  entrainements: "notion-entrainements",
 };
 
 const VERSION = "2025-09-03";
@@ -585,4 +589,117 @@ export async function ecrireJournalCagnotte(m: { evenement?: string | null; id: 
   }
   const pg = (await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS_JOURNAL_CAGNOTTES }, properties } })) as Page;
   return pg.id;
+}
+
+/* ---------- Trainings: sessions (roles, validations, programme) and exercise sheets ---------- */
+
+function versSeance(pg: Page): SeanceE {
+  const p = pg.properties;
+  const postes = Object.fromEntries(ROLES.map((r) => [r.id, { ids: rel(p[r.notion]), ok: coche(p[r.valide]) }])) as SeanceE["postes"];
+  const st = choix(p["Statut"]);
+  return {
+    id: pg.id,
+    titre: texte(p["Séance"]) || "Entraînement",
+    date: date(p["Date"]) || "",
+    debut: texte(p["Heure début"]),
+    fin: texte(p["Heure fin"]),
+    lieu: texte(p["Lieu"]),
+    statut: st === "Confirmé" || st === "Annulé" ? st : "Prévu",
+    annule: coche(p["Annulé"]),
+    motif: texte(p["Motif d'annulation"]),
+    postes,
+    programme: (texte(p["Programme"]) || "").split(/[,;\s]+/).map((x) => x.trim().toUpperCase()).filter(Boolean),
+    exercices: rel(p["Exercices"]),
+    publie: coche(p["Planning publié"]),
+    notes: texte(p["Notes"]),
+  };
+}
+
+/** Sessions between two dates (inclusive), oldest first. Fresh (1 min): validations change often. */
+export async function lireSeancesPeriode(du: string, au: string): Promise<SeanceE[]> {
+  const pages = await toutLire(DS.seances, 60, TAGS.entrainements, {
+    filter: { and: [{ property: "Date", date: { on_or_after: du } }, { property: "Date", date: { on_or_before: au } }] },
+    sorts: [{ property: "Date", direction: "ascending" }],
+  });
+  return pages.map(versSeance).filter((s) => s.date);
+}
+
+export async function lireSeance(id: string): Promise<SeanceE> {
+  return versSeance((await notion(`pages/${id}`, { method: "GET" })) as Page);
+}
+
+/** Exercise library. */
+export async function lireExercices(): Promise<ExerciceT[]> {
+  const pages = await toutLire(DS.exercices, 300, TAGS.entrainements);
+  return pages.map((pg) => {
+    const p = pg.properties;
+    return {
+      id: pg.id,
+      code: texte(p["Code"]),
+      titre: texte(p["Exercice"]) || "Exercice",
+      styles: multi(p["Style"]),
+      niveau: choix(p["Niveau de difficulté"]),
+      duree: nombreP(p["Durée (min)"]),
+      description: texte(p["Description"]),
+      materiel: texte(p["Matériel"]),
+      objectif: texte(p["Objectif"]),
+      joueurs: nombreP(p["Nombre de joueurs"]),
+      video: texte(p["Lien vidéo"]),
+    };
+  }).sort((a, b) => (a.code || "~").localeCompare(b.code || "~", "fr", { numeric: true }));
+}
+
+/** Who holds a role at a session (empty = nobody); changing the person resets the validation. */
+export async function majPoste(seanceId: string, role: RoleSeance, joueurId: string | null, ok = false) {
+  const r = ROLES.find((x) => x.id === role)!;
+  await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { [r.notion]: { relation: joueurId ? [{ id: joueurId }] : [] }, [r.valide]: { checkbox: Boolean(joueurId) && ok } } } });
+}
+export async function majValidation(seanceId: string, role: RoleSeance, ok: boolean) {
+  const r = ROLES.find((x) => x.id === role)!;
+  await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { [r.valide]: { checkbox: ok } } } });
+}
+export async function majStatutSeance(seanceId: string, statut: "Prévu" | "Confirmé" | "Annulé", motif?: string | null) {
+  const properties: Record<string, unknown> = { Statut: { select: { name: statut } }, "Annulé": { checkbox: statut === "Annulé" } };
+  if (motif !== undefined) properties["Motif d'annulation"] = rt(motif);
+  await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties } });
+}
+export async function majProgramme(seanceId: string, codes: string[], exerciceIds: string[]) {
+  await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { Programme: rt(codes.join(", ")), Exercices: { relation: exerciceIds.map((id) => ({ id })) } } } });
+}
+export async function publierSeance(seanceId: string) {
+  await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { "Planning publié": { checkbox: true } } } });
+}
+export async function creerSeance(s: { date: string; debut: string | null; fin: string | null; lieu: string | null }) {
+  const lim = limiteDe(s.date);
+  const titre = `Entraînement du ${s.date.slice(8, 10)}/${s.date.slice(5, 7)}`;
+  await notion("pages", {
+    body: {
+      parent: { type: "data_source_id", data_source_id: DS.seances },
+      properties: {
+        "Séance": { title: [{ type: "text", text: { content: titre } }] },
+        Date: { date: { start: s.date } },
+        "Heure début": rt(s.debut),
+        "Heure fin": rt(s.fin),
+        Lieu: rt(s.lieu),
+        Statut: { select: { name: "Prévu" } },
+        "Date limite": { date: { start: `${lim.jour}T${lim.heure}:00`, time_zone: "Europe/Brussels" } },
+      },
+    },
+  });
+}
+export async function enregistrerExercice(e: { id?: string | null; code: string; titre: string; style: string; niveau: string | null; duree: number | null; description: string | null; materiel: string | null; objectif: string | null; joueurs: number | null; video: string | null }) {
+  const properties: Record<string, unknown> = {
+    Exercice: { title: [{ type: "text", text: { content: e.titre.slice(0, 200) } }] },
+    Code: rt(e.code),
+    Style: { multi_select: [{ name: e.style }] },
+    "Niveau de difficulté": e.niveau ? { select: { name: e.niveau } } : { select: null },
+    "Durée (min)": { number: e.duree },
+    Description: rt(e.description),
+    "Matériel": rt(e.materiel),
+    Objectif: rt(e.objectif),
+    "Nombre de joueurs": { number: e.joueurs },
+    "Lien vidéo": { url: e.video || null },
+  };
+  if (e.id) await notion(`pages/${e.id}`, { method: "PATCH", body: { properties } });
+  else await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS.exercices }, properties } });
 }
