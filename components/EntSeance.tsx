@@ -162,7 +162,8 @@ export function CellulePoste({ s, role, noms, mesFiches, admin, pool }: {
   const miens = mesFiches.filter((f) => f.roles.includes(role));
   const moi = id && mesFiches.some((f) => f.id === id);
   const ph = phase(s.date);
-  const ferme = ph === "clos" || s.annule;
+  // Staff can always change a role, even after Monday 21:00 or on a cancelled session.
+  const ferme = !admin && (ph === "clos" || s.annule);
   const libre = !id;
   // After the Friday before: an unconfirmed role can be taken by a substitute.
   const supps = ph === "suppleants" && !p.ok && !moi ? mesFiches.filter((f) => f.supps.includes(role) || f.roles.includes(role)) : [];
