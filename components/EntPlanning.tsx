@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ROLES, type RoleSeance, type SeanceE } from "@/lib/entrainements-types";
-import { completerMois, creerMois, publierMois, type Retour } from "@/app/entrainements/actions";
+import { actualiserNotion, completerMois, creerMois, publierMois, type Retour } from "@/app/entrainements/actions";
 import { CellulePoste, Pastille, type MaFiche } from "./EntSeance";
 import "./entrainements.css";
 
@@ -64,6 +64,7 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, equipe
         <div className="en-admin">
           <button type="button" className="btn" disabled={pending} onClick={() => agir(() => creerMois(m))}>📅 Créer les vendredis</button>
           <button type="button" className="btn" disabled={pending || !liste.length} onClick={() => agir(() => completerMois(m))}>🔄 Compléter automatiquement</button>
+          <button type="button" className="btn" disabled={pending} onClick={() => agir(actualiserNotion)}>🔄 Mettre à jour depuis Notion</button>
           <button type="button" className="btn primary" disabled={pending || !liste.length} onClick={() => agir(() => publierMois(m))}>{publie ? "📣 Publier à nouveau" : "📣 Publier le planning"}</button>
         </div>
       ) : null}
