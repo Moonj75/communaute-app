@@ -1,26 +1,25 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Header from "@/components/Header";
-import VueCalendrier from "@/components/club/VueCalendrier";
-import { displayName, getVue, estInactif } from "@/lib/profil";
-import { essayer, lireCalendrier, lireFiches, lireParticipations, nomsJoueurs } from "@/lib/club";
-import { chargerJoueurs } from "@/lib/donnees";
-import { competiteur } from "@/lib/club-types";
+import { displayName, getVue } from "@/lib/profil";
+import { lireExercices } from "@/lib/club";
+import FicheExercice from "@/components/entrainements/FicheExercice";
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendrierPage({ searchParams }: { searchParams: Promise<{ m?: string; e?: string }> }) {
+/** One exercise sheet (video, how it goes, aim, equipment). */
+export default async function ExercicePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) redirect("/login");
-  // Members not active this season only see the discovery space (home page).
-  if (estInactif(profil)) redirect("/#bloc-calendrier");
-  const sp = await searchParams;
-  const [cal, parts, famille, fiches, noms] = await Promise.all([essayer(lireCalendrier), essayer(lireParticipations), chargerJoueurs(supabase, user.email), essayer(lireFiches), essayer(nomsJoueurs)]);
-  const joueurs = [...(noms.data || new Map<string, string>()).entries()].map(([notionId, nom]) => ({ notionId, nom, email: null, actif: true }));
+  const [exercices, { data }] = await Promise.all([lireExercices().catch(() => []), supabase.from("joueurs").select("roles").eq("email", (user.email || "").toLowerCase())]);
+  const e = exercices.find((x) => x.id === id || x.id.replace(/-/g, "") === id.replace(/-/g, ""));
+  if (!e) notFound();
+  const entraineur = (profil?.role === "admin" && !apercu) || ((data || []) as { roles: string[] | null }[]).some((f) => (f.roles || []).includes("🎓 Entraîneur"));
   return (
     <>
-      <Header subtitle="Calendrier des compétitions" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
+      <Header subtitle={`Exercice ${e.code || ""}`} profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
-        <VueCalendrier fiches={fiches.data || undefined} noms={noms.data || undefined} joueurs={joueurs} evs={cal.data || []} parts={parts.data || []} famille={famille.filter(competiteur)} sansCompet={famille.length > 0 && !famille.some(competiteur)} m={sp.m} e={sp.e} erreur={cal.erreur} />
+        <FicheExercice e={e} peutEditer={entraineur} />
       </main>
     </>
   );

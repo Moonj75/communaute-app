@@ -99,7 +99,7 @@ export default function VueAccueil(p: {
       />
       <PhotoAccueil />
 
-      <a className="acc-c acc-entr" href="#bloc-entrainements" style={{ "--k": "var(--n-temps)" } as React.CSSProperties}>
+      <a className="acc-c acc-entr" href="/entrainements" style={{ "--k": "var(--n-temps)" } as React.CSSProperties}>
         <span className="acc-l">🎯 Prochain entraînement</span>
         <b className="acc-v txt">{seance ? dateLongue(seance.date) : "—"}</b>
         <span className="acc-s">{seance ? [seance.debut && seance.fin ? `${seance.debut} – ${seance.fin}` : seance.debut, seance.lieu].filter(Boolean).join(" · ") : "Aucune séance prévue"}</span>
