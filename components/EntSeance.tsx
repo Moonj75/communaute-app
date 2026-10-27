@@ -162,8 +162,10 @@ export function CellulePoste({ s, role, noms, mesFiches, admin, pool }: {
   const changer = (v: string) => start(async () => { const r = await choisirPoste(s.id, role, v || null); setErr(r.ok ? null : r.message); if (r.ok) router.refresh(); });
   const valider = () => start(async () => { const r = await validerPoste(s.id, role, !p.ok); setErr(r.ok ? null : r.message); if (r.ok) router.refresh(); });
 
+  const r = ROLES.find((x) => x.id === role)!;
   return (
-    <td className={`en-cel ${p.ok ? "ok" : id ? "attente" : "vide"}${moi ? " moi" : ""}`}>
+    <div className={`en-li ${p.ok ? "ok" : id ? "attente" : "vide"}${moi ? " moi" : ""}`}>
+      <span className="en-li-r"><span aria-hidden="true">{r.ic}</span> {r.nom}</span>
       {peutChoisir ? (
         <select className="en-sel" value={id} disabled={pending} onChange={(e) => changer(e.target.value)} aria-label={`${ROLES.find((r) => r.id === role)!.nom} du ${s.date}`}>
           {libre || moi || admin ? <option value="">{libre ? "— Libre —" : admin && !moi ? "— Libre —" : "— Me retirer —"}</option> : null}
@@ -173,14 +175,18 @@ export function CellulePoste({ s, role, noms, mesFiches, admin, pool }: {
       ) : (
         <span className="en-nom">{id ? noms[id] || "?" : "—"}</span>
       )}
-      {id ? (
-        moi && !ferme ? (
-          <button type="button" className={`en-ok${p.ok ? " on" : ""}`} disabled={pending} onClick={valider} title={p.ok ? "Retirer ma validation" : "Je valide"}>{p.ok ? "✅" : "Valider"}</button>
+      <span className="en-li-e">
+        {id ? (
+          moi && !ferme ? (
+            <button type="button" className={`en-ok${p.ok ? " on" : ""}`} disabled={pending} onClick={valider} title={p.ok ? "Retirer ma validation" : "Je valide"}>{p.ok ? "✅ Validé" : "Valider"}</button>
+          ) : (
+            <span className={`en-chip ${p.ok ? "ok" : "att"}`}>{p.ok ? "✅ Validé" : "⏳ À valider"}</span>
+          )
         ) : (
-          <span className="en-etat" title={p.ok ? "Validé" : "À valider"}>{p.ok ? "✅" : "⏳"}</span>
-        )
-      ) : null}
+          <span className="en-chip vide">{r.requis ? "À pourvoir" : "Facultatif"}</span>
+        )}
+      </span>
       {err ? <small className="en-err">{err}</small> : null}
-    </td>
+    </div>
   );
 }

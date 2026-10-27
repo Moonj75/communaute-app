@@ -72,3 +72,24 @@ a.en-pt:hover { text-decoration: underline; }
 .en-ligne { display: flex; gap: 10px; flex-wrap: wrap; }
 .en-ligne .f { flex: 1 1 140px; }
 .en-ligne .en-court { flex: 0 1 110px; }
+
+/* Planning : une carte par vendredi, une ligne par rôle (rôle · personne · état). */
+.en-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.en-ven { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 8px 20px -16px rgba(0,0,0,.35); }
+.en-ven-t { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px 6px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
+.en-ven-d { font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 18px; text-transform: capitalize; }
+.en-li { display: grid; grid-template-columns: 104px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: var(--sunk); border-left: 4px solid transparent; }
+.en-li.ok { border-left-color: #8fdc00; background: color-mix(in srgb, #c8ff2e 16%, var(--surface)); }
+.en-li.attente { border-left-color: var(--gold, #f5d300); }
+.en-li.moi { box-shadow: 0 0 0 2px #00e5ff inset; }
+.en-li-r { font-size: 12px; font-weight: 800; letter-spacing: .03em; color: var(--muted); white-space: nowrap; }
+.en-li .en-sel { max-width: none; width: 100%; min-width: 0; }
+.en-li .en-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.en-li-e { justify-self: end; }
+.en-li .en-ok { margin: 0; display: inline-block; white-space: nowrap; }
+.en-li .en-err { grid-column: 1 / -1; }
+.en-chip { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.en-chip.ok { background: #c8ff2e; color: #142000; }
+.en-chip.att { background: var(--gold-soft, #fff4bf); color: var(--gold-ink, #5a4700); }
+.en-chip.vide { background: transparent; color: var(--muted); border: 1px dashed var(--line); }
+@media (max-width: 420px) { .en-grille { grid-template-columns: 1fr; } .en-li { grid-template-columns: 86px minmax(0, 1fr) auto; } }

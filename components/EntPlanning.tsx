@@ -7,6 +7,7 @@ import { actualiserNotion, completerMois, creerMois, publierMois, type Retour } 
 import { CellulePoste, Pastille, type MaFiche } from "./EntSeance";
 import "./entrainements.css";
 
+const jourLong = (d: string) => new Date(d.slice(0, 10) + "T12:00:00Z").toLocaleDateString("fr-BE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const nomMois = (m: string) => new Date(`${m}-15T12:00:00Z`).toLocaleDateString("fr-BE", { month: "long", year: "numeric", timeZone: "UTC" });
 
 /**
@@ -36,26 +37,16 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, equipe
       {!admin && !mesRoles.size ? <p className="muted small">Planning des vendredis. Pour rejoindre l&apos;équipe (entraîneur, ouvreur, fermeur, buvette ou suppléant), demande au staff de t&apos;ajouter à la liste.</p> : null}
       {!admin && mesRoles.size ? <p className="muted small">Choisis « Moi » sur une date libre et valide au plus tard le vendredi d&apos;avant à 21h00 (tu peux valider tout de suite). Ensuite, la place non confirmée est proposée aux suppléants. Le planning est géré par l&apos;équipe : chacun peut créer les vendredis, compléter et publier.</p> : null}
       {liste.length ? (
-        <div className="en-tab-cadre">
-          <table className="en-tab">
-            <thead>
-              <tr>
-                <th>Vendredi</th>
-                {ROLES.map((r) => <th key={r.id} title={r.nom}>{r.ic} <span className="en-thn">{r.nom}</span></th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {liste.map((s) => (
-                <tr key={s.id}>
-                  <th className="en-d">
-                    <b>{s.date.slice(8, 10)}/{s.date.slice(5, 7)}</b>
-                    <Pastille s={s} />
-                  </th>
-                  {ROLES.map((r) => <CellulePoste key={r.id} s={s} role={r.id} noms={noms} mesFiches={mesFiches} admin={admin} pool={pools[r.id]} />)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="en-grille">
+          {liste.map((s) => (
+            <section key={s.id} className="en-ven">
+              <header className="en-ven-t">
+                <b className="en-ven-d">{jourLong(s.date)}</b>
+                <Pastille s={s} />
+              </header>
+              {ROLES.map((r) => <CellulePoste key={r.id} s={s} role={r.id} noms={noms} mesFiches={mesFiches} admin={admin} pool={pools[r.id]} />)}
+            </section>
+          ))}
         </div>
       ) : (
         <p className="vide">Pas encore de séances en {nomMois(m)}.{equipe ? " Crée les vendredis ci-dessous." : ""}</p>
