@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getVue } from "@/lib/profil";
 import { TAGS, lireMembresRoles, creerSeance, enregistrerExercice, lireExercices, lireSeance, lireSeancesPeriode, majPoste, majProgramme, majStatutSeance, majValidation, publierSeance } from "@/lib/club";
-import { ROLES, limitePassee, phase, prochainCode, vendredis, type RoleSeance } from "@/lib/entrainements-types";
+import { ROLES, limitePassee, phase, prochainCode, statutEffectif, vendredis, type RoleSeance } from "@/lib/entrainements-types";
 import { clientAdmin } from "@/lib/supabase/admin";
 import { pousser, pushPret, type Abonnement } from "@/lib/push";
 import { deposer } from "@/lib/courrier";
@@ -46,6 +46,7 @@ export async function choisirPoste(seanceId: string, role: RoleSeance, joueurId:
   const actuel = s.postes[role].ids[0] || null;
   const miens = new Set(q.fiches.map((f) => f.notion_id));
   if (!q.admin) {
+    if (statutEffectif(s) === "Confirmé") return { ok: false, message: "L'entraînement est confirmé : seul le staff peut encore changer les rôles." };
     const ph = phase(s.date);
     if (ph === "clos") return { ok: false, message: "La date limite (lundi 21h00) est passée : contacte le staff." };
     const f = joueurId ? q.fiches.find((x) => x.notion_id === joueurId) : null;
@@ -73,6 +74,7 @@ export async function validerPoste(seanceId: string, role: RoleSeance, ok: boole
   const s = await lireSeance(seanceId);
   const actuel = s.postes[role].ids[0];
   if (!q.admin) {
+    if (statutEffectif(s) === "Confirmé") return { ok: false, message: "L'entraînement est confirmé : seul le staff peut encore changer les rôles." };
     if (!actuel || !q.fiches.some((f) => f.notion_id === actuel)) return { ok: false, message: "Ce rôle n'est pas à ton nom." };
     if (limitePassee(s.date)) return { ok: false, message: "La date limite (lundi 21h00) est passée." };
   }
@@ -175,7 +177,9 @@ export async function publierMois(mois: string): Promise<Retour> {
 
 /** Trainers (and staff): confirm or cancel by hand (bad weather, room closed…). */
 export async function changerStatut(seanceId: string, statut: "Prévu" | "Confirmé" | "Annulé", motif: string): Promise<Retour> {
-  if (!(await staffOuEntraineur())) return { ok: false, message: "Réservé aux entraîneurs et au staff." };
+  const q = await staffOuEntraineur();
+  if (!q) return { ok: false, message: "Réservé aux entraîneurs et au staff." };
+  if (!q.admin && statutEffectif(await lireSeance(seanceId)) === "Confirmé") return { ok: false, message: "L'entraînement est confirmé : seul le staff peut encore le changer." };
   await majStatutSeance(seanceId, statut, statut === "Annulé" ? motif.slice(0, 200) || "Annulé par le staff" : null);
   fini();
   return { ok: true, message: `Séance : ${statut}.` };

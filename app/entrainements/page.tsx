@@ -80,7 +80,7 @@ export default async function EntrainementsPage({ searchParams }: { searchParams
               titre: "Prochain entraînement",
               ic: "🎯",
               badge: aMoi ? "!" : null,
-              contenu: prochaine ? <Seance s={prochaine} noms={equipe ? nomsR : {}} mesFiches={mesFiches} admin={entraineur} entraineur={entraineur} equipe={equipe} exercices={entraineur ? ex : []} /> : <p className="vide">Aucun entraînement programmé pour le moment.</p>,
+              contenu: prochaine ? <Seance s={prochaine} noms={equipe ? nomsR : {}} mesFiches={mesFiches} admin={entraineur} entraineur={entraineur} equipe={equipe} staff={admin} exercices={entraineur ? ex : []} /> : <p className="vide">Aucun entraînement programmé pour le moment.</p>,
             },
             ...(equipe ? [{ id: "planning", titre: "Planning des rôles", ic: "📅", contenu: <Planning mois={mois} seances={liste} noms={nomsR} mesFiches={mesFiches} admin={admin} equipe={equipe} pools={pools} /> }] : []),
             ...(entraineur ? [{ id: "exercices", titre: "Fiches d'exercices", ic: "📚", badge: ex.length ? String(ex.length) : null, contenu: <Bibliotheque exercices={ex} peutEditer={entraineur} /> }] : []),
