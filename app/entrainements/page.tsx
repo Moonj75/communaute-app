@@ -51,11 +51,13 @@ export default async function EntrainementsPage({ searchParams }: { searchParams
   const liste = seances.data || [];
   const ex = exercices.data || [];
   const prochaine = liste.find((s) => s.date.slice(0, 10) >= T);
-  const entraineur = admin || mesFiches.some((f) => f.roles.includes("entraineur"));
+  // Exercise sheets and programme: trainers (and their substitutes) only. Planning and roles: the training crew.
+  const entraineur = admin || mesFiches.some((f) => f.roles.includes("entraineur") || f.supps.includes("entraineur"));
   const equipe = admin || mesFiches.some((f) => f.roles.length > 0 || f.supps.length > 0);
   const aMoi = prochaine && ROLES.some((r) => prochaine.postes[r.id].ids.some((id) => mesFiches.some((f) => f.id === id) && !prochaine.postes[r.id].ok));
 
   // One exercise sheet (link « /entrainements?ex=… »).
+  if (exId && !entraineur) redirect("/entrainements");
   const fiche = exId ? ex.find((e) => e.id === exId || e.id.replace(/-/g, "") === exId.replace(/-/g, "")) : null;
   if (fiche)
     return (
@@ -78,10 +80,10 @@ export default async function EntrainementsPage({ searchParams }: { searchParams
               titre: "Prochain entraînement",
               ic: "🎯",
               badge: aMoi ? "!" : null,
-              contenu: prochaine ? <Seance s={prochaine} noms={nomsR} mesFiches={mesFiches} admin={entraineur} entraineur={entraineur} exercices={ex} /> : <p className="vide">Aucun entraînement programmé pour le moment.</p>,
+              contenu: prochaine ? <Seance s={prochaine} noms={equipe ? nomsR : {}} mesFiches={mesFiches} admin={entraineur} entraineur={entraineur} equipe={equipe} exercices={entraineur ? ex : []} /> : <p className="vide">Aucun entraînement programmé pour le moment.</p>,
             },
-            { id: "planning", titre: "Planning des rôles", ic: "📅", contenu: <Planning mois={mois} seances={liste} noms={nomsR} mesFiches={mesFiches} admin={admin} equipe={equipe} pools={pools} /> },
-            { id: "exercices", titre: "Fiches d'exercices", ic: "📚", badge: ex.length ? String(ex.length) : null, contenu: <Bibliotheque exercices={ex} peutEditer={entraineur} /> },
+            ...(equipe ? [{ id: "planning", titre: "Planning des rôles", ic: "📅", contenu: <Planning mois={mois} seances={liste} noms={nomsR} mesFiches={mesFiches} admin={admin} equipe={equipe} pools={pools} /> }] : []),
+            ...(entraineur ? [{ id: "exercices", titre: "Fiches d'exercices", ic: "📚", badge: ex.length ? String(ex.length) : null, contenu: <Bibliotheque exercices={ex} peutEditer={entraineur} /> }] : []),
           ]}
         />
       </main>
