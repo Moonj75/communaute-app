@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import Blocs from "@/components/Blocs";
 import { displayName, getVue } from "@/lib/profil";
-import { essayer, lireExercices, lireSeancesPeriode, nomsJoueurs } from "@/lib/club";
+import { essayer, lireExercices, lireMembresRoles, lireSeancesPeriode, nomsJoueurs } from "@/lib/club";
 import { ROLES, type RoleSeance } from "@/lib/entrainements-types";
 import { aujourdhui } from "@/lib/club-types";
 import Seance, { type MaFiche } from "@/components/EntSeance";
@@ -27,16 +27,26 @@ export default async function EntrainementsPage({ searchParams }: { searchParams
   const admin = profil?.role === "admin" && !apercu;
   const T = aujourdhui();
   const mois = [T.slice(0, 7), moisPlus(T.slice(0, 7), 1)];
-  const [seances, exercices, noms, mesR, tousR] = await Promise.all([
+  const email = (user.email || "").toLowerCase();
+  const [seances, exercices, noms, membresR] = await Promise.all([
     essayer(() => lireSeancesPeriode(`${mois[0]}-01`, finMois(mois[1]))),
     essayer(lireExercices),
     essayer(nomsJoueurs),
-    supabase.from("joueurs").select("*").eq("email", (user.email || "").toLowerCase()),
-    admin ? supabase.from("joueurs").select("*") : Promise.resolve({ data: [] }),
+    // Roles straight from Notion (1 minute); the app copy if Notion does not answer.
+    essayer(lireMembresRoles),
   ]);
-  const mesFiches: MaFiche[] = ((mesR.data || []) as Fiche[]).filter((f) => !f.archive).map((f) => ({ id: f.notion_id, nom: [f.prenom, f.nom].filter(Boolean).join(" "), roles: rolesDe(f), supps: suppsDe(f) }));
-  const tous = ((tousR.data || []) as Fiche[]).filter((f) => f.actif && !f.archive);
-  const pools = Object.fromEntries(ROLES.map((r) => [r.id, tous.filter((f) => rolesDe(f).includes(r.id)).map((f) => ({ id: f.notion_id, nom: [f.prenom, f.nom].filter(Boolean).join(" ") })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"))])) as Record<RoleSeance, { id: string; nom: string }[]>;
+  const membres: Fiche[] = membresR.data || (((await supabase.from("joueurs").select("*")).data || []) as Fiche[]);
+  const nomDe = (f: Fiche) => [f.prenom, f.nom].filter(Boolean).join(" ");
+  const mesFiches: MaFiche[] = membres.filter((f) => f.email === email && !f.archive).map((f) => ({ id: f.notion_id, nom: nomDe(f), roles: rolesDe(f), supps: suppsDe(f) }));
+  const tous = membres.filter((f) => f.actif && !f.archive);
+  // Staff list: the people on the role first (★), then the substitutes (🔁), then everybody else.
+  const pools = Object.fromEntries(ROLES.map((r) => {
+    const rang = (f: Fiche) => (rolesDe(f).includes(r.id) ? 0 : suppsDe(f).includes(r.id) ? 1 : 2);
+    const liste = (admin ? tous : tous.filter((f) => rang(f) === 0))
+      .sort((a, b) => rang(a) - rang(b) || nomDe(a).localeCompare(nomDe(b), "fr"))
+      .map((f) => ({ id: f.notion_id, nom: `${["★ ", "🔁 ", ""][rang(f)]}${nomDe(f)}` }));
+    return [r.id, liste];
+  })) as Record<RoleSeance, { id: string; nom: string }[]>;
   const nomsR = Object.fromEntries(noms.data || []);
   const liste = seances.data || [];
   const ex = exercices.data || [];

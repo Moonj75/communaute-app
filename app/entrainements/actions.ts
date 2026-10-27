@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getVue } from "@/lib/profil";
-import { TAGS, creerSeance, enregistrerExercice, lireExercices, lireSeance, lireSeancesPeriode, majPoste, majProgramme, majStatutSeance, majValidation, publierSeance } from "@/lib/club";
+import { TAGS, lireMembresRoles, creerSeance, enregistrerExercice, lireExercices, lireSeance, lireSeancesPeriode, majPoste, majProgramme, majStatutSeance, majValidation, publierSeance } from "@/lib/club";
 import { ROLES, limitePassee, phase, prochainCode, vendredis, type RoleSeance } from "@/lib/entrainements-types";
 import { clientAdmin } from "@/lib/supabase/admin";
 import { pousser, pushPret, type Abonnement } from "@/lib/push";
@@ -15,9 +15,23 @@ type Fiche = { notion_id: string; prenom: string | null; nom: string; email: str
 async function qui() {
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) return null;
-  const { data } = await supabase.from("joueurs").select("*").eq("email", (user.email || "").toLowerCase());
-  const fiches = ((data || []) as Fiche[]).filter((f) => !f.archive);
+  const email = (user.email || "").toLowerCase();
+  // Roles straight from Notion (a role just added there counts at once); the app copy if Notion does not answer.
+  let fiches: Fiche[];
+  try {
+    fiches = (await lireMembresRoles()).filter((f) => f.email === email && !f.archive);
+  } catch {
+    const { data } = await supabase.from("joueurs").select("*").eq("email", email);
+    fiches = ((data || []) as Fiche[]).filter((f) => !f.archive);
+  }
   return { supabase, admin: profil?.role === "admin" && !apercu, apercu: Boolean(apercu), fiches };
+}
+/** Everybody with roles (Notion first, app copy otherwise). */
+async function membres(q: { supabase: Awaited<ReturnType<typeof getVue>>["supabase"] }): Promise<Fiche[]> {
+  try { return await lireMembresRoles(); } catch {
+    const { data } = await (clientAdmin() || q.supabase).from("joueurs").select("*");
+    return (data || []) as Fiche[];
+  }
 }
 const aLeRole = (f: Fiche, role: RoleSeance) => (f.roles || []).includes(ROLES.find((r) => r.id === role)!.tag);
 const estSuppleant = (f: Fiche, role: RoleSeance) => (f.roles || []).includes(ROLES.find((r) => r.id === role)!.supp);
@@ -107,8 +121,7 @@ export async function completerMois(mois: string): Promise<Retour> {
   if (!q) return { ok: false, message: "Réservé à l'équipe des entraînements." };
   const jours = vendredis(mois);
   const seances = await lireSeancesPeriode(jours[0], jours[jours.length - 1]);
-  const { data } = await (clientAdmin() || q.supabase).from("joueurs").select("*");
-  const tous = ((data || []) as Fiche[]).filter((f) => f.actif && !f.archive);
+  const tous = (await membres(q)).filter((f) => f.actif && !f.archive);
   let n = 0;
   for (const r of ROLES) {
     const pool = tous.filter((f) => aLeRole(f, r.id));
@@ -136,8 +149,7 @@ export async function publierMois(mois: string): Promise<Retour> {
   const jours = vendredis(mois);
   const seances = await lireSeancesPeriode(jours[0], jours[jours.length - 1]);
   if (!seances.length) return { ok: false, message: "Aucune séance ce mois-là : crée d'abord les vendredis." };
-  const { data } = await (clientAdmin() || q.supabase).from("joueurs").select("*");
-  const fiches = (data || []) as Fiche[];
+  const fiches = await membres(q);
   const parEmail = new Map<string, string[]>();
   for (const s of seances) {
     for (const r of ROLES) for (const id of s.postes[r.id].ids) {
@@ -195,4 +207,21 @@ export async function sauverExercice(fd: FormData): Promise<Retour> {
   await enregistrerExercice({ id, code, titre, style, niveau: s("niveau") || null, duree: n("duree"), description: s("description") || null, materiel: s("materiel") || null, objectif: s("objectif") || null, joueurs: n("joueurs"), video: video || null });
   fini();
   return { ok: true, message: `Fiche ${code} enregistrée ✓` };
+}
+
+/** « Mettre à jour depuis Notion »: sessions and roles read again now; the roles are also copied into the app. */
+export async function actualiserNotion(): Promise<Retour> {
+  const q = await equipe();
+  if (!q) return { ok: false, message: "Réservé à l'équipe des entraînements." };
+  revalidateTag(TAGS.entrainements);
+  let n = 0;
+  try {
+    const db = clientAdmin();
+    const liste = await lireMembresRoles();
+    if (db) for (const m of liste) { const { error } = await db.from("joueurs").update({ roles: m.roles }).eq("notion_id", m.notion_id); if (!error) n++; }
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Notion ne répond pas." };
+  }
+  revalidatePath("/entrainements");
+  return { ok: true, message: `À jour avec Notion ✓ (${n} fiches).` };
 }
