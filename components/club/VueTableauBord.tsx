@@ -240,7 +240,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
           </section>
         </>) : <p className="vide">Choisis une compétition.</p> },
 
-        { id: "inscrits", titre: "Transport des inscrits", ic: "🚗", badge: rows.length || null, contenu: sel && c ? (
+        { id: "inscrits", titre: "Inscrits, transport et référents", ic: "🚗", badge: rows.length || null, contenu: sel && c ? (
           <section className="panel"><div className="bd">
               {rows.length ? (
                 <>
