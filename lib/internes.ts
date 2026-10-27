@@ -476,7 +476,10 @@ export function situations(competitions: { c: Competition; groupes: Groupe[]; ma
 /* ------------------------------------------------------------------ validators */
 
 /** Role given in Notion (« Rôles ») to the members who may validate club competition scores. */
-export const ROLE_VALIDEUR = "✅ Valideur";
+export const ROLE_VALIDEUR = "✅ Valideur chpt interne";
+/** Former name of the role (still accepted). */
+export const ROLES_VALIDEUR = [ROLE_VALIDEUR, "✅ Valideur"];
+export const estValideur = (roles: string[] | null | undefined) => (roles || []).some((r) => ROLES_VALIDEUR.includes(r));
 
 /** A score waiting for a validation (typed by one player, or different between the two). */
 export type AValider = {
