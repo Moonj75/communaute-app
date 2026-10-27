@@ -26,7 +26,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
   const name = displayName(profil, user.email);
 
   const [{ data: fiches }, compets, cl, res, se, cal, noms, eug, clubsComplet] = await Promise.all([
-    supabase.from("joueurs").select("notion_id,prenom,cagnotte,roles,actif").eq("email", (user.email || "").toLowerCase()),
+    supabase.from("joueurs").select("*").eq("email", (user.email || "").toLowerCase()),
     prochainesCompetitions(2),
     essayer(lireClassementsClub),
     essayer(() => lireResultats(6)),
@@ -61,6 +61,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
           salut={greeting()}
           isAdmin={profil?.role === "admin"}
           lie={Boolean(profil)}
+          sansCompet={((fiches || []) as { sans_competition?: boolean; archive?: boolean }[]).filter((f) => !f.archive).length > 0 && ((fiches || []) as { sans_competition?: boolean; archive?: boolean }[]).filter((f) => !f.archive).every((f) => f.sans_competition)}
           email={user.email || ""}
           gens={(fiches || []) as Gens}
           prochaine={next ? { nom: next.nom, date: next.date, lieu: next.lieu } : null}

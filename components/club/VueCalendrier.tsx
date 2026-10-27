@@ -18,6 +18,8 @@ export type CalendrierProps = {
   evs: Evenement[];
   parts: Participation[];
   famille: JoueurLite[];
+  /** Account « sans compétitions officielles »: the calendar is read-only (no answer button at all). */
+  sansCompet?: boolean;
   m?: string;
   e?: string;
   erreur?: string | null;
@@ -34,7 +36,7 @@ function lien(q: { m?: string; e?: string }) {
 
 export { decisionBadge };
 
-export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiches, noms, joueurs }: CalendrierProps) {
+export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiches, noms, joueurs, sansCompet = false }: CalendrierProps) {
   const today = aujourdhui();
   const visibles = evs.filter((x) => x.date && !x.jourSpecial && estRetenu(x));
   const avenir = visibles.filter((x) => (x.fin || x.date)! >= today);
@@ -83,7 +85,9 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiche
                 </div>
               ) : null}
               <div className="ev-actions">
-                {famille.some((j) => modifiable(sel, idx.get(sel.id)?.get(j.notionId), today)) || (!famille.length && inscriptionsOuvertes(sel, today)) ? (
+                {sansCompet ? (
+                  <span className="muted small">Statut « sans compétitions officielles » : pas de réponse à donner.</span>
+                ) : famille.some((j) => modifiable(sel, idx.get(sel.id)?.get(j.notionId), today)) || (!famille.length && inscriptionsOuvertes(sel, today)) ? (
                   famille.length ? (
                     famille.filter((j) => modifiable(sel, idx.get(sel.id)?.get(j.notionId), today)).map((j) => (
                       <a key={j.notionId} className="btn primary" href={lienReponse(sel, j.notionId)}>

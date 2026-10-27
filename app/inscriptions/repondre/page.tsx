@@ -29,6 +29,10 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
   if (!ev)
     return (<>{entete}<main className="wrap"><div className="notice err">Évènement introuvable.</div><Link href="/inscriptions">← Mes inscriptions</Link></main></>);
 
+  // Nobody of this account takes part in official competitions: nothing to answer.
+  if (!actifs.length)
+    return (<>{entete}<main className="wrap"><div className="notice">Ton statut au club est « sans compétitions officielles » : tu n&apos;as aucun formulaire de compétition à remplir.</div><Link className="btn" href="/calendrier">← Calendrier</Link></main></>);
+
   // Family account and no player chosen yet: pick who answers.
   if (!joueur)
     return (

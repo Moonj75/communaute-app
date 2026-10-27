@@ -20,7 +20,7 @@ export default async function CalendrierPage({ searchParams }: { searchParams: P
     <>
       <Header subtitle="Calendrier des compétitions" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
-        <VueCalendrier fiches={fiches.data || undefined} noms={noms.data || undefined} joueurs={joueurs} evs={cal.data || []} parts={parts.data || []} famille={famille.filter(competiteur)} m={sp.m} e={sp.e} erreur={cal.erreur} />
+        <VueCalendrier fiches={fiches.data || undefined} noms={noms.data || undefined} joueurs={joueurs} evs={cal.data || []} parts={parts.data || []} famille={famille.filter(competiteur)} sansCompet={famille.length > 0 && !famille.some(competiteur)} m={sp.m} e={sp.e} erreur={cal.erreur} />
       </main>
     </>
   );
