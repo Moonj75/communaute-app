@@ -197,7 +197,7 @@ function JourBadge({ j }: { j?: "S" | "D" }) {
     <b
       title={j === "S" ? "Samedi uniquement" : "Dimanche uniquement"}
       aria-label={j === "S" ? "samedi uniquement" : "dimanche uniquement"}
-      style={{ display: "inline-grid", placeItems: "center", width: 24, height: 24, marginLeft: 6, flex: "none", borderRadius: "50%", font: "900 14px/1 var(--font-display, system-ui)", fontStyle: "normal", background: j === "S" ? "#1e5bff" : "#8a2be2", color: "#fff", border: "2px solid #fff", boxShadow: "0 0 0 2px " + (j === "S" ? "#1e5bff" : "#8a2be2") + ", 0 2px 6px rgba(0,0,0,.35)" }}
+      style={{ display: "inline-grid", placeItems: "center", width: 24, height: 24, marginLeft: 6, flex: "none", borderRadius: "50%", font: "900 14px/1 var(--font-display, system-ui)", fontStyle: "normal", background: "#fff", color: j === "S" ? "#1e5bff" : "#8a2be2", border: "2.5px solid " + (j === "S" ? "#1e5bff" : "#8a2be2"), boxShadow: "0 2px 6px rgba(0,0,0,.3)" }}
     >
       {j}
     </b>
