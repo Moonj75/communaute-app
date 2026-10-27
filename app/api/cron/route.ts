@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { clientAdmin } from "@/lib/supabase/admin";
-import { lireCalendrier, lireParticipations, lireTaches } from "@/lib/club";
+import { TAGS, lireCalendrier, lireParticipations, lireTaches } from "@/lib/club";
 import { pousser, pushPret, type Abonnement, type MessagePush } from "@/lib/push";
 import { comptesActifs, comptesConcernes, inscritsOui, sansReponse } from "@/lib/audiences";
 import { lireEligibles } from "@/lib/eligibles";
 import { deposer } from "@/lib/courrier";
+import { traiterEntrainements } from "@/lib/entrainements-cron";
 import { fusionner, remplir, type CleModele, type ModeleEnregistre } from "@/lib/modeles-notifs";
 import type { JoueurLite } from "@/lib/club-types";
 import { ajouterJours, ajouterMois, aujourdhui, dateCourte, estCompetition, estRetenu, indexReponses, lienReponse, DECISION_OUI } from "@/lib/club-types";
@@ -19,6 +21,8 @@ type Envoi = { cle: string; emails: Set<string>; msg: MessagePush; modele?: CleM
  * Protected by CRON_SECRET: Vercel sends it automatically, nobody else can trigger this.
  */
 export async function GET(req: NextRequest) {
+  // Hourly trainings check from Supabase (SQL step 21): « ?quoi=entrainements » with its own token.
+  if (req.nextUrl.searchParams.get("quoi") === "entrainements") return entrainementsSeuls(req);
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ erreur: "non autorisé" }, { status: 401 });
   if (!pushPret()) return NextResponse.json({ info: "clés VAPID absentes : rien envoyé" });
@@ -149,5 +153,20 @@ export async function GET(req: NextRequest) {
       /* continue with the next message */
     }
   }
-  return NextResponse.json({ date: T, envois: bilan });
+  // Trainings (safety net if the hourly Supabase job is not installed): confirmation / cancellation.
+  const entrainements = await traiterEntrainements(db).catch((e) => ({ erreur: e instanceof Error ? e.message : String(e) }));
+  return NextResponse.json({ date: T, envois: bilan, entrainements });
+}
+
+/** Trainings only: accepted with the Vercel CRON_SECRET or the token created in Supabase (nothing to copy by hand). */
+async function entrainementsSeuls(req: NextRequest) {
+  const db = clientAdmin();
+  if (!db) return NextResponse.json({ info: "SUPABASE_SECRET_KEY absente" });
+  const auth = req.headers.get("authorization") || "";
+  const { data: j } = await db.from("cron_jetons").select("jeton").eq("nom", "entrainements").maybeSingle();
+  const permis = [process.env.CRON_SECRET, (j as { jeton?: string } | null)?.jeton].filter((x): x is string => Boolean(x && x.length >= 16));
+  if (!permis.some((x) => auth === `Bearer ${x}`)) return NextResponse.json({ erreur: "non autorisé" }, { status: 401 });
+  const r = await traiterEntrainements(db);
+  if (r.decisions.length) revalidateTag(TAGS.entrainements);
+  return NextResponse.json(r);
 }
