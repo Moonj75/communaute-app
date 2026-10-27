@@ -99,6 +99,31 @@ export function phase(date: string, now = maintenantBxl()): "titulaires" | "supp
   return now >= `${t.jour} ${t.heure}` ? "suppleants" : "titulaires";
 }
 
+const plusJours = (jour: string, n: number) => { const d = new Date(jour + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+/**
+ * Reminders, more and more often as a deadline gets near (Brussels time, the cron runs every hour at :05).
+ * Holders: Monday, Wednesday, Thursday 18:00, then Friday 12:00, 18:00, 20:00 (deadline Friday 21:00).
+ * Substitutes: Saturday 10:00, Sunday 18:00, then Monday 09:00, 15:00, 19:00, 20:00 (deadline Monday 21:00).
+ */
+export function rappelsDe(date: string): { quand: string; phase: "titulaires" | "suppleants"; limite: string }[] {
+  const t = limiteTitulaires(date).jour;
+  const l = limiteDe(date).jour;
+  const lt = `${t} 21:00`, ll = `${l} 21:00`;
+  return [
+    ...[[-4, "18:00"], [-2, "18:00"], [-1, "18:00"], [0, "12:00"], [0, "18:00"], [0, "20:00"]].map(([n, h]) => ({ quand: `${plusJours(t, n as number)} ${h}`, phase: "titulaires" as const, limite: lt })),
+    ...[[1, "10:00"], [2, "18:00"], [3, "09:00"], [3, "15:00"], [3, "19:00"], [3, "20:00"]].map(([n, h]) => ({ quand: `${plusJours(t, n as number)} ${h}`, phase: "suppleants" as const, limite: ll })),
+  ];
+}
+/** « 3 jours », « 5 h », « 55 min » between two « YYYY-MM-DD HH:mm » texts. */
+export function reste(now: string, limite: string) {
+  const ms = (x: string) => Date.parse(x.replace(" ", "T") + ":00Z");
+  const min = Math.max(0, Math.round((ms(limite) - ms(now)) / 60000));
+  if (min >= 48 * 60) return `${Math.round(min / 1440)} jours`;
+  if (min >= 60) return `${Math.round(min / 60)} h`;
+  return `${min} min`;
+}
+
 /** Required roles filled and validated (trainer, opener, closer). */
 export const complet = (s: SeanceE) => ROLES.filter((r) => r.requis).every((r) => s.postes[r.id].ids.length > 0 && s.postes[r.id].ok);
 
