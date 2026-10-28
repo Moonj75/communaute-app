@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { sendMagicLink, verifierCode, type CodeState, type LoginState } from "./actions";
+import Aide from "./Aide";
 
 const initial: LoginState = { status: "idle" };
 const initialCode: CodeState = { status: "idle" };
@@ -9,8 +10,11 @@ const initialCode: CodeState = { status: "idle" };
 /** Step 2: the code of the e-mail, typed here (works in the installed app, whatever opens the mail). */
 function SaisieCode({ email, recommencer }: { email: string; recommencer: () => void }) {
   const [state, action, pending] = useActionState(verifierCode, initialCode);
+  const [aide, setAide] = useState(false);
   const champ = useRef<HTMLInputElement>(null);
   useEffect(() => { champ.current?.focus(); }, []);
+  if (state.status === "aide" && state.cas) return <Aide cas={state.cas} email={email} />;
+  if (aide) return <Aide cas="code" email={email} />;
   return (
     <form action={action} className="login-code">
       <div className="notice ok" role="status">
@@ -46,6 +50,7 @@ function SaisieCode({ email, recommencer }: { email: string; recommencer: () => 
         Avec l&apos;application installée, utilise le code.
       </p>
       <button type="button" className="btn ghost" onClick={recommencer}>↺ Changer d&apos;adresse ou renvoyer un code</button>
+      <button type="button" className="btn ghost" onClick={() => setAide(true)}>📭 Je ne reçois pas le code / il ne marche pas</button>
     </form>
   );
 }
@@ -54,6 +59,8 @@ export default function LoginForm({ error }: { error?: string }) {
   const [state, action, pending] = useActionState(sendMagicLink, initial);
 
   if (state.status === "sent") return <SaisieCode email={state.email || ""} recommencer={() => window.location.assign("/login")} />;
+  // Not (or no longer) in the club: the help page made for that situation.
+  if (state.status === "aide" && state.cas) return <Aide cas={state.cas} email={state.email || ""} nom={state.nom} />;
 
   return (
     <form action={action}>

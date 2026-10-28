@@ -1,14 +1,30 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import LoginForm from "./LoginForm";
+import Aide from "./Aide";
+import type { CasAide } from "./actions";
+import { createClient } from "@/lib/supabase/server";
 
 const ERRORS: Record<string, string> = {
   lien: "Ce lien de connexion n'est plus valable (déjà utilisé ou expiré). Demandez-en un nouveau.",
-  acces: "Votre adresse n'est pas reconnue par le club. Contactez un administrateur.",
 };
+const CAS: CasAide[] = ["inconnu", "attente", "archive", "code"];
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ erreur?: string }> }) {
-  const { erreur } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ erreur?: string; aide?: string; email?: string }> }) {
+  const sp = await searchParams;
+  const erreur = sp.erreur;
+  // Help page: /login?aide=inconnu|attente|archive|code (also when a mail link was refused: erreur=acces).
+  let cas = (CAS.includes(sp.aide as CasAide) ? sp.aide : erreur === "acces" ? "inconnu" : null) as CasAide | null;
+  let email = (sp.email || "").slice(0, 120);
+  // Signed in through a mail link but archived (former member): the page to ask for a comeback.
+  if (!cas) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: p } = await supabase.from("profils").select("archive,role").eq("id", user.id).maybeSingle();
+      if (p?.archive && p.role !== "admin") { cas = "archive"; email = user.email || ""; }
+    }
+  }
   return (
     <>
       <Header subtitle="Espace membres" valeurs />
@@ -25,11 +41,18 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="login-side">
           <section className="panel">
             <div className="bd" style={{ padding: 28 }}>
-              <h2>Connexion</h2>
-              <p className="muted" style={{ margin: 0 }}>
-                Entre l&apos;adresse e-mail que tu as donnée au club.
-              </p>
-              <LoginForm error={erreur ? ERRORS[erreur] || ERRORS.lien : undefined} />
+              {cas ? (
+                <Aide cas={cas} email={email} />
+              ) : (
+                <>
+                  <h2>Connexion</h2>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Entre l&apos;adresse e-mail que tu as donnée au club.
+                  </p>
+                  <LoginForm error={erreur ? ERRORS[erreur] || ERRORS.lien : undefined} />
+                  <Link className="btn ghost" href="/login?aide=code" style={{ marginTop: 10 }}>🆘 Un souci pour te connecter ?</Link>
+                </>
+              )}
             </div>
           </section>
           <Link className="decouvrir" href="/club">
