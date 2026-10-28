@@ -16,6 +16,7 @@ const GENRES = {
 } as const;
 
 function bouton(lien: string) {
+  if (lien.includes("guide=")) return "📘 Ouvrir le guide";
   if (lien.startsWith("/inscriptions")) return "📝 Répondre au formulaire";
   if (lien.startsWith("/calendrier")) return "📅 Voir l'évènement";
   if (lien.startsWith("/staff/planning")) return "✅ Ouvrir le planning";
