@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ROLES, statutEffectif, type RoleSeance, type SeanceE } from "@/lib/entrainements-types";
 import { actualiserNotion, type Retour } from "@/app/entrainements/actions";
-import { CellulePoste, Pastille, type MaFiche } from "./EntSeance";
+import { CellulePoste, DispoLigne, Pastille, type MaFiche } from "./EntSeance";
 import "./entrainements.css";
 
 const jourLong = (d: string) => new Date(d.slice(0, 10) + "T12:00:00Z").toLocaleDateString("fr-BE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
@@ -39,7 +39,7 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, pools 
         ))}
       </div>
       {!admin && !mesRoles.size ? <p className="muted small">Planning des vendredis. Pour rejoindre l&apos;équipe (entraîneur, ouvreur, fermeur, buvette ou suppléant), demande au staff de t&apos;ajouter à la liste.</p> : null}
-      {!admin && mesRoles.size ? <p className="muted small">Choisis « Moi » sur une date libre et valide au plus tard le vendredi d&apos;avant à 21h00 (tu peux valider tout de suite). Ensuite, la place non confirmée est proposée aux suppléants.</p> : null}
+      {!admin && mesRoles.size ? <p className="muted small">Choisis « Moi » sur une date libre et valide au plus tard le vendredi d&apos;avant à 21h00 (tu peux valider tout de suite). Ensuite, la place non confirmée est proposée aux suppléants. Pas libre un vendredi ? Touche « 🙂 dispo » pour passer en « 🚫 pas dispo » : tu ne recevras aucun rappel pour cette date.</p> : null}
       {liste.length ? (
         <div className="en-grille">
           {liste.map((s) => (
@@ -49,6 +49,7 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, pools 
                 <Pastille s={s} />
               </header>
               {ROLES.map((r) => <CellulePoste key={r.id} s={s} role={r.id} noms={noms} mesFiches={mesFiches} admin={admin} pool={pools[r.id]} />)}
+              <DispoLigne s={s} noms={noms} mesFiches={mesFiches} />
             </section>
           ))}
         </div>

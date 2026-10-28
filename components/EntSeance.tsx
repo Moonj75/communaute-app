@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ROLES, limiteDe, limiteTitulaires, phase, statutEffectif, type Exercice, type RoleSeance, type SeanceE } from "@/lib/entrainements-types";
-import { changerStatut, choisirPoste, enregistrerProgramme, validerPoste, type Retour } from "@/app/entrainements/actions";
+import { changerDispo, changerStatut, choisirPoste, enregistrerProgramme, validerPoste, type Retour } from "@/app/entrainements/actions";
 import "./entrainements.css";
 
 /** roles: holder lists the fiche is on; supps: roles it can take as a substitute. */
@@ -72,6 +72,7 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe =
             );
           })}
         </ul>
+        <DispoLigne s={s} noms={noms} mesFiches={mesFiches} />
         <p className="muted small en-lim">
           {confirme
             ? "✅ Entraînement confirmé : les rôles sont figés. Pour un changement, contacte le staff."
@@ -193,6 +194,36 @@ export function CellulePoste({ s, role, noms, mesFiches, admin, pool }: {
           <span className="en-chip vide">{r.requis ? "À pourvoir" : "Facultatif"}</span>
         )}
       </span>
+      {err ? <small className="en-err">{err}</small> : null}
+    </div>
+  );
+}
+
+/**
+ * « Pas disponible » for one Friday (crew members, for their own fiches): no reminders nor substitute calls
+ * for that date. Also shows who already said they are not available.
+ */
+export function DispoLigne({ s, noms, mesFiches }: { s: SeanceE; noms: Record<string, string>; mesFiches: MaFiche[] }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
+  const equipe = mesFiches.filter((f) => f.roles.length || f.supps.length);
+  const ferme = phase(s.date) === "clos" || s.annule || statutEffectif(s) === "Confirmé";
+  const autres = s.indispos.filter((id) => !equipe.some((f) => f.id === id));
+  if (!equipe.length && !s.indispos.length) return null;
+  return (
+    <div className="en-dispo">
+      {equipe.map((f) => {
+        const non = s.indispos.includes(f.id);
+        return (
+          <button key={f.id} type="button" className={`en-dispo-b${non ? " non" : ""}`} disabled={pending || ferme}
+            onClick={() => start(async () => { const r = await changerDispo(s.id, f.id, !non); setErr(r.ok ? null : r.message); if (r.ok) router.refresh(); })}
+            title={non ? "Touche pour redevenir disponible" : "Touche si tu n'es pas disponible ce vendredi : tu ne recevras pas de rappel"}>
+            {non ? `🚫 ${equipe.length > 1 ? f.nom.split(" ")[0] + " : " : ""}pas dispo` : `🙂 ${equipe.length > 1 ? f.nom.split(" ")[0] + " : " : ""}dispo`}
+          </button>
+        );
+      })}
+      {autres.length ? <small className="en-dispo-l">🚫 Pas dispo : {autres.map((id) => noms[id] || "?").join(", ")}</small> : null}
       {err ? <small className="en-err">{err}</small> : null}
     </div>
   );
