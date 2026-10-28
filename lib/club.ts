@@ -616,8 +616,8 @@ function versSeance(pg: Page): SeanceE {
 }
 
 /** Sessions between two dates (inclusive), oldest first. Fresh (1 min): validations change often. */
-export async function lireSeancesPeriode(du: string, au: string): Promise<SeanceE[]> {
-  const pages = await toutLire(DS.seances, 60, TAGS.entrainements, {
+export async function lireSeancesPeriode(du: string, au: string, frais = false): Promise<SeanceE[]> {
+  const pages = await toutLire(DS.seances, frais ? 0 : 60, TAGS.entrainements, {
     filter: { and: [{ property: "Date", date: { on_or_after: du } }, { property: "Date", date: { on_or_before: au } }] },
     sorts: [{ property: "Date", direction: "ascending" }],
   });
@@ -668,6 +668,10 @@ export async function majProgramme(seanceId: string, codes: string[], exerciceId
 }
 export async function publierSeance(seanceId: string) {
   await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { "Planning publié": { checkbox: true } } } });
+}
+/** Replaces a player's Rôles (Notion multi-select). */
+export async function majRolesJoueur(pageId: string, roles: string[]) {
+  await notion(`pages/${pageId}`, { method: "PATCH", body: { properties: { "Rôles": { multi_select: [...new Set(roles)].map((name) => ({ name })) } } } });
 }
 export async function creerSeance(s: { date: string; debut: string | null; fin: string | null; lieu: string | null }) {
   const lim = limiteDe(s.date);

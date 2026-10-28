@@ -144,10 +144,14 @@ export const complet = (s: SeanceE) => ROLES.filter((r) => r.requis).every((r) =
 export function statutEffectif(s: SeanceE, now = maintenantBxl()): StatutSeance {
   if (s.annule || s.statut === "Annulé") return "Annulé";
   if (s.statut === "Confirmé") return "Confirmé";
-  // Sessions of a planning not published yet are never decided automatically.
-  if (!s.publie) return "Prévu";
   return limitePassee(s.date, now) ? (complet(s) ? "Confirmé" : "Annulé") : "Prévu";
 }
+
+/** « YYYY-MM » n months later. */
+export const moisPlus = (m: string, n: number) => { const d = new Date(`${m}-15T12:00:00Z`); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 7); };
+
+/** Last day of a month « YYYY-MM » (« YYYY-MM-DD »). */
+export const finMois = (m: string) => { const d = new Date(`${moisPlus(m, 1)}-01T12:00:00Z`); d.setUTCDate(0); return d.toISOString().slice(0, 10); };
 
 /** Fridays of a month « YYYY-MM ». */
 export function vendredis(mois: string) {

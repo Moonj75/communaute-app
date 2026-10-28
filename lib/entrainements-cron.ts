@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { creerSeance, lireSeancesPeriode, majStatutSeance } from "./club";
-import { ROLES, complet, limitePassee, maintenantBxl, phase, rappelsDe, reste, vendredis, type SeanceE } from "./entrainements-types";
+import { ROLES, complet, limitePassee, maintenantBxl, moisPlus, finMois, phase, rappelsDe, reste, vendredis, type SeanceE } from "./entrainements-types";
 import { pousser, pushPret, type Abonnement, type MessagePush } from "./push";
 import { deposer } from "./courrier";
 import { ajouterJours } from "./club-types";
@@ -20,6 +20,23 @@ const heures = (s: SeanceE) => [s.debut && s.fin ? `${s.debut} – ${s.fin}` : s
  *   and every active member is told.
  * Each message is sent once (push_journal).
  */
+/**
+ * Creates the missing Fridays of a month (from today on), with the usual hours and place.
+ * Returns how many were created.
+ */
+export async function assurerMois(mois: string, aPartirDe = maintenantBxl().slice(0, 10)) {
+  const jours = vendredis(mois).filter((j) => j >= aPartirDe);
+  if (!jours.length) return 0;
+  // Read without cache: a Friday created a few seconds ago must not be created twice.
+  const existantes = await lireSeancesPeriode(`${mois}-01`, finMois(mois), true);
+  const manquants = jours.filter((j) => !existantes.some((s) => s.date.slice(0, 10) === j));
+  if (!manquants.length) return 0;
+  const avant = await lireSeancesPeriode(`${moisPlus(mois, -6)}-01`, finMois(mois)).catch(() => [] as SeanceE[]);
+  const modele = [...avant, ...existantes].filter((s) => s.debut || s.lieu).pop();
+  for (const j of manquants) await creerSeance({ date: j, debut: modele?.debut || "18h00", fin: modele?.fin || "22h00", lieu: modele?.lieu || "Eugies" });
+  return manquants.length;
+}
+
 export async function traiterEntrainements(db: SupabaseClient) {
   const now = maintenantBxl();
   const T = now.slice(0, 10);
@@ -31,27 +48,19 @@ export async function traiterEntrainements(db: SupabaseClient) {
   const envois: Envoi[] = [];
   const decisions: string[] = [];
 
-  // From the 20th: the Fridays of next month are created by themselves and the crew is invited to share them out.
+  // The planning is always open one month ahead: the Fridays of this month and of next month are created by themselves.
   const equipe = new Set(fiches.filter((f) => ROLES.some((r) => (f.roles || []).includes(r.tag) || (f.roles || []).includes(r.supp))).map((f) => f.email?.toLowerCase()).filter((x): x is string => Boolean(x)));
-  if (Number(T.slice(8, 10)) >= 20) {
-    const d = new Date(`${T.slice(0, 7)}-15T12:00:00Z`);
-    d.setUTCMonth(d.getUTCMonth() + 1);
-    const mois = d.toISOString().slice(0, 7);
-    const jours = vendredis(mois);
+  for (const mois of [T.slice(0, 7), moisPlus(T.slice(0, 7), 1)]) {
+    const n = await assurerMois(mois, T).catch(() => 0);
     const cle = `ent-mois:${mois}`;
-    const { data: fait } = await db.from("push_journal").select("cle").eq("cle", cle).maybeSingle();
-    if (!fait && jours.length) {
-      const deja = await lireSeancesPeriode(jours[0], jours[jours.length - 1]);
-      const modele = [...seances].reverse().find((s) => s.debut || s.lieu);
-      for (const j of jours) if (!deja.some((s) => s.date.slice(0, 10) === j)) await creerSeance({ date: j, debut: modele?.debut || "18h00", fin: modele?.fin || "22h00", lieu: modele?.lieu || "Eugies" });
+    if (n > 0 && mois !== T.slice(0, 7)) {
       const nom = new Date(`${mois}-15T12:00:00Z`).toLocaleDateString("fr-BE", { month: "long", timeZone: "UTC" });
-      envois.push({ cle, emails: equipe, msg: { title: `📅 Planning de ${nom} ouvert`, body: `Les ${jours.length} vendredis sont créés. Prenez vos dates (entraîneur, ouvreur, fermeur, buvette), puis publiez le planning.`, url: "/entrainements#bloc-planning", tag: `ent-mois-${mois}` } });
+      envois.push({ cle, emails: equipe, msg: { title: `📅 Planning de ${nom} ouvert`, body: `Les vendredis de ${nom} sont dans l'appli. Prends tes dates (entraîneur, ouvreur, fermeur, buvette).`, url: "/entrainements#bloc-planning", tag: `ent-mois-${mois}` } });
     }
   }
 
   for (const s of seances) {
-    // Only the sessions of a published planning are handled automatically (substitutes, decision).
-    if (s.annule || s.statut !== "Prévu" || !s.publie) continue;
+    if (s.annule || s.statut !== "Prévu") continue;
     if (limitePassee(s.date, now)) {
       // Decision.
       const ok = complet(s);
