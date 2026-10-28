@@ -1,0 +1,12 @@
+/* Courrier du staff : une demande d'accès, traitée en un clic. */
+.dm { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 10px; padding: 12px; border-radius: 14px; background: var(--sunk, #f3eee8); }
+.dm-actif { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+.dm-go { min-height: 48px; }
+.dm-ok { display: flex; flex-direction: column; gap: 8px; }
+.dm-q { margin: 0; font-size: 13px; font-weight: 800; }
+.dm-q small { font-weight: 500; color: var(--muted); }
+.dm-roles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.dm-roles .eq-r { height: auto; padding: 8px; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 2px dashed var(--line); background: transparent; cursor: pointer; color: var(--fg); font-weight: 800; }
+.dm-roles .eq-r.titulaire { border: 2px solid #00e5ff; background: color-mix(in srgb, #00e5ff 22%, var(--surface)); }
+.dm-roles .eq-r.suppleant { border: 2px solid #00e5ff; }
+.dm-liens { display: flex; flex-wrap: wrap; gap: 6px; }

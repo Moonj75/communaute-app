@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Message } from "@/lib/courrier";
+import { estMail, type Message } from "@/lib/courrier";
+import type { ContenuMail } from "@/lib/mail-modele";
 import { marquerLu } from "./actions";
 import MailCarte from "@/components/MailCarte";
 import CarteCourrier from "@/components/CarteCourrier";
@@ -94,7 +95,7 @@ export default function Fenetre({ messages }: { messages: Message[] }) {
             <img src="/crest.png" alt="" width={22} height={22} />
             <span><b>{de}</b> · <span className="fm-quand">{quand}</span></span>
           </p>
-          {m?.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={m?.type || (g.c === "msg" ? "message" : g.c === "relance" ? "relance" : "notification")} titre={titre} texte={texte} de={de} />}
+          {estMail(m?.carte) ? <MailCarte carte={m!.carte as ContenuMail} /> : <CarteCourrier type={m?.type || (g.c === "msg" ? "message" : g.c === "relance" ? "relance" : "notification")} titre={titre} texte={texte} de={de} />}
         </div>
         <footer className="fm-pied">
           {lien.endsWith(".pdf") ? <a className="btn primary fm-go" href={lien} target="_blank" rel="noopener">📘 Ouvrir le guide (PDF)</a> : lien ? <Link className="btn primary fm-go" href={lien}>{bouton(lien)}</Link> : null}

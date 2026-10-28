@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Message } from "@/lib/courrier";
+import { estMail, type Message } from "@/lib/courrier";
+import type { ContenuMail } from "@/lib/mail-modele";
 import { effacerMessages, marquerLu } from "./actions";
 import Ecrire from "./Ecrire";
 import MailCarte from "@/components/MailCarte";
 import CarteCourrier from "@/components/CarteCourrier";
+import Demande from "./Demande";
+import "./demande.css";
 
 const IC: Record<string, string> = { message: "✉️", relance: "⏰", notification: "🔔" };
 const LIB: Record<string, string> = { message: "Message", relance: "Relance", notification: "Notification" };
@@ -70,7 +73,9 @@ export default function Liste({ messages, vide, repondre, comptes, effacable = f
             </button>
             {on ? (
               <div className="cr-corps">
-                {m.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={m.type} titre={m.titre} texte={m.texte} de={m.de_nom} />}
+                {estMail(m.carte) ? <MailCarte carte={m.carte as ContenuMail} /> : <CarteCourrier type={m.type} titre={m.titre} texte={m.texte} de={m.de_nom} />}
+                {/* A request from the login help pages (staff): open the access in one tap. */}
+                {repondre === "auteur" && m.pour_staff && ((m.carte as { demande?: unknown } | null)?.demande || /^(🔑|👋|👨‍👩‍👧|⏳|🔄|📭) /u.test(m.titre)) ? <Demande m={m} /> : null}
                 {m.lien && m.lien.endsWith(".pdf") ? <a className="btn primary" href={m.lien} target="_blank" rel="noopener">📘 Ouvrir le guide (PDF)</a> : m.lien && m.lien !== "/courrier" ? <Link className="btn primary" href={m.lien}>{m.lien.includes("guide=") ? "📘 Ouvrir le guide" : "Ouvrir →"}</Link> : null}
                 {effacable ? <button type="button" className="btn cr-eff" disabled={enCours} onClick={() => effacer([m.id])}>🗑️ Effacer</button> : null}
                 {repondre && m.type === "message" ? (
