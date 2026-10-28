@@ -613,6 +613,7 @@ function versSeance(pg: Page): SeanceE {
     publie: coche(p["Planning publié"]),
     notes: texte(p["Notes"]),
     indispos: rel(p["Indisponibles"]),
+    motifs: Object.fromEntries((texte(p["Motifs indispo"]) || "").split("\n").map((l) => l.match(/^([0-9a-f-]{32,36})\s*:\s*(.+)$/i)).filter((m): m is RegExpMatchArray => Boolean(m)).map((m) => [m[1], m[2].trim()])),
   };
 }
 
@@ -655,8 +656,11 @@ export async function majPoste(seanceId: string, role: RoleSeance, joueurId: str
   const r = ROLES.find((x) => x.id === role)!;
   await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { [r.notion]: { relation: joueurId ? [{ id: joueurId }] : [] }, [r.valide]: { checkbox: Boolean(joueurId) && ok } } } });
 }
-export async function majIndispos(seanceId: string, ids: string[]) {
-  await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { Indisponibles: { relation: [...new Set(ids)].map((id) => ({ id })) } } } });
+export async function majIndispos(seanceId: string, ids: string[], motifs: Record<string, string> = {}) {
+  const liste = [...new Set(ids)];
+  // « Motifs indispo »: one line per person, « <fiche id>: <reason> ».
+  const lignes = liste.filter((id) => motifs[id]).map((id) => `${id}: ${motifs[id]}`).join("\n");
+  await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { Indisponibles: { relation: liste.map((id) => ({ id })) }, "Motifs indispo": rt(lignes || null) } } });
 }
 export async function majValidation(seanceId: string, role: RoleSeance, ok: boolean) {
   const r = ROLES.find((x) => x.id === role)!;

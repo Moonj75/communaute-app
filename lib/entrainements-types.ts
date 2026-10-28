@@ -44,7 +44,12 @@ export type SeanceE = {
   notes: string | null;
   /** Crew members who said « Pas disponible » for this Friday: no reminders for them. */
   indispos: string[];
+  /** Reason given by each unavailable member (by fiche id), e.g. « 💼 Travail ». */
+  motifs: Record<string, string>;
 };
+
+/** Ready-made reasons for « Indisponible ». */
+export const MOTIFS_INDISPO = ["💼 Travail", "👨‍👩‍👧 Famille", "🤒 Malade", "✈️ Vacances", "🚗 Déplacement", "🏆 Compétition"];
 
 export type Exercice = {
   id: string;
