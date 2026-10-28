@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ROLES, limiteDe, limiteTitulaires, phase, statutEffectif, type Exercice, type RoleSeance, type SeanceE } from "@/lib/entrainements-types";
+import { MOTIFS_INDISPO, ROLES, limiteDe, limiteTitulaires, phase, statutEffectif, type Exercice, type RoleSeance, type SeanceE } from "@/lib/entrainements-types";
 import { changerDispo, changerStatut, choisirPoste, enregistrerProgramme, validerPoste, type Retour } from "@/app/entrainements/actions";
 import "./entrainements.css";
 
@@ -72,7 +72,6 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe =
             );
           })}
         </ul>
-        <DispoLigne s={s} noms={noms} mesFiches={mesFiches} />
         <p className="muted small en-lim">
           {confirme
             ? "✅ Entraînement confirmé : les rôles sont figés. Pour un changement, contacte le staff."
@@ -91,6 +90,7 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe =
           </div>
         ) : null}
         {info ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
+        <DispoLigne s={s} noms={noms} mesFiches={mesFiches} />
       </section>
 
       {entraineur ? (
@@ -200,30 +200,61 @@ export function CellulePoste({ s, role, noms, mesFiches, admin, pool }: {
 }
 
 /**
- * « Pas disponible » for one Friday (crew members, for their own fiches): no reminders nor substitute calls
- * for that date. Also shows who already said they are not available.
+ * Bottom of each training: « 🚫 Je suis indisponible » with a reason (Travail, Famille, Malade…).
+ * Unavailable members get no reminders nor substitute calls for that Friday; the crew sees who and why.
  */
 export function DispoLigne({ s, noms, mesFiches }: { s: SeanceE; noms: Record<string, string>; mesFiches: MaFiche[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [ouvert, setOuvert] = useState<string | null>(null);
+  const [autre, setAutre] = useState("");
   const equipe = mesFiches.filter((f) => f.roles.length || f.supps.length);
   const ferme = phase(s.date) === "clos" || s.annule || statutEffectif(s) === "Confirmé";
   const autres = s.indispos.filter((id) => !equipe.some((f) => f.id === id));
   if (!equipe.length && !s.indispos.length) return null;
+  const plusieurs = equipe.length > 1;
+  const envoyer = (id: string, non: boolean, motif = "") =>
+    start(async () => {
+      const r = await changerDispo(s.id, id, non, motif);
+      setErr(r.ok ? null : r.message);
+      if (r.ok) { setOuvert(null); setAutre(""); router.refresh(); }
+    });
+
   return (
-    <div className="en-dispo">
+    <div className="en-indispo">
       {equipe.map((f) => {
         const non = s.indispos.includes(f.id);
-        return (
-          <button key={f.id} type="button" className={`en-dispo-b${non ? " non" : ""}`} disabled={pending || ferme}
-            onClick={() => start(async () => { const r = await changerDispo(s.id, f.id, !non); setErr(r.ok ? null : r.message); if (r.ok) router.refresh(); })}
-            title={non ? "Touche pour redevenir disponible" : "Touche si tu n'es pas disponible ce vendredi : tu ne recevras pas de rappel"}>
-            {non ? `🚫 ${equipe.length > 1 ? f.nom.split(" ")[0] + " : " : ""}pas dispo` : `🙂 ${equipe.length > 1 ? f.nom.split(" ")[0] + " : " : ""}dispo`}
-          </button>
+        const qui = plusieurs ? `${f.nom.split(" ")[0]} : ` : "";
+        if (non)
+          return (
+            <div key={f.id} className="en-ind-etat">
+              <span>🚫 {qui}<b>Indisponible</b> · {s.motifs[f.id] || "sans motif"}</span>
+              {!ferme ? <button type="button" className="btn en-mini" disabled={pending} onClick={() => envoyer(f.id, false)}>✅ Finalement dispo</button> : null}
+            </div>
+          );
+        if (ferme) return null;
+        return ouvert === f.id ? (
+          <div key={f.id} className="en-ind-choix">
+            <p className="en-ind-q">{qui}Pourquoi es-tu indisponible ?</p>
+            <div className="en-ind-motifs">
+              {MOTIFS_INDISPO.map((m) => <button key={m} type="button" className="en-ind-m" disabled={pending} onClick={() => envoyer(f.id, true, m)}>{m}</button>)}
+            </div>
+            <div className="en-ind-autre">
+              <input className="input" maxLength={60} placeholder="✏️ Autre motif…" value={autre} onChange={(e) => setAutre(e.target.value)} />
+              <button type="button" className="btn primary en-mini" disabled={pending || !autre.trim()} onClick={() => envoyer(f.id, true, `✏️ ${autre.trim()}`)}>OK</button>
+              <button type="button" className="btn en-mini" onClick={() => setOuvert(null)}>Annuler</button>
+            </div>
+          </div>
+        ) : (
+          <button key={f.id} type="button" className="en-ind-btn" disabled={pending} onClick={() => setOuvert(f.id)}>🚫 {plusieurs ? `${f.nom.split(" ")[0]} est` : "Je suis"} indisponible ce vendredi</button>
         );
       })}
-      {autres.length ? <small className="en-dispo-l">🚫 Pas dispo : {autres.map((id) => noms[id] || "?").join(", ")}</small> : null}
+      {autres.length ? (
+        <ul className="en-ind-liste">
+          {autres.map((id) => <li key={id}>🚫 <b>{noms[id] || "?"}</b> · {s.motifs[id] || "indisponible"}</li>)}
+        </ul>
+      ) : null}
       {err ? <small className="en-err">{err}</small> : null}
     </div>
   );

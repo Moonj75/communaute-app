@@ -39,7 +39,7 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, pools 
         ))}
       </div>
       {!admin && !mesRoles.size ? <p className="muted small">Planning des vendredis. Pour rejoindre l&apos;équipe (entraîneur, ouvreur, fermeur, buvette ou suppléant), demande au staff de t&apos;ajouter à la liste.</p> : null}
-      {!admin && mesRoles.size ? <p className="muted small">Choisis « Moi » sur une date libre et valide au plus tard le vendredi d&apos;avant à 21h00 (tu peux valider tout de suite). Ensuite, la place non confirmée est proposée aux suppléants. Pas libre un vendredi ? Touche « 🙂 dispo » pour passer en « 🚫 pas dispo » : tu ne recevras aucun rappel pour cette date.</p> : null}
+      {!admin && mesRoles.size ? <p className="muted small">Choisis « Moi » sur une date libre et valide au plus tard le vendredi d&apos;avant à 21h00 (tu peux valider tout de suite). Ensuite, la place non confirmée est proposée aux suppléants. Pas libre un vendredi ? Touche « 🚫 Je suis indisponible » en bas de la date et choisis le motif : tu ne recevras aucun rappel pour cette date.</p> : null}
       {liste.length ? (
         <div className="en-grille">
           {liste.map((s) => (
