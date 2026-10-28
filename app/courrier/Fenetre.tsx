@@ -96,7 +96,7 @@ export default function Fenetre({ messages }: { messages: Message[] }) {
           {m?.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={m?.type || (g.c === "msg" ? "message" : g.c === "relance" ? "relance" : "notification")} titre={titre} texte={texte} de={de} />}
         </div>
         <footer className="fm-pied">
-          {lien ? <Link className="btn primary fm-go" href={lien}>{bouton(lien)}</Link> : null}
+          {lien.endsWith(".pdf") ? <a className="btn primary fm-go" href={lien} target="_blank" rel="noopener">📘 Ouvrir le guide (PDF)</a> : lien ? <Link className="btn primary fm-go" href={lien}>{bouton(lien)}</Link> : null}
           {m?.type === "message" ? <a className="btn fm-rep" href={`#m-${m.id}`} onClick={() => setFerme(true)}>↩️ Répondre</a> : null}
           <button type="button" className="btn fm-ok" onClick={fermer}>{lien ? "Plus tard" : "Fermer"}</button>
         </footer>

@@ -71,7 +71,7 @@ export default function Liste({ messages, vide, repondre, comptes, effacable = f
             {on ? (
               <div className="cr-corps">
                 {m.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={m.type} titre={m.titre} texte={m.texte} de={m.de_nom} />}
-                {m.lien && m.lien !== "/courrier" ? <Link className="btn primary" href={m.lien}>Ouvrir →</Link> : null}
+                {m.lien && m.lien.endsWith(".pdf") ? <a className="btn primary" href={m.lien} target="_blank" rel="noopener">📘 Ouvrir le guide (PDF)</a> : m.lien && m.lien !== "/courrier" ? <Link className="btn primary" href={m.lien}>Ouvrir →</Link> : null}
                 {effacable ? <button type="button" className="btn cr-eff" disabled={enCours} onClick={() => effacer([m.id])}>🗑️ Effacer</button> : null}
                 {repondre && m.type === "message" ? (
                   repondre === "staff" ? (
