@@ -78,7 +78,7 @@ export default function FenetreNotif() {
           {m?.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={type} titre={titre} texte={texte} de={m?.de_nom} />}
         </div>
         <footer className="fm-pied">
-          {lien ? <Link className="btn primary fm-go" href={lien}>{bouton(lien)}</Link> : null}
+          {lien.endsWith(".pdf") ? <a className="btn primary fm-go" href={lien} target="_blank" rel="noopener">📘 Ouvrir le guide (PDF)</a> : lien ? <Link className="btn primary fm-go" href={lien}>{bouton(lien)}</Link> : null}
           {type === "message" ? <Link className="btn" href={m ? `/courrier#m-${m.id}` : "/courrier"}>↩️ Répondre</Link> : <Link className="btn" href="/courrier">📬 Mon courrier</Link>}
           <button type="button" className="btn fm-ok" onClick={fermer}>{lien ? "Plus tard" : "Fermer"}</button>
         </footer>
