@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ROLES, type RoleSeance, type SeanceE } from "@/lib/entrainements-types";
+import { ROLES, statutEffectif, type RoleSeance, type SeanceE } from "@/lib/entrainements-types";
 import { actualiserNotion, type Retour } from "@/app/entrainements/actions";
 import { CellulePoste, Pastille, type MaFiche } from "./EntSeance";
 import "./entrainements.css";
@@ -19,7 +19,12 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, pools 
   mois: string[]; seances: SeanceE[]; noms: Record<string, string>; mesFiches: MaFiche[]; admin: boolean; pools: Record<RoleSeance, { id: string; nom: string }[]>;
 }) {
   const router = useRouter();
-  const [m, setM] = useState(mois[0]);
+  // Once the last Friday of this month is decided (confirmed or cancelled), the planning opens on next month.
+  const [m, setM] = useState(() => {
+    const ceMois = seances.filter((s) => s.date.startsWith(mois[0]));
+    const derniere = ceMois[ceMois.length - 1];
+    return mois[1] && (!derniere || statutEffectif(derniere) !== "Prévu") ? mois[1] : mois[0];
+  });
   const [pending, start] = useTransition();
   const [info, setInfo] = useState<Retour | null>(null);
   const liste = seances.filter((s) => s.date.startsWith(m));
@@ -50,6 +55,7 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, pools 
       ) : (
         <p className="vide">Pas encore de séances en {nomMois(m)} : les vendredis arrivent tout seuls, un mois à l&apos;avance.</p>
       )}
+      {admin || mesRoles.size ? <a className="btn" href="/guide-entrainements.pdf" target="_blank" rel="noopener">📘 Guide de l&apos;équipe (PDF)</a> : null}
       {admin ? (
         <div className="en-admin">
           <button type="button" className="btn" disabled={pending} onClick={() => agir(actualiserNotion)}>🔄 Mettre à jour depuis Notion</button>
