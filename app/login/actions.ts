@@ -151,7 +151,11 @@ export async function envoyerDemande(_p: DemandeState, fd: FormData): Promise<De
   };
   const titre = `${sujet.ic} ${sujet.titre} — ${prenom} ${nom}`.slice(0, 140);
   const texte = [...lignes, "", `👉 ${conseil[v("sujet", 20)]}`].join("\n");
-  const { error } = await db.from("messages").insert({ type: "message", titre, texte, a_email: null, pour_staff: true, de_email: email, de_nom: `${prenom} ${nom}`, lien: "/courrier" });
+  // The details are kept too (column « carte »), so the staff can open the access in one tap from the Courrier.
+  const demande = { sujet: v("sujet", 20), prenom, nom, email, tel: v("tel", 30) || undefined, ancienne: v("ancienne", 120).toLowerCase() || undefined, enfant: v("enfant", 120) || undefined, niveau: v("niveau", 40) || undefined, message: v("message", 1000) || undefined };
+  const ligne = { type: "message", titre, texte, a_email: null, pour_staff: true, de_email: email, de_nom: `${prenom} ${nom}`, lien: "/courrier" };
+  let { error } = await db.from("messages").insert({ ...ligne, carte: { demande } });
+  if (error && /carte/.test(error.message)) ({ error } = await db.from("messages").insert(ligne));
   if (error) return { status: "error", message: "Envoi impossible, réessaie dans un instant." };
 
   // The administrators are told on their phone.
