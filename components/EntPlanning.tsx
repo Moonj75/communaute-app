@@ -55,7 +55,7 @@ export default function Planning({ mois, seances, noms, mesFiches, admin, pools 
       ) : (
         <p className="vide">Pas encore de séances en {nomMois(m)} : les vendredis arrivent tout seuls, un mois à l&apos;avance.</p>
       )}
-      {admin || mesRoles.size ? <a className="btn" href="/guide-entrainements.pdf" target="_blank" rel="noopener">📘 Guide de l&apos;équipe (PDF)</a> : null}
+      {admin || mesRoles.size ? <a className="btn" href="/entrainements?guide=1">📘 Guide de l&apos;équipe</a> : null}
       {admin ? (
         <div className="en-admin">
           <button type="button" className="btn" disabled={pending} onClick={() => agir(actualiserNotion)}>🔄 Mettre à jour depuis Notion</button>
