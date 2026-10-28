@@ -21,10 +21,29 @@ const rolesDe = (f: Fiche) => ROLES.filter((r) => (f.roles || []).includes(r.tag
 const suppsDe = (f: Fiche) => ROLES.filter((r) => (f.roles || []).includes(r.supp)).map((r) => r.id);
 
 /** Trainings: the next session (roles and programme), the monthly planning of roles, the exercise sheets. */
-export default async function EntrainementsPage({ searchParams }: { searchParams: Promise<{ ex?: string }> }) {
-  const { ex: exId } = await searchParams;
+export default async function EntrainementsPage({ searchParams }: { searchParams: Promise<{ ex?: string; guide?: string }> }) {
+  const { ex: exId, guide } = await searchParams;
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) redirect("/login");
+  // The crew's guide, read inside the app (pictures of the PDF pages), with the PDF to download.
+  if (guide)
+    return (
+      <>
+        <Header subtitle="Guide de l'équipe" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
+        <main className="wrap">
+          <div className="en-guide">
+            <div className="en-admin">
+              <a className="btn" href="/entrainements">← Entraînements</a>
+              <a className="btn primary" href="/guide-entrainements.pdf" download>⬇️ Télécharger le PDF</a>
+            </div>
+            {[1, 2].map((n) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={n} src={`/guide-entrainements-${n}.webp`} alt={`Guide de l'équipe entraînements, page ${n} sur 2`} width={1159} height={1639} />
+            ))}
+          </div>
+        </main>
+      </>
+    );
   const admin = profil?.role === "admin" && !apercu;
   const T = aujourdhui();
   const mois = [T.slice(0, 7), moisPlus(T.slice(0, 7), 1)];
