@@ -45,7 +45,10 @@ export async function envoyerManuel(_prev: RetourEnvoi | null, fd: FormData): Pr
       url = cible.startsWith("attente:") ? "/inscriptions" : `/calendrier?e=${ev.id}`;
     }
     // Optional: the button of the message opens a document (e.g. the trainings guide).
-    if (fd.get("doc") === "guide-entrainements") url = "/guide-entrainements.pdf";
+    if (fd.get("doc") === "guide-entrainements") url = "/entrainements?guide=1";
+    // « M'envoyer aussi une copie »: the sender receives the very same message (to check what the others see).
+    const { data: { user: moi } } = await supabase.auth.getUser();
+    if (fd.get("copie") === "on" && moi?.email) emails.add(moi.email.toLowerCase());
     if (!emails.size) return { ok: false, message: "Personne ne correspond à ce choix." };
     // Always a copy in each person's Courrier (relance when it targets missing answers).
     const deposes = await deposer(supabase, emails, { type: cible.startsWith("attente:") ? "relance" : "notification", titre, texte: corps, lien: url });

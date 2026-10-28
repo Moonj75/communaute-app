@@ -94,6 +94,9 @@ export default function FormEnvoi({ evenements, cible }: { evenements: { id: str
         <Apercu titre={titre} texte={texte} rangement={dest.startsWith("attente:") ? "Relances" : "Notifications"} />
       </div>
 
+      <label className="nm-copie" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14 }}>
+        <input type="checkbox" name="copie" defaultChecked /> 📩 M&apos;envoyer aussi une copie (pour voir ce que reçoivent les autres)
+      </label>
       {/* Two steps: check first, then confirm. */}
       {!verif ? (
         <button className="btn primary" type="button" disabled={!titre.trim()} onClick={() => setVerif(true)}>
