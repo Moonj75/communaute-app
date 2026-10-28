@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { Message } from "@/lib/courrier";
+import { estMail, type Message } from "@/lib/courrier";
+import type { ContenuMail } from "@/lib/mail-modele";
 import { ouvrirMessage } from "./actions";
 import CarteCourrier from "@/components/CarteCourrier";
 import MailCarte from "@/components/MailCarte";
@@ -76,7 +77,7 @@ export default function FenetreNotif() {
             <img src="/crest.png" alt="" width={22} height={22} />
             <span><b>{m?.de_nom || "SC Lions d'Eugies"}</b> · <span className="fm-quand">{quand}</span></span>
           </p>
-          {m?.carte ? <MailCarte carte={m.carte} /> : <CarteCourrier type={type} titre={titre} texte={texte} de={m?.de_nom} />}
+          {estMail(m?.carte) ? <MailCarte carte={m!.carte as ContenuMail} /> : <CarteCourrier type={type} titre={titre} texte={texte} de={m?.de_nom} />}
         </div>
         <footer className="fm-pied">
           {lien.endsWith(".pdf") ? <a className="btn primary fm-go" href={lien} target="_blank" rel="noopener">📘 Ouvrir le guide (PDF)</a> : lien ? <Link className="btn primary fm-go" href={lien}>{bouton(lien)}</Link> : null}
