@@ -51,12 +51,6 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe =
           <Pastille s={s} />
         </header>
         {s.annule && s.motif ? <p className="en-motif">{s.motif}</p> : null}
-        {!equipe ? (
-          <p className="muted small en-lim">
-            {statutEffectif(s) === "Confirmé" ? "✅ L'entraînement aura lieu." : statutEffectif(s) === "Annulé" ? "❌ Pas d'entraînement ce jour-là." : `La séance est confirmée ou annulée le lundi ${jm(lim.jour)} à 21h00. Tu recevras une notification.`}
-          </p>
-        ) : null}
-        {equipe ? (<>
         <ul className="en-roles">
           {ROLES.map((r) => {
             const p = s.postes[r.id];
@@ -87,7 +81,6 @@ export default function Seance({ s, noms, mesFiches, admin, entraineur, equipe =
               ? `Les personnes prévues valident jusqu'au vendredi ${jm(limT.jour)} à 21h00. Ensuite, les places non confirmées sont proposées aux suppléants jusqu'au lundi ${jm(lim.jour)} à 21h00.`
               : `Places non confirmées ouvertes aux suppléants jusqu'au lundi ${jm(lim.jour)} à 21h00. Sans entraîneur, ouvreur et fermeur confirmés, l'entraînement est annulé.`}
         </p>
-        </>) : null}
         {admin && (staff || !confirme) ? (
           <div className="en-admin">
             <input className="input" placeholder="Motif (si annulation)" value={motif} onChange={(e) => setMotif(e.target.value)} />

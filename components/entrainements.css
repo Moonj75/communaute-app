@@ -93,3 +93,18 @@ a.en-pt:hover { text-decoration: underline; }
 .en-chip.att { background: var(--gold-soft, #fff4bf); color: var(--gold-ink, #5a4700); }
 .en-chip.vide { background: transparent; color: var(--muted); border: 1px dashed var(--line); }
 @media (max-width: 420px) { .en-grille { grid-template-columns: 1fr; } .en-li { grid-template-columns: 86px minmax(0, 1fr) auto; } }
+
+/* Staff : l'équipe et ses rôles (★ titulaire, 🔁 suppléant). */
+.en-coche { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.eq-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.eq-tete, .eq-l { display: grid; grid-template-columns: minmax(0, 1fr) repeat(4, 46px); gap: 6px; align-items: center; }
+.eq-tete { position: sticky; top: 0; z-index: 1; background: var(--surface); padding: 4px 6px; }
+.eq-tete span { display: flex; flex-direction: column; align-items: center; font-size: 20px; line-height: 1; }
+.eq-tete small { font-size: 8.5px; font-weight: 800; letter-spacing: 0; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+.eq-l { padding: 5px 6px; border-radius: 12px; background: var(--sunk); }
+.eq-nom { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg); }
+.eq-r { height: 36px; border-radius: 10px; border: 2px dashed var(--line); background: transparent; font-size: 17px; font-weight: 800; cursor: pointer; color: var(--fg); }
+.eq-r.titulaire { border: 2px solid #00e5ff; background: color-mix(in srgb, #00e5ff 28%, var(--surface)); }
+.eq-r.suppleant { border: 2px solid #00e5ff; background: transparent; }
+.eq-r:disabled { opacity: .6; cursor: wait; }
+.eq-vide { color: var(--muted); font-weight: 600; }
