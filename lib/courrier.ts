@@ -15,9 +15,21 @@ export type Message = {
   lien: string | null;
   parent: string | null;
   lu: boolean;
-  /** A club e-mail (Joyeuses fêtes…): shown with the same layout as the e-mail. */
-  carte?: ContenuMail | null;
+  /** A club e-mail (Joyeuses fêtes…): shown with the same layout as the e-mail.
+   *  Or, for a request from the login help pages, its details (« demande ») so the staff can open the access in one tap. */
+  carte?: (ContenuMail & { demande?: undefined }) | { demande: Demande; theme?: undefined } | null;
 };
+/** A request sent from the login help pages (no account yet). */
+export type Demande = {
+  sujet: "membre" | "rejoindre" | "parent" | "attente" | "archive" | "code";
+  prenom: string; nom: string; email: string;
+  tel?: string; ancienne?: string; enfant?: string; niveau?: string; message?: string;
+  /** Set once the staff has opened the access: when, and the Notion fiche. */
+  traite?: { le: string; par: string; notionId?: string; resultat: string };
+};
+/** True when « carte » is a club e-mail layout (not a request). */
+export const estMail = (c: Message["carte"]): c is ContenuMail & { demande?: undefined } => Boolean(c && "theme" in c && c.theme);
+
 const COLS = "id,cree_le,type,de_email,de_nom,a_email,pour_staff,titre,texte,lien,parent,lu";
 
 /** Unread mail of this account (and, for the staff, unread messages sent to the staff). */
@@ -49,7 +61,7 @@ export async function lireCourrier(db: SupabaseClient, email = "", admin = false
 }
 
 /** Drops one copy of a club message (relance, notification) into each account's mailbox. */
-export async function deposer(db: SupabaseClient, emails: Iterable<string>, m: { type: TypeMessage; titre: string; texte?: string | null; lien?: string | null; de_email?: string | null; de_nom?: string | null; carte?: ContenuMail | null }) {
+export async function deposer(db: SupabaseClient, emails: Iterable<string>, m: { type: TypeMessage; titre: string; texte?: string | null; lien?: string | null; de_email?: string | null; de_nom?: string | null; carte?: ContenuMail | { demande: Demande } | null }) {
   const lignes = [...new Set([...emails].map((e) => e.toLowerCase()))].map((a) => ({
     type: m.type,
     titre: m.titre.slice(0, 140),
