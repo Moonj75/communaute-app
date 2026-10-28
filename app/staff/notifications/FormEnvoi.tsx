@@ -14,6 +14,7 @@ const MODELES = [
   { id: "entrainement", nom: "🎯 Entraînement", titre: "🎯 Entraînement ce …", texte: "Rendez-vous à la Maison du Peuple à …h. Viens nombreux !" },
   { id: "annule", nom: "❌ Annulation", titre: "❌ Entraînement annulé", texte: "L'entraînement de … est annulé. On se retrouve la semaine prochaine." },
   { id: "equipe", nom: "📅 Équipe : prenez vos dates", titre: "📅 Planning des entraînements", texte: "Il reste des places libres ce mois-ci. Ouvre l'appli → Entraînements et prends tes dates." },
+  { id: "guide", nom: "📘 Équipe : le guide des entraînements", titre: "📘 Le guide de l'équipe entraînements", texte: "Comment prendre tes dates, valider ta place, ce que font les suppléants et quand l'entraînement est confirmé : tout est expliqué dans ce guide. Touche « Ouvrir le guide » pour le lire.", doc: "guide-entrainements" },
   { id: "valider", nom: "✅ Équipe : pensez à valider", titre: "✅ Pense à valider ta place", texte: "Ouvre l'appli → Entraînements et touche « Je valide » pour ta prochaine séance." },
 ];
 
@@ -23,10 +24,11 @@ export default function FormEnvoi({ evenements, cible }: { evenements: { id: str
   const [titre, setTitre] = useState("");
   const [texte, setTexte] = useState("");
   const [verif, setVerif] = useState(false);
+  const [doc, setDoc] = useState("");
 
   // After a successful sending, a clean form.
   useEffect(() => {
-    if (etat?.ok) { setTitre(""); setTexte(""); setVerif(false); }
+    if (etat?.ok) { setTitre(""); setTexte(""); setVerif(false); setDoc(""); }
   }, [etat]);
 
   const ev = evenements.find((e) => dest.endsWith(":" + e.id));
@@ -38,6 +40,8 @@ export default function FormEnvoi({ evenements, cible }: { evenements: { id: str
     const nom = ev?.court || "…";
     setTitre(m.titre.replace("{competition}", nom));
     setTexte(m.texte.replace("{competition}", nom));
+    setDoc((m as { doc?: string }).doc || "");
+    if ((m as { doc?: string }).doc && !dest.startsWith("ent:")) setDest("ent:tous");
     setVerif(false);
   };
 
@@ -69,6 +73,13 @@ export default function FormEnvoi({ evenements, cible }: { evenements: { id: str
             Modèle de message
             <select className="input" defaultValue="libre" onChange={(e) => choisirModele(e.target.value)}>
               {MODELES.map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}
+            </select>
+          </label>
+          <label className="f">
+            Document joint
+            <select className="input" name="doc" value={doc} onChange={(e) => { setDoc(e.target.value); setVerif(false); }}>
+              <option value="">— Aucun —</option>
+              <option value="guide-entrainements">📘 Guide de l&apos;équipe entraînements (PDF)</option>
             </select>
           </label>
           <label className="f">

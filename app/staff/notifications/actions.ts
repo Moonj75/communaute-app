@@ -44,6 +44,8 @@ export async function envoyerManuel(_prev: RetourEnvoi | null, fd: FormData): Pr
       emails = cible.startsWith("attente:") ? sansReponse(ev, evs, parts, joueurs, await lireEligibles(supabase)) : inscritsOui(ev, evs, parts, joueurs);
       url = cible.startsWith("attente:") ? "/inscriptions" : `/calendrier?e=${ev.id}`;
     }
+    // Optional: the button of the message opens a document (e.g. the trainings guide).
+    if (fd.get("doc") === "guide-entrainements") url = "/guide-entrainements.pdf";
     if (!emails.size) return { ok: false, message: "Personne ne correspond à ce choix." };
     // Always a copy in each person's Courrier (relance when it targets missing answers).
     const deposes = await deposer(supabase, emails, { type: cible.startsWith("attente:") ? "relance" : "notification", titre, texte: corps, lien: url });
