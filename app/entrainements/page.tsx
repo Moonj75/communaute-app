@@ -3,12 +3,15 @@ import Header from "@/components/Header";
 import Blocs from "@/components/Blocs";
 import { displayName, getVue } from "@/lib/profil";
 import { essayer, lireExercices, lireMembresRoles, lireSeancesPeriode, nomsJoueurs } from "@/lib/club";
-import { ROLES, type RoleSeance } from "@/lib/entrainements-types";
+import { ROLES, finMois, moisPlus, type RoleSeance } from "@/lib/entrainements-types";
 import { aujourdhui } from "@/lib/club-types";
 import Seance, { type MaFiche } from "@/components/EntSeance";
 import Planning from "@/components/EntPlanning";
 import Bibliotheque from "@/components/EntBibliotheque";
 import FicheExercice from "@/components/EntFiche";
+import Equipe, { type MembreEquipe } from "@/components/EntEquipe";
+import { assurerMois } from "@/lib/entrainements-cron";
+import { vendredis } from "@/lib/entrainements-types";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Entraînements · SC Lions d'Eugies" };
@@ -16,8 +19,6 @@ export const metadata = { title: "Entraînements · SC Lions d'Eugies" };
 type Fiche = { notion_id: string; prenom: string | null; nom: string; email: string | null; roles: string[] | null; actif: boolean; archive?: boolean };
 const rolesDe = (f: Fiche) => ROLES.filter((r) => (f.roles || []).includes(r.tag)).map((r) => r.id);
 const suppsDe = (f: Fiche) => ROLES.filter((r) => (f.roles || []).includes(r.supp)).map((r) => r.id);
-const moisPlus = (m: string, n: number) => { const d = new Date(`${m}-15T12:00:00Z`); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 7); };
-const finMois = (m: string) => { const d = new Date(`${moisPlus(m, 1)}-01T12:00:00Z`); d.setUTCDate(0); return d.toISOString().slice(0, 10); };
 
 /** Trainings: the next session (roles and programme), the monthly planning of roles, the exercise sheets. */
 export default async function EntrainementsPage({ searchParams }: { searchParams: Promise<{ ex?: string }> }) {
@@ -28,13 +29,19 @@ export default async function EntrainementsPage({ searchParams }: { searchParams
   const T = aujourdhui();
   const mois = [T.slice(0, 7), moisPlus(T.slice(0, 7), 1)];
   const email = (user.email || "").toLowerCase();
-  const [seances, exercices, noms, membresR] = await Promise.all([
+  let [seances, exercices, noms, membresR] = await Promise.all([
     essayer(() => lireSeancesPeriode(`${mois[0]}-01`, finMois(mois[1]))),
     essayer(lireExercices),
     essayer(nomsJoueurs),
     // Roles straight from Notion (1 minute); the app copy if Notion does not answer.
     essayer(lireMembresRoles),
   ]);
+  // Always one month ahead: a Friday missing this month (from today) or next month is created now.
+  const manque = mois.some((m) => vendredis(m).some((j) => j >= T && !(seances.data || []).some((s) => s.date.slice(0, 10) === j)));
+  if (manque && !seances.erreur) {
+    const n = (await Promise.all(mois.map((m) => assurerMois(m, T).catch(() => 0)))).reduce((a, b) => a + b, 0);
+    if (n) seances = await essayer(() => lireSeancesPeriode(`${mois[0]}-01`, finMois(mois[1]), true));
+  }
   const membres: Fiche[] = membresR.data || (((await supabase.from("joueurs").select("*")).data || []) as Fiche[]);
   const nomDe = (f: Fiche) => [f.prenom, f.nom].filter(Boolean).join(" ");
   const mesFiches: MaFiche[] = membres.filter((f) => f.email === email && !f.archive).map((f) => ({ id: f.notion_id, nom: nomDe(f), roles: rolesDe(f), supps: suppsDe(f) }));
@@ -54,6 +61,10 @@ export default async function EntrainementsPage({ searchParams }: { searchParams
   // Exercise sheets and programme: trainers (and their substitutes) only. Planning and roles: the training crew.
   const entraineur = admin || mesFiches.some((f) => f.roles.includes("entraineur") || f.supps.includes("entraineur"));
   const equipe = admin || mesFiches.some((f) => f.roles.length > 0 || f.supps.length > 0);
+  // Staff: everybody active, with his state on each role (★ holder, 🔁 substitute).
+  const equipeAdmin: MembreEquipe[] = admin
+    ? tous.map((f) => ({ id: f.notion_id, nom: nomDe(f), etats: Object.fromEntries(ROLES.map((r) => [r.id, rolesDe(f).includes(r.id) ? "titulaire" : suppsDe(f).includes(r.id) ? "suppleant" : "aucun"])) as MembreEquipe["etats"] })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"))
+    : [];
   const aMoi = prochaine && ROLES.some((r) => prochaine.postes[r.id].ids.some((id) => mesFiches.some((f) => f.id === id) && !prochaine.postes[r.id].ok));
 
   // One exercise sheet (link « /entrainements?ex=… »).
@@ -80,9 +91,10 @@ export default async function EntrainementsPage({ searchParams }: { searchParams
               titre: "Prochain entraînement",
               ic: "🎯",
               badge: aMoi ? "!" : null,
-              contenu: prochaine ? <Seance s={prochaine} noms={equipe ? nomsR : {}} mesFiches={mesFiches} admin={entraineur} entraineur={entraineur} equipe={equipe} staff={admin} exercices={entraineur ? ex : []} /> : <p className="vide">Aucun entraînement programmé pour le moment.</p>,
+              contenu: prochaine ? <Seance s={prochaine} noms={nomsR} mesFiches={mesFiches} admin={entraineur} entraineur={entraineur} equipe={equipe} staff={admin} exercices={entraineur ? ex : []} /> : <p className="vide">Aucun entraînement programmé pour le moment.</p>,
             },
-            ...(equipe ? [{ id: "planning", titre: "Planning des rôles", ic: "📅", contenu: <Planning mois={mois} seances={liste} noms={nomsR} mesFiches={mesFiches} admin={admin} equipe={equipe} pools={pools} /> }] : []),
+            ...(equipe ? [{ id: "planning", titre: "Planning des rôles", ic: "📅", contenu: <Planning mois={mois} seances={liste} noms={nomsR} mesFiches={mesFiches} admin={admin} pools={pools} /> }] : []),
+            ...(admin ? [{ id: "equipe", titre: "Équipe et rôles", ic: "👥", badge: String(equipeAdmin.filter((m) => ROLES.some((r) => m.etats[r.id] !== "aucun")).length), contenu: <Equipe membres={equipeAdmin} /> }] : []),
             ...(entraineur ? [{ id: "exercices", titre: "Fiches d'exercices", ic: "📚", badge: ex.length ? String(ex.length) : null, contenu: <Bibliotheque exercices={ex} peutEditer={entraineur} /> }] : []),
           ]}
         />

@@ -2,11 +2,9 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getVue } from "@/lib/profil";
-import { TAGS, lireMembresRoles, creerSeance, enregistrerExercice, lireExercices, lireSeance, lireSeancesPeriode, majPoste, majProgramme, majStatutSeance, majValidation, publierSeance } from "@/lib/club";
-import { ROLES, limitePassee, phase, prochainCode, statutEffectif, vendredis, type RoleSeance } from "@/lib/entrainements-types";
+import { TAGS, lireMembresRoles, enregistrerExercice, lireExercices, lireSeance, majPoste, majProgramme, majRolesJoueur, majStatutSeance, majValidation } from "@/lib/club";
+import { ROLES, limitePassee, phase, prochainCode, statutEffectif, type RoleSeance } from "@/lib/entrainements-types";
 import { clientAdmin } from "@/lib/supabase/admin";
-import { pousser, pushPret, type Abonnement } from "@/lib/push";
-import { deposer } from "@/lib/courrier";
 
 export type Retour = { ok: boolean; message: string };
 type Fiche = { notion_id: string; prenom: string | null; nom: string; email: string | null; roles: string[] | null; actif: boolean; archive?: boolean };
@@ -25,13 +23,6 @@ async function qui() {
     fiches = ((data || []) as Fiche[]).filter((f) => !f.archive);
   }
   return { supabase, admin: profil?.role === "admin" && !apercu, apercu: Boolean(apercu), fiches };
-}
-/** Everybody with roles (Notion first, app copy otherwise). */
-async function membres(q: { supabase: Awaited<ReturnType<typeof getVue>>["supabase"] }): Promise<Fiche[]> {
-  try { return await lireMembresRoles(); } catch {
-    const { data } = await (clientAdmin() || q.supabase).from("joueurs").select("*");
-    return (data || []) as Fiche[];
-  }
 }
 const aLeRole = (f: Fiche, role: RoleSeance) => (f.roles || []).includes(ROLES.find((r) => r.id === role)!.tag);
 const estSuppleant = (f: Fiche, role: RoleSeance) => (f.roles || []).includes(ROLES.find((r) => r.id === role)!.supp);
@@ -89,90 +80,10 @@ async function staff() {
   const q = await qui();
   return q && q.admin ? q : null;
 }
-/** The training crew (trainers, openers, closers, bar, and their substitutes) runs the planning itself; staff can too. */
-async function equipe() {
-  const q = await qui();
-  return q && !q.apercu && (q.admin || q.fiches.some((f) => ROLES.some((r) => aLeRole(f, r.id) || estSuppleant(f, r.id)))) ? q : null;
-}
 /** Trainers may also write the programme and the exercise sheets. */
 async function staffOuEntraineur() {
   const q = await qui();
   return q && (q.admin || q.fiches.some((f) => aLeRole(f, "entraineur"))) && !q.apercu ? q : null;
-}
-
-/** Creates the Friday sessions of a month (the missing ones), with the usual hours and place. */
-export async function creerMois(mois: string): Promise<Retour> {
-  if (!(await equipe())) return { ok: false, message: "Réservé à l'équipe des entraînements." };
-  const jours = vendredis(mois);
-  const existantes = await lireSeancesPeriode(jours[0], jours[jours.length - 1]);
-  const avant = await lireSeancesPeriode(`${Number(mois.slice(0, 4)) - 1}${mois.slice(4)}-01`, `${mois}-01`).catch(() => []);
-  const modele = [...avant].reverse().find((s) => s.debut || s.lieu);
-  let n = 0;
-  for (const j of jours) {
-    if (existantes.some((s) => s.date.slice(0, 10) === j)) continue;
-    await creerSeance({ date: j, debut: modele?.debut || "18h00", fin: modele?.fin || "22h00", lieu: modele?.lieu || "Eugies" });
-    n++;
-  }
-  fini();
-  return { ok: true, message: n ? `${n} vendredi${n > 1 ? "s" : ""} ajouté${n > 1 ? "s" : ""} au planning.` : "Tous les vendredis du mois existent déjà." };
-}
-
-/** Fills the empty roles in turn among the volunteers of each list (fewest sessions first). */
-export async function completerMois(mois: string): Promise<Retour> {
-  const q = await equipe();
-  if (!q) return { ok: false, message: "Réservé à l'équipe des entraînements." };
-  const jours = vendredis(mois);
-  const seances = await lireSeancesPeriode(jours[0], jours[jours.length - 1]);
-  const tous = (await membres(q)).filter((f) => f.actif && !f.archive);
-  let n = 0;
-  for (const r of ROLES) {
-    const pool = tous.filter((f) => aLeRole(f, r.id));
-    if (!pool.length) continue;
-    const compte = new Map(pool.map((f) => [f.notion_id, seances.filter((s) => s.postes[r.id].ids.includes(f.notion_id)).length]));
-    for (const s of seances) {
-      if (s.postes[r.id].ids.length || s.annule) continue;
-      // Not twice the same evening on two roles if it can be avoided.
-      const pris = new Set(ROLES.flatMap((x) => s.postes[x.id].ids));
-      const choix = [...pool].sort((a, b) => Number(pris.has(a.notion_id)) - Number(pris.has(b.notion_id)) || compte.get(a.notion_id)! - compte.get(b.notion_id)!)[0];
-      await majPoste(s.id, r.id, choix.notion_id, false);
-      s.postes[r.id].ids = [choix.notion_id];
-      compte.set(choix.notion_id, compte.get(choix.notion_id)! + 1);
-      n++;
-    }
-  }
-  fini();
-  return { ok: true, message: n ? `${n} rôle${n > 1 ? "s" : ""} proposé${n > 1 ? "s" : ""}. Vérifie, puis publie le planning.` : "Rien à compléter (ou aucune liste de volontaires dans Notion → Rôles)." };
-}
-
-/** Publishes the month: each person receives his dates (notification + Courrier). */
-export async function publierMois(mois: string): Promise<Retour> {
-  const q = await equipe();
-  if (!q) return { ok: false, message: "Réservé à l'équipe des entraînements." };
-  const jours = vendredis(mois);
-  const seances = await lireSeancesPeriode(jours[0], jours[jours.length - 1]);
-  if (!seances.length) return { ok: false, message: "Aucune séance ce mois-là : crée d'abord les vendredis." };
-  const fiches = await membres(q);
-  const parEmail = new Map<string, string[]>();
-  for (const s of seances) {
-    for (const r of ROLES) for (const id of s.postes[r.id].ids) {
-      const f = fiches.find((x) => x.notion_id === id);
-      if (!f?.email) continue;
-      const e = f.email.toLowerCase();
-      parEmail.set(e, [...(parEmail.get(e) || []), `${r.ic} ${r.nom} le ${s.date.slice(8, 10)}/${s.date.slice(5, 7)}`]);
-    }
-    await publierSeance(s.id);
-  }
-  const nomMois = new Date(`${mois}-15T12:00:00Z`).toLocaleDateString("fr-BE", { month: "long", timeZone: "UTC" });
-  const db = clientAdmin() || q.supabase;
-  const { data: subs } = pushPret() ? await db.from("push_abonnements").select("endpoint,email,p256dh,auth") : { data: [] };
-  for (const [email, lignes] of parEmail) {
-    const titre = `📅 Planning des entraînements de ${nomMois}`;
-    const texte = `Tes rôles : ${lignes.join(" · ")}. Valide chaque date dans l'appli au plus tard le vendredi d'avant à 21h00 ; ensuite la place est proposée aux suppléants.`;
-    await deposer(db, [email], { type: "notification", titre, texte, lien: "/entrainements#bloc-planning" }).catch(() => 0);
-    if (subs?.length) await pousser(db, subs as Abonnement[], [email], { title: titre, body: texte, url: "/entrainements#bloc-planning", tag: `ent-planning-${mois}` }).catch(() => null);
-  }
-  fini();
-  return { ok: true, message: `Planning publié ✓ — ${parEmail.size} personne${parEmail.size > 1 ? "s" : ""} prévenue${parEmail.size > 1 ? "s" : ""}.` };
 }
 
 /** Trainers (and staff): confirm or cancel by hand (bad weather, room closed…). */
@@ -213,10 +124,10 @@ export async function sauverExercice(fd: FormData): Promise<Retour> {
   return { ok: true, message: `Fiche ${code} enregistrée ✓` };
 }
 
-/** « Mettre à jour depuis Notion »: sessions and roles read again now; the roles are also copied into the app. */
+/** « Mettre à jour depuis Notion » (staff): sessions and roles read again now; the roles are also copied into the app. */
 export async function actualiserNotion(): Promise<Retour> {
-  const q = await equipe();
-  if (!q) return { ok: false, message: "Réservé à l'équipe des entraînements." };
+  const q = await staff();
+  if (!q || q.apercu) return { ok: false, message: "Réservé au staff." };
   revalidateTag(TAGS.entrainements);
   let n = 0;
   try {
@@ -228,4 +139,29 @@ export async function actualiserNotion(): Promise<Retour> {
   }
   revalidatePath("/entrainements");
   return { ok: true, message: `À jour avec Notion ✓ (${n} fiches).` };
+}
+
+/**
+ * Staff: the training role of one member, chosen in the app and written into Notion (Rôles).
+ * etat: « titulaire » (★ on the role), « suppleant » (🔁) or « aucun ». The other roles of the fiche are kept.
+ */
+export async function changerRoleMembre(notionId: string, role: RoleSeance, etat: "titulaire" | "suppleant" | "aucun"): Promise<Retour> {
+  const q = await staff();
+  if (!q || q.apercu) return { ok: false, message: "Réservé au staff." };
+  const r = ROLES.find((x) => x.id === role);
+  if (!r) return { ok: false, message: "Rôle inconnu." };
+  try {
+    const m = (await lireMembresRoles()).find((x) => x.notion_id === notionId);
+    if (!m) return { ok: false, message: "Membre introuvable dans Notion." };
+    const roles = (m.roles || []).filter((x) => x !== r.tag && x !== r.supp);
+    if (etat === "titulaire") roles.push(r.tag);
+    if (etat === "suppleant") roles.push(r.supp);
+    await majRolesJoueur(notionId, roles);
+    const db = clientAdmin();
+    if (db) await db.from("joueurs").update({ roles }).eq("notion_id", notionId);
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Notion ne répond pas." };
+  }
+  fini();
+  return { ok: true, message: "Rôle enregistré ✓" };
 }
