@@ -54,7 +54,7 @@ export async function choisirPoste(seanceId: string, role: RoleSeance, joueurId:
   }
   await majPoste(seanceId, role, joueurId, valider);
   // Taking a role means being available that evening.
-  if (joueurId && s.indispos.includes(joueurId)) await majIndispos(seanceId, s.indispos.filter((x) => x !== joueurId));
+  if (joueurId && s.indispos.includes(joueurId)) await majIndispos(seanceId, s.indispos.filter((x) => x !== joueurId), s.motifs);
   fini();
   return { ok: true, message: joueurId ? "C'est noté ✓" : "Place libérée." };
 }
@@ -80,7 +80,7 @@ export async function validerPoste(seanceId: string, role: RoleSeance, ok: boole
  * « Pas disponible » for one Friday: no reminders nor substitute calls for that session.
  * A member of the crew for himself (his fiches), staff for anybody. A role held that evening is freed.
  */
-export async function changerDispo(seanceId: string, joueurId: string, indispo: boolean): Promise<Retour> {
+export async function changerDispo(seanceId: string, joueurId: string, indispo: boolean, motif = ""): Promise<Retour> {
   const q = await qui();
   if (!q) return { ok: false, message: "Reconnecte-toi." };
   if (q.apercu) return { ok: false, message: "Mode aperçu : rien n'est enregistré." };
@@ -92,12 +92,16 @@ export async function changerDispo(seanceId: string, joueurId: string, indispo: 
     if (statutEffectif(s) === "Confirmé") return { ok: false, message: "L'entraînement est confirmé : préviens le staff." };
     if (limitePassee(s.date)) return { ok: false, message: "La date limite (lundi 21h00) est passée." };
   }
+  const raison = motif.replace(/\s+/g, " ").trim().slice(0, 60);
+  if (indispo && !raison) return { ok: false, message: "Choisis un motif." };
   const liste = indispo ? [...s.indispos, joueurId] : s.indispos.filter((x) => x !== joueurId);
-  await majIndispos(seanceId, liste);
+  const motifs = { ...s.motifs };
+  if (indispo) motifs[joueurId] = raison; else delete motifs[joueurId];
+  await majIndispos(seanceId, liste, motifs);
   let libere = 0;
   if (indispo) for (const r of ROLES) if (s.postes[r.id].ids.includes(joueurId)) { await majPoste(seanceId, r.id, null, false); libere++; }
   fini();
-  return { ok: true, message: indispo ? `Noté : pas disponible ce vendredi${libere ? " (ta place est libérée)" : ""}. Tu ne recevras pas de rappel pour cette date.` : "Noté : de nouveau disponible ✓" };
+  return { ok: true, message: indispo ? `Noté : indisponible (${raison})${libere ? ", ta place est libérée" : ""}. Tu ne recevras pas de rappel pour cette date.` : "Noté : de nouveau disponible ✓" };
 }
 
 /* ---------- Staff ---------- */
