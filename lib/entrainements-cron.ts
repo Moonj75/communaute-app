@@ -77,6 +77,8 @@ export async function traiterEntrainements(db: SupabaseClient) {
     } else {
       const ph = phase(s.date, now);
       const id2mails = (ids: string[]) => ids.map(mail).filter((x): x is string => Boolean(x));
+      // « Pas disponible » this Friday: no call, no reminder.
+      const dispo = (f: Fiche) => !s.indispos.includes(f.notion_id);
       // Everybody of a required role validated: the four are told the session will take place.
       if (complet(s)) {
         const tous = new Set(ROLES.flatMap((r) => id2mails(s.postes[r.id].ids)));
@@ -87,7 +89,7 @@ export async function traiterEntrainements(db: SupabaseClient) {
         for (const r of ROLES) {
           const ids = s.postes[r.id].ids;
           if (s.postes[r.id].ok) continue;
-          const supp = new Set(fiches.filter((f) => (f.roles || []).includes(r.supp) && !ids.includes(f.notion_id)).map((f) => f.email?.toLowerCase()).filter((x): x is string => Boolean(x)));
+          const supp = new Set(fiches.filter((f) => (f.roles || []).includes(r.supp) && !ids.includes(f.notion_id) && dispo(f)).map((f) => f.email?.toLowerCase()).filter((x): x is string => Boolean(x)));
           envois.push({ cle: `ent-supp:${s.id}:${r.id}`, emails: supp, msg: { title: `🔁 ${r.ic} ${r.nom} recherché ${jourCourt(s.date)}`, body: `La place n'a pas été confirmée. Tu es suppléant : prends-la dans l'appli avant lundi 21h00${r.requis ? ", sinon l'entraînement sera annulé" : ""}.`, url: "/entrainements#bloc-prochain", tag: `ent-supp-${s.id}` } });
           if (ids.length) envois.push({ cle: `ent-titu:${s.id}:${r.id}`, emails: new Set(id2mails(ids)), msg: { title: `⏳ ${r.ic} ${r.nom} ${jourCourt(s.date)} : pas encore validé`, body: "Ta place est maintenant proposée aux suppléants. Tu peux encore valider tant que personne ne l'a prise (jusqu'à lundi 21h00).", url: "/entrainements#bloc-prochain", tag: `ent-titu-${s.id}` } });
         }
@@ -105,9 +107,9 @@ export async function traiterEntrainements(db: SupabaseClient) {
           let body: string;
           if (slot.phase === "titulaires") {
             if (ids.length) { emails = new Set(id2mails(ids)); body = `Tu es prévu ${r.nom.toLowerCase()} : touche « Je valide » avant ${jourLim}. Sinon ta place sera proposée aux suppléants.`; }
-            else { emails = new Set(fiches.filter((f) => (f.roles || []).includes(r.tag)).map((f) => f.email?.toLowerCase()).filter((x): x is string => Boolean(x))); body = `Personne n'a encore pris le rôle ${r.nom.toLowerCase()}. Inscris-toi dans le planning avant ${jourLim}.`; }
+            else { emails = new Set(fiches.filter((f) => (f.roles || []).includes(r.tag) && dispo(f)).map((f) => f.email?.toLowerCase()).filter((x): x is string => Boolean(x))); body = `Personne n'a encore pris le rôle ${r.nom.toLowerCase()}. Inscris-toi dans le planning avant ${jourLim}.`; }
           } else {
-            emails = new Set([...id2mails(ids), ...fiches.filter((f) => (f.roles || []).includes(r.supp) && !ids.includes(f.notion_id)).map((f) => f.email?.toLowerCase()).filter((x): x is string => Boolean(x))]);
+            emails = new Set([...id2mails(ids), ...fiches.filter((f) => (f.roles || []).includes(r.supp) && !ids.includes(f.notion_id) && dispo(f)).map((f) => f.email?.toLowerCase()).filter((x): x is string => Boolean(x))]);
             body = `La place ${r.nom.toLowerCase()} n'est toujours pas confirmée. Le premier qui la prend est validé. ${r.requis ? `Sans personne ${jourLim}, l'entraînement est annulé.` : "La buvette est facultative, mais bien utile."}`;
           }
           const urgent = /min$|^[1-3] h$/.test(r2);

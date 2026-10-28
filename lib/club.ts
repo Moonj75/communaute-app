@@ -612,6 +612,7 @@ function versSeance(pg: Page): SeanceE {
     exercices: rel(p["Exercices"]),
     publie: coche(p["Planning publié"]),
     notes: texte(p["Notes"]),
+    indispos: rel(p["Indisponibles"]),
   };
 }
 
@@ -653,6 +654,9 @@ export async function lireExercices(): Promise<ExerciceT[]> {
 export async function majPoste(seanceId: string, role: RoleSeance, joueurId: string | null, ok = false) {
   const r = ROLES.find((x) => x.id === role)!;
   await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { [r.notion]: { relation: joueurId ? [{ id: joueurId }] : [] }, [r.valide]: { checkbox: Boolean(joueurId) && ok } } } });
+}
+export async function majIndispos(seanceId: string, ids: string[]) {
+  await notion(`pages/${seanceId}`, { method: "PATCH", body: { properties: { Indisponibles: { relation: [...new Set(ids)].map((id) => ({ id })) } } } });
 }
 export async function majValidation(seanceId: string, role: RoleSeance, ok: boolean) {
   const r = ROLES.find((x) => x.id === role)!;

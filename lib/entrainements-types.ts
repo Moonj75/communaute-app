@@ -42,6 +42,8 @@ export type SeanceE = {
   exercices: string[];
   publie: boolean;
   notes: string | null;
+  /** Crew members who said « Pas disponible » for this Friday: no reminders for them. */
+  indispos: string[];
 };
 
 export type Exercice = {
