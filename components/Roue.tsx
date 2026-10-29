@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Trophee } from "./Trophee";
 import { classeRang, motRang } from "@/lib/palmares-types";
+import { couleurCategorie } from "@/lib/classements-types";
 import "./roue.css";
 
 /** The name on its plaque: first name small, family name big (several players: one per line). */
@@ -12,11 +13,18 @@ function nomBeau(qui: string) {
   const m = qui.trim().split(/\s+/);
   const prenom = m.length > 1 ? m[0] : "";
   const nom = m.length > 1 ? m.slice(1).join(" ") : m[0] || "?";
-  return <>{prenom ? <span className="rc-pre">{prenom}</span> : null}<b className="rc-nom">{nom}</b></>;
+  // Long family names get a smaller size, so they are never cut in the middle of a word.
+  const lg = Math.max(...nom.split(/\s+/).map((x) => x.length));
+  return <>{prenom ? <span className="rc-pre">{prenom}</span> : null}<b className={`rc-nom${lg > 11 ? " tres-long" : lg > 8 ? " long" : ""}`}>{nom}</b></>;
 }
 
 /** One result of the wheel. */
-export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null };
+export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null; date?: string | null };
+
+/** « 12 octobre 2025 », or the season when the day is not known. */
+const quand = (c: Cran) => (c.date ? new Date(c.date.slice(0, 10) + "T12:00:00Z").toLocaleDateString("fr-BE", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : c.saison ? `Saison ${c.saison}` : null);
+/** Pause after a tap on the card or on an arrow, before the wheel goes on by itself. */
+const ARRET = 12000;
 
 const H_C = 168; // highlighted card
 const H_V = 50; // neighbours
@@ -28,10 +36,19 @@ const ECART = 6;
  * The band goes down: the next result comes from above. Home: automatic; palmarès page: by hand
  * (swipe, wheel, arrows, or a tap on a neighbour), the highlighted card always stays in the middle.
  */
-export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 5000, debut = 0, surChange, outil }: { crans: Cran[]; auto?: boolean; voisins?: number; duree?: number; debut?: number; surChange?: (i: number) => void; /** Small tool on the highlighted card (staff: remove). */ outil?: (c: Cran) => React.ReactNode }) {
+export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 7000, debut = 0, surChange, outil }: { crans: Cran[]; auto?: boolean; voisins?: number; duree?: number; debut?: number; surChange?: (i: number) => void; /** Small tool on the highlighted card (staff: remove). */ outil?: (c: Cran) => React.ReactNode }) {
   const n = crans.length;
   const [i, setI] = useState(Math.min(debut, Math.max(0, n - 1)));
   const [pause, setPause] = useState(false);
+  // Held still (tap on the highlighted card, arrows, swipe): the wheel waits, then goes on gently.
+  const [fige, setFige] = useState(0);
+  const arreter = useCallback(() => setFige(Date.now()), []);
+  useEffect(() => {
+    if (!fige) return;
+    const t = window.setTimeout(() => setFige(0), ARRET);
+    return () => clearTimeout(t);
+  }, [fige]);
+  const arret = pause || fige > 0;
   const y0 = useRef<number | null>(null);
   // The frame takes the height left on the screen (CSS); as many neighbours as fit are shown.
   const boite = useRef<HTMLDivElement>(null);
@@ -50,10 +67,11 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 5
   useEffect(() => { setI((v) => (v >= n ? 0 : v)); }, [n]);
   const aller = useCallback((k: number) => { if (!n) return; const v = ((k % n) + n) % n; setI(v); surChange?.(v); }, [n, surChange]);
   useEffect(() => {
-    if (!auto || pause || n < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!auto || arret || n < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const t = window.setTimeout(() => aller(i + 1), duree);
     return () => clearTimeout(t);
-  }, [auto, pause, n, i, duree, aller]);
+  }, [auto, arret, n, i, duree, aller]);
+  const pas = (k: number) => { arreter(); aller(i + k); };
   if (!n) return <p className="vide">Pas encore de résultat… le premier arrive ! 💪</p>;
   const boucle = n > voisins * 2 + 1;
   // Distance of item k to the middle: < 0 above (coming), > 0 below (gone).
@@ -68,15 +86,14 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 5
     <div ref={boite} className={`roue${auto ? " auto" : ""}`}
       onMouseEnter={() => setPause(true)} onMouseLeave={() => setPause(false)}
       onWheel={(e) => { if (auto) return; const t = Date.now(); if (t - roule.current < 260 || Math.abs(e.deltaY) < 8) return; roule.current = t; aller(i + (e.deltaY > 0 ? 1 : -1)); }}
-      onTouchStart={(e) => { setPause(true); y0.current = e.touches[0].clientY; }}
+      onTouchStart={(e) => { y0.current = e.touches[0].clientY; }}
       onTouchEnd={(e) => {
         const d = y0.current === null ? 0 : e.changedTouches[0].clientY - y0.current;
         // The band goes down: pulling it down shows the next one.
-        if (Math.abs(d) > 30) aller(i + (d > 0 ? 1 : -1) * Math.max(1, Math.round(Math.abs(d) / 90)));
+        if (Math.abs(d) > 30) { arreter(); aller(i + (d > 0 ? 1 : -1) * Math.max(1, Math.round(Math.abs(d) / 90))); }
         y0.current = null;
-        window.setTimeout(() => setPause(false), 6000);
       }}
-      onKeyDown={(e) => { if (e.key === "ArrowDown") { e.preventDefault(); aller(i + 1); } if (e.key === "ArrowUp") { e.preventDefault(); aller(i - 1); } }}
+      onKeyDown={(e) => { if (e.key === "ArrowDown") { e.preventDefault(); pas(1); } if (e.key === "ArrowUp") { e.preventDefault(); pas(-1); } }}
       tabIndex={0} aria-roledescription="carrousel" aria-label="Palmarès"
     >
       <span className="roue-guide" aria-hidden="true" style={{ height: H_C + 8 }} />
@@ -87,9 +104,9 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 5
         const centre = d === 0;
         const rc = classeRang(p);
         return (
-          <div key={c.id} className={`rc ${rc}${centre ? " c" : ""}`} aria-hidden={!centre}
+          <div key={c.id} className={`rc ${rc}${centre ? " c" : ""}${centre && fige ? " fige" : ""}`} aria-hidden={!centre}
             style={{ height: centre ? H_C : H_V, transform: `translateY(${pos(d) - (centre ? H_C : H_V) / 2}px)`, opacity: Math.abs(d) > voisins ? 0 : centre ? 1 : Math.abs(d) === 1 ? 0.8 : 0.45, zIndex: 10 - Math.abs(d) }}
-            onClick={() => !centre && aller(k)}>
+            onClick={() => { arreter(); if (!centre) aller(k); }}>
             {centre ? (
               <>
                 {outil ? <span className="rc-outil">{outil(c)}</span> : null}
@@ -100,14 +117,11 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 5
                   <span className={`pk-badge ${c.equipe ? "eq" : "in"}`}>{c.equipe ? "👥 Équipe" : "👤 Individuel"}</span>
                 </span>
                 {/* Middle: who. */}
-                <span className="rc-m">{nomBeau(c.qui)}</span>
+                <span className="rc-m">{nomBeau(c.qui)}{c.categorie ? <span className="rc-mcat" style={couleurCategorie(c.categorie) ? ({ "--cc": couleurCategorie(c.categorie) } as React.CSSProperties) : undefined}>{c.categorie}</span> : null}</span>
                 {/* Right: the event, big. */}
                 <span className="rc-d">
                   <b className="rc-ev">{c.competition}</b>
-                  <span className="rc-pied">
-                    {c.categorie ? <span className="rc-cat">{c.categorie}</span> : null}
-                    {c.saison ? <span className="rc-sz">{c.saison}</span> : null}
-                  </span>
+                  {quand(c) ? <span className="rc-date">📅 {quand(c)}</span> : null}
                 </span>
               </>
             ) : (
@@ -120,15 +134,14 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 5
           </div>
         );
       })}
-      {auto ? <span className="roue-barre" aria-hidden="true"><i key={i} style={{ animationDuration: `${duree}ms`, animationPlayState: pause ? "paused" : "running" }} /></span> : null}
+      {auto ? <span className="roue-barre" aria-hidden="true"><i key={`${i}-${fige}`} style={{ animationDuration: `${duree}ms`, animationPlayState: arret ? "paused" : "running" }} /></span> : null}
+      {fige ? <span className="roue-fige" key={fige}>⏸ Arrêté un instant<i style={{ animationDuration: `${ARRET}ms` }} /></span> : null}
     </div>
-    {!auto ? (
-      <div className="roue-fl">
-        <button type="button" aria-label="Résultat précédent" onClick={() => aller(i - 1)}>▲</button>
-        <span className="roue-n num">{i + 1}<small> / {n}</small></span>
-        <button type="button" aria-label="Résultat suivant" onClick={() => aller(i + 1)}>▼</button>
-      </div>
-    ) : null}
+    <div className={`roue-fl${auto ? " petit" : ""}`}>
+      <button type="button" aria-label="Résultat précédent" onClick={() => pas(-1)}>▲</button>
+      <span className="roue-n num">{i + 1}<small> / {n}</small></span>
+      <button type="button" aria-label="Résultat suivant" onClick={() => pas(1)}>▼</button>
+    </div>
     </div>
   );
 }

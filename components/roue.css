@@ -30,7 +30,7 @@
 .rc-cat, .rc-sz { font-size: 10.5px; font-weight: 900; padding: 2px 6px; border-radius: 6px; background: rgba(255, 255, 255, .14); color: #fff; }
 .roue-bloc { display: flex; flex-direction: column; gap: 6px; }
 .roue { height: clamp(300px, calc(100dvh - var(--entete-h, 100px) - var(--bande-h, 50px) - var(--dock-h, 84px) - 150px), 640px); }
-.roue.auto { height: clamp(270px, calc(100dvh - var(--entete-h, 100px) - var(--bande-h, 50px) - var(--dock-h, 84px) - 190px), 400px); }
+.roue.auto { height: clamp(270px, calc(100dvh - var(--entete-h, 100px) - var(--bande-h, 50px) - var(--dock-h, 84px) - 230px), 400px); }
 .roue-fl { display: flex; align-items: center; justify-content: center; gap: 14px; }
 .roue-fl button { width: 64px; height: 36px; border: 0; border-radius: 12px; background: #1d1716; color: #ffd54a; font-size: 16px; cursor: pointer; }
 .roue-n { min-width: 74px; text-align: center; font-weight: 900; font-size: 15px; color: var(--fg, #1d1716); }
@@ -82,3 +82,18 @@
 .rc-vn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; text-align: center; }
 .rc-ve { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #5b524d; font-weight: 700; }
 @media (max-width: 360px) { .rc.c, .rc:not(.c) { grid-template-columns: 84px minmax(0, 1fr) minmax(0, 1fr); } .rc-nom { font-size: 20px; } .rc-ev { font-size: 15px; } }
+
+/* v3 — slower, held still on a tap, event and date bigger. */
+.rc { transition: transform 1.4s cubic-bezier(.45, .05, .25, 1), height 1.4s cubic-bezier(.45, .05, .25, 1), opacity 1.1s ease, background .4s; }
+.rc-ev { font-size: 21px; line-height: 1.05; }
+.rc.c .rc-date { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 9px; background: rgba(255, 213, 74, .16); color: #ffd54a; font-size: 13.5px; font-weight: 900; box-shadow: inset 0 0 0 1px rgba(255, 213, 74, .45); }
+.rc.c.fige { box-shadow: inset 0 0 0 2.5px #00e5ff, 0 0 26px rgba(0, 229, 255, .55); }
+.roue-fige { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 26; overflow: hidden; padding: 4px 12px 6px; border-radius: 99px; background: #1d1716; color: #7ff; font-size: 12px; font-weight: 900; white-space: nowrap; }
+.roue-fige i { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: #00e5ff; transform-origin: left; animation: roue-fige linear both; }
+@keyframes roue-fige { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.roue-fl.petit button { width: 52px; height: 32px; font-size: 14px; }
+@media (max-width: 360px) { .rc-ev { font-size: 17px; } }
+.rc-mcat { margin-top: 6px; padding: 3px 10px; border-radius: 8px; background: var(--cc, #4a3f3a); color: #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, .5); border: 1px solid rgba(255, 255, 255, .35); font-size: 13px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; box-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+.rc-nom { overflow-wrap: normal; word-break: normal; hyphens: none; }
+.rc.c .rc-nom.long { font-size: 19px; }
+.rc.c .rc-nom.tres-long { font-size: 15px; }
