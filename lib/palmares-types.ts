@@ -102,4 +102,4 @@ export function triVitrine(a: ResultatP, b: ResultatP) {
   return n(a) - n(b) || cleSaison(b.saison) - cleSaison(a.saison) || (b.date || "").localeCompare(a.date || "") || b.cree.localeCompare(a.cree);
 }
 /** One highlight of the showcase / of the card band. */
-export type Exploit = { id: string; place: number | null; equipe: boolean; competition: string; categorie: string | null; saison: string | null; qui: string };
+export type Exploit = { id: string; place: number | null; equipe: boolean; competition: string; categorie: string | null; saison: string | null; date?: string | null; qui: string };
