@@ -7,6 +7,7 @@ import { comptesActifs, comptesConcernes, inscritsOui, sansReponse } from "@/lib
 import { lireEligibles } from "@/lib/eligibles";
 import { deposer } from "@/lib/courrier";
 import { traiterEntrainements } from "@/lib/entrainements-cron";
+import { ROLE_PALMARES } from "@/lib/palmares-types";
 import { fusionner, remplir, type CleModele, type ModeleEnregistre } from "@/lib/modeles-notifs";
 import type { JoueurLite } from "@/lib/club-types";
 import { ajouterJours, ajouterMois, aujourdhui, dateCourte, estCompetition, estRetenu, indexReponses, lienReponse, DECISION_OUI } from "@/lib/club-types";
@@ -129,6 +130,20 @@ export async function GET(req: NextRequest) {
       emails: staff,
       msg: msgDe("decision", motsEv(e), `/staff/planning?e=${e.id}`, `dec-${e.id}`),
     });
+
+  // 6. Palmarès: the day after a competition the club took part in → the person in charge of the palmarès
+  //    (staff if nobody has the role) and the participants are asked for the results. The palmarès changes only then.
+  const respPalmares = new Set(((rj.data || []) as { email: string | null; roles?: string[] | null; archive?: boolean }[]).filter((j) => !j.archive && j.email && (j.roles || []).includes(ROLE_PALMARES)).map((j) => j.email!.toLowerCase()));
+  for (const e of comps.filter((e) => (e.fin || e.date) === ajouterJours(T, -1))) {
+    const participants = inscritsOui(e, evs, parts, joueurs);
+    if (!participants.size) continue;
+    const lien = `/palmares?c=${encodeURIComponent(e.nom)}&d=${e.date}#bloc-ajouter`;
+    envois.push({ cle: `palmares:${e.id}`, modele: "palmares" as CleModele, emails: respPalmares.size ? respPalmares : staff, msg: { title: `🏅 Résultats de ${e.nom}`, body: `${participants.size} joueur${participants.size > 1 ? "s" : ""} du club y étai${participants.size > 1 ? "ent" : "t"}. Ajoute leurs résultats au palmarès.`, url: lien, tag: `palmares-${e.id}` } });
+    envois.push({ cle: `palmaresj:${e.id}`, modele: "palmares" as CleModele, emails: participants, msg: { title: `🏅 Un résultat à ${e.nom} ?`, body: "Bravo pour ta participation ! Un podium, une finale, une demi ? Ajoute-le à ton palmarès en 10 secondes.", url: lien, tag: `palmares-${e.id}` } });
+  }
+  // 7. End of season (25 August): the final standings of the year (club championship, cup…) into the palmarès.
+  if (T.slice(5) === "08-25")
+    envois.push({ cle: `palmaresfin:${T.slice(0, 4)}`, modele: "palmares" as CleModele, emails: respPalmares.size ? respPalmares : staff, msg: { title: "🏆 Fin de saison : le palmarès", body: "Pense à ajouter les classements finaux de la saison (championnat et coupe du club, classements de fin d'année).", url: "/palmares#bloc-ajouter", tag: "palmares-fin" } });
 
   // Send once per key (the job may run twice).
   const { data: deja } = await db.from("push_journal").select("cle").in("cle", envois.length ? envois.map((e) => e.cle) : ["-"]);
