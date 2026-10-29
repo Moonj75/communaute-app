@@ -18,3 +18,8 @@
 .ee-l-t { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .ee-l-t small { color: var(--muted); }
 .ee-liste { display: flex; flex-direction: column; gap: 6px; }
+.ee-obj-l { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ee-pm { width: 44px; height: 44px; border: 0; border-radius: 12px; background: #1d1716; color: #fff; font-size: 24px; font-weight: 900; cursor: pointer; }
+.ee-pm:disabled { opacity: .3; }
+.ee-obj-n { min-width: 46px; text-align: center; font-family: var(--font-display); font-style: italic; font-weight: 900; font-size: 34px; line-height: 1; }
+.ee-obj .ee-choix { margin-left: 4px; }

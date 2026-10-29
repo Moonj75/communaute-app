@@ -11,7 +11,7 @@ import "./evenements.css";
  * Staff: every field of an event of the calendar (Notion « Calendrier Déplacements »), to create one from the app
  * or to complete one created in Notion. The registration dates can be proposed from the club's usual delays.
  */
-export default function EditeurEvenement({ ev, aFiche = false, delais, manque = [], ouvert = false }: { ev?: Evenement; aFiche?: boolean; delais: Delais; manque?: string[]; ouvert?: boolean }) {
+export default function EditeurEvenement({ ev, aFiche = false, fiche, delais, manque = [], ouvert = false }: { ev?: Evenement; aFiche?: boolean; /** Its logistics sheet (where the players' target is kept). */ fiche?: { id: string; objectif: number | null }; delais: Delais; manque?: string[]; ouvert?: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [info, setInfo] = useState<{ ok: boolean; message?: string } | null>(null);
@@ -19,7 +19,7 @@ export default function EditeurEvenement({ ev, aFiche = false, delais, manque = 
   const [f, setF] = useState({
     nom: ev?.nom || "", type: ev?.type || "Compétition", competition: ev?.competition || "", date: ev?.date || "", fin: ev?.fin || "",
     lieu: ev?.lieu || "", deplacement: ev?.deplacement || "", decision: ev ? ev.decision || "" : "✅ On y va", priorite: ev?.priorite || [],
-    ouverture: ev?.ouverture || "", limite: ev?.limite || "", validation: ev?.validation || "", covoiturage: Boolean(ev?.covoiturage), notes: ev?.notes || "",
+    ouverture: ev?.ouverture || "", limite: ev?.limite || "", validation: ev?.validation || "", covoiturage: Boolean(ev?.covoiturage), notes: ev?.notes || "", objectif: fiche?.objectif ?? ev?.objectif ?? null as number | null,
   });
   const maj = (k: keyof typeof f, v: unknown) => setF((x) => ({ ...x, [k]: v }));
   const compet = f.type === "Compétition";
@@ -31,7 +31,7 @@ export default function EditeurEvenement({ ev, aFiche = false, delais, manque = 
   const envoyer = (fd: FormData) => start(async () => {
     const r = await enregistrerEvenement(fd);
     setInfo(r);
-    if (r.ok) { router.refresh(); if (!ev) setF((x) => ({ ...x, nom: "", date: "", fin: "", lieu: "", ouverture: "", limite: "", validation: "", notes: "" })); }
+    if (r.ok) { router.refresh(); if (!ev) setF((x) => ({ ...x, nom: "", date: "", fin: "", lieu: "", ouverture: "", limite: "", validation: "", notes: "", objectif: null })); }
   });
 
   if (ev && !voir)
@@ -87,6 +87,18 @@ export default function EditeurEvenement({ ev, aFiche = false, delais, manque = 
               <label className="f">Date limite<input className="input" type="date" name="limite" value={f.limite} onChange={(e) => maj("limite", e.target.value)} /></label>
               <label className="f">Validation<input className="input" type="date" name="validation" value={f.validation} onChange={(e) => maj("validation", e.target.value)} /></label>
             </div>
+          </div>
+          <div className="f ee-obj">🎯 Objectif de joueurs pour ce déplacement
+            <div className="ee-obj-l">
+              <button type="button" className="ee-pm" aria-label="Un joueur de moins" disabled={!f.objectif} onClick={() => maj("objectif", f.objectif && f.objectif > 1 ? f.objectif - 1 : null)}>−</button>
+              <b className="ee-obj-n num">{f.objectif ?? "—"}</b>
+              <button type="button" className="ee-pm" aria-label="Un joueur de plus" onClick={() => maj("objectif", Math.min(99, (f.objectif || 0) + 1))}>+</button>
+              <span className="ee-choix">{[4, 6, 8, 10, 12, 16].map((n) => <button type="button" key={n} className={f.objectif === n ? "on" : undefined} onClick={() => maj("objectif", n)}>{n}</button>)}</span>
+            </div>
+            <small className="muted">{f.objectif ? `Le compteur d'inscriptions montrera « … / ${f.objectif} joueurs ». Il est gardé dans la fiche logistique${fiche ? "" : " (créée automatiquement)"}.` : "Facultatif : combien de joueurs le club veut emmener."}</small>
+            <input type="hidden" name="objectif" value={f.objectif ?? ""} />
+            {fiche ? <input type="hidden" name="ficheId" value={fiche.id} /> : null}
+            {fiche?.objectif ? <input type="hidden" name="objectifAvant" value={fiche.objectif} /> : null}
           </div>
           <label className="ee-coche"><input type="checkbox" name="covoiturage" checked={f.covoiturage} onChange={(e) => maj("covoiturage", e.target.checked)} /> 🚐 Covoiturage organisé par le club</label>
           {!aFiche ? <label className="ee-coche"><input type="checkbox" name="fiche" defaultChecked={f.decision === "✅ On y va"} /> 📋 Créer aussi sa fiche logistique</label> : null}
