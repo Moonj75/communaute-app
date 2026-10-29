@@ -76,7 +76,9 @@ export default function BarreBas({ isAdmin, nom, inactif = false, sansCompet = f
     const preparer = () => {
       if (document.visibilityState !== "visible") return;
       ["/club/classements", "/club/classements?l=FBFTS-Clubs", "/club/classements?l=WR-Open"].forEach((h) => router.prefetch(h));
-      items.filter((i) => !i.href.includes("#") && !i.href.startsWith("/club/classements")).forEach((i) => router.prefetch(i.href, { kind: "full" } as never));
+      // (the palmarès page, heavier, is only prepared lightly)
+      router.prefetch("/palmares");
+      items.filter((i) => !i.href.includes("#") && !i.href.startsWith("/club/classements") && i.href !== "/palmares").forEach((i) => router.prefetch(i.href, { kind: "full" } as never));
     };
     const t = window.setTimeout(preparer, 1500);
     const iv = window.setInterval(preparer, 4 * 60 * 1000);

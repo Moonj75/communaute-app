@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES_P, JEUNES, RANGS, cleSaison, compter, icRang, libelleRang, triMedailles, triResultats, type ResultatP } from "@/lib/palmares-types";
-import { ajouterResultat, importerHistorique, supprimerResultat, traiterProposition, type RetourP } from "@/lib/palmares-actions";
+import { ajouterResultat, importerHistorique, rafraichirPalmares, supprimerResultat, traiterProposition, type RetourP } from "@/lib/palmares-actions";
 import "./palmares.css";
 
 type Noms = Record<string, string>;
@@ -92,6 +92,7 @@ export function PalmaresClub({ resultats, noms, gerer = false }: { resultats: Re
           {saisons.map((s) => <option key={s}>{s}</option>)}
         </select>
       </div>
+      {gerer ? <button type="button" className="btn en-mini pa-plus" disabled={pending} onClick={() => start(async () => { await rafraichirPalmares(); router.refresh(); })}>🔄 Mettre à jour depuis Notion</button> : null}
       <p className="pa-h">🏆 Tableau d&apos;honneur</p>
       <ol className="pa-hon">
         {honneur.map((x, i) => (
@@ -120,12 +121,12 @@ export function PalmaresJoueur({ resultats }: { resultats: ResultatP[] }) {
 }
 
 /** Home page block: key figures and the latest exploits, with the way to the full page. */
-export function PalmaresAccueil({ resultats, noms }: { resultats: ResultatP[]; noms: Noms }) {
+export function PalmaresAccueil({ resultats, noms, totaux }: { resultats: ResultatP[]; noms: Noms; /** Counted on the server (the home page only receives the 5 latest results). */ totaux?: ReturnType<typeof compter> }) {
   const valides = resultats.filter((r) => r.statut === "Validé");
   const derniers = [...valides].filter((r) => ["Vainqueur", "Finaliste", "Demi-finaliste"].includes(r.rang)).sort((a, b) => cleSaison(b.saison) - cleSaison(a.saison) || b.cree.localeCompare(a.cree)).slice(0, 5);
   return (
     <div className="pa">
-      <Compteurs m={compter(valides)} total />
+      <Compteurs m={totaux || compter(valides)} total />
       <p className="pa-h">✨ Derniers exploits</p>
       <ul className="pa-liste">{derniers.map((r) => <Ligne key={r.id} r={r} noms={noms} />)}</ul>
       <a className="btn primary pa-ajout" href="/palmares">🏆 Tout le palmarès du club →</a>
@@ -134,7 +135,7 @@ export function PalmaresAccueil({ resultats, noms }: { resultats: ResultatP[]; n
 }
 
 /** Form to add a result (validated at once for the people in charge, proposed for the others). */
-export function AjoutResultat({ joueurs, competitions, responsable, moi }: { joueurs: { id: string; nom: string; archive?: boolean }[]; competitions: { nom: string; date: string }[]; responsable: boolean; moi: string[] }) {
+export function AjoutResultat({ joueurs, competitions, responsable, moi, initial }: { joueurs: { id: string; nom: string; archive?: boolean }[]; competitions: { nom: string; date: string }[]; responsable: boolean; moi: string[]; /** Prefilled from the post-competition notification. */ initial?: { competition: string; date: string } }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [info, setInfo] = useState<RetourP | null>(null);
@@ -142,8 +143,8 @@ export function AjoutResultat({ joueurs, competitions, responsable, moi }: { jou
   const [equipe, setEquipe] = useState("");
   const [rang, setRang] = useState("");
   const [cat, setCat] = useState("");
-  const [compet, setCompet] = useState("");
-  const [date, setDate] = useState("");
+  const [compet, setCompet] = useState(initial?.competition || "");
+  const [date, setDate] = useState(initial?.date || "");
   const [cherche, setCherche] = useState("");
   const proposes = joueurs.filter((j) => !choisis.includes(j.id) && (!cherche || j.nom.toLowerCase().includes(cherche.toLowerCase()))).slice(0, cherche ? 8 : 0);
   const envoyer = (fd: FormData) => start(async () => {
