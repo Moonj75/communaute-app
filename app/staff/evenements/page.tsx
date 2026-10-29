@@ -27,7 +27,7 @@ export default async function EvenementsPage() {
   const delais = delaisHabituels(evs);
   // Coming events (and those without a date), real events only (no holidays / special days).
   const avenir = evs.filter((e) => (!e.date || (e.fin || e.date) >= T) && !e.jourSpecial && !e.annule && !e.nePasFaire);
-  const avec = avenir.map((e) => ({ e, aFiche: Boolean(fiches.data?.get(e.id)), m: manques(e, Boolean(fiches.data?.get(e.id))) }));
+  const avec = avenir.map((e) => { const f = fiches.data?.get(e.id); return { e, aFiche: Boolean(f), fiche: f ? { id: f.id, objectif: f.objectif ?? null } : undefined, m: manques(e, Boolean(f)) }; });
   const aCompleter = avec.filter((x) => x.m.length);
   return (
     <>
@@ -42,12 +42,12 @@ export default async function EvenementsPage() {
             { id: "completer", titre: "À compléter", ic: "⚠️", badge: aCompleter.length || null, contenu: aCompleter.length ? (
               <div className="ee-liste">
                 <p className="muted small">Ces évènements ont été créés dans Notion mais il leur manque des cases : ils n&apos;apparaissent pas partout (inscriptions, tableau de bord, relances…). Complète-les ici.</p>
-                {aCompleter.map((x) => <EditeurEvenement key={x.e.id} ev={x.e} aFiche={x.aFiche} delais={delais} manque={x.m} />)}
+                {aCompleter.map((x) => <EditeurEvenement key={x.e.id} ev={x.e} aFiche={x.aFiche} fiche={x.fiche} delais={delais} manque={x.m} />)}
               </div>
             ) : <p className="vide">Tous les évènements à venir sont complets ✓</p> },
             { id: "ajouter", titre: "Ajouter un évènement", ic: "➕", contenu: <EditeurEvenement delais={delais} /> },
             { id: "tous", titre: "Évènements à venir", ic: "📅", badge: avenir.length || null, contenu: (
-              <div className="ee-liste">{avec.map((x) => <EditeurEvenement key={x.e.id} ev={x.e} aFiche={x.aFiche} delais={delais} manque={x.m} />)}</div>
+              <div className="ee-liste">{avec.map((x) => <EditeurEvenement key={x.e.id} ev={x.e} aFiche={x.aFiche} fiche={x.fiche} delais={delais} manque={x.m} />)}</div>
             ) },
           ]}
         />
