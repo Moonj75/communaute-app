@@ -27,7 +27,7 @@ function nomBeau(qui: string) {
 }
 
 /** One result of the wheel. */
-export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null; date?: string | null };
+export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null; date?: string | null; scoreFinale?: string | null; adversaire?: string | null };
 
 /** « 12 octobre 2025 », or the season when the day is not known. */
 function Quand({ c }: { c: Cran }) {
@@ -135,6 +135,7 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 7
                 <span className="rc-d">
                   <b className="rc-ev">{c.competition}</b>
                   <Quand c={c} />
+                  {c.scoreFinale || c.adversaire ? <span className="rc-fin">⚔️ Finale{c.scoreFinale ? <b className="num"> {c.scoreFinale.replace("-", " – ")}</b> : null}{c.adversaire ? <> contre <b>{c.adversaire}</b></> : null}</span> : null}
                 </span>
               </>
             ) : (

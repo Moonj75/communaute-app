@@ -107,3 +107,6 @@
 .rc.c .rc-date { flex-wrap: wrap; max-width: 100%; row-gap: 0; line-height: 1.15; font-size: 12.5px; padding: 3px 7px; }
 .rc.c .rc-date b { font-size: 14px; }
 .rc-d { padding-right: 8px; }
+.rc-fin { font-size: 12px; color: #eadfd7; line-height: 1.2; }
+.rc-fin b { color: #fff; }
+.rc-fin b.num { font-family: var(--font-display); font-style: italic; font-size: 16px; color: #7ff; }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES_P, JEUNES, RANGS, classeRang, cleSaison, compter, icRang, libelleRang, motRang, placeDe, triMedailles, triVitrine, type ResultatP } from "@/lib/palmares-types";
+import { CATEGORIES_P, JEUNES, classeRang, cleSaison, compter, icRang, libelleRang, motRang, placeDe, triMedailles, triVitrine, type ResultatP } from "@/lib/palmares-types";
 import { Trophee } from "./Trophee";
 import { ajouterResultat, importerHistorique, rafraichirPalmares, supprimerResultat, traiterProposition, type RetourP } from "@/lib/palmares-actions";
 import "./palmares.css";
@@ -112,7 +112,7 @@ function Victoires({ m, titre = "Victoires", sous }: { m: ReturnType<typeof comp
   );
 }
 
-const versCran = (r: ResultatP, noms: Noms): Cran => ({ id: r.id, place: placeDe(r), equipe: estEquipe(r), qui: quiDe(r, noms), competition: r.competition, categorie: r.categorie, saison: r.saison, date: r.date });
+const versCran = (r: ResultatP, noms: Noms): Cran => ({ id: r.id, place: placeDe(r), equipe: estEquipe(r), qui: quiDe(r, noms), competition: r.competition, categorie: r.categorie, saison: r.saison, date: r.date, scoreFinale: r.scoreFinale, adversaire: r.adversaire });
 const FILTRES_R = FILTRES.filter((x) => x.id !== "club");
 
 /**
@@ -220,7 +220,6 @@ export function PalmaresJoueur({ resultats }: { resultats: ResultatP[] }) {
       <Compteurs m={compter(valides)} />
       {attente.length ? <p className="muted small">⏳ {attente.length} résultat{attente.length > 1 ? "s" : ""} en attente de validation.</p> : null}
       <SaisonsCartes liste={valides} ouvertes={2} parSaison={4} />
-      <a className="btn primary pa-ajout" href="/palmares#bloc-ajouter">➕ Ajouter un résultat</a>
     </div>
   );
 }
@@ -236,61 +235,145 @@ export function PalmaresAccueil({ exploits, totaux }: { /** Chosen on the server
   );
 }
 
-/** Form to add a result (validated at once for the people in charge, proposed for the others). */
-export function AjoutResultat({ joueurs, competitions, responsable, moi, initial }: { joueurs: { id: string; nom: string; archive?: boolean }[]; competitions: { nom: string; date: string }[]; responsable: boolean; moi: string[]; /** Prefilled from the post-competition notification. */ initial?: { competition: string; date: string } }) {
+/** A club competition of the calendar, proposed in the form (past ones only: a result comes after the event). */
+export type CompetCal = { id: string; nom: string; date: string; fin: string | null; lieu: string | null };
+const RANGS_SAISIE: { id: string; court: string; place: number }[] = [
+  { id: "Huitième de finaliste", court: "8e de finale", place: 9 },
+  { id: "Quart de finaliste", court: "¼ de finale", place: 5 },
+  { id: "Demi-finaliste", court: "½ finale", place: 3 },
+  { id: "Finaliste", court: "Finaliste", place: 2 },
+  { id: "Vainqueur", court: "Vainqueur", place: 1 },
+];
+const jourLong = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString("fr-BE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+const jourCourt = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString("fr-BE", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+/** The days of an event (2 for a week-end tournament). */
+const joursDe = (c: CompetCal) => {
+  if (!c.fin || c.fin <= c.date) return [c.date];
+  const out: string[] = [];
+  for (let d = new Date(c.date + "T12:00:00Z"); out.length < 4; d.setUTCDate(d.getUTCDate() + 1)) { const x = d.toISOString().slice(0, 10); if (x > c.fin) break; out.push(x); }
+  return out;
+};
+
+/**
+ * Form to add a result (validated at once for the people in charge, proposed for the others):
+ * the competition is chosen among the club's events, then individual or team, the day (2-day tournaments),
+ * who, the category and the result (8e → winner).
+ */
+export function AjoutResultat({ joueurs, competitions, responsable, moi, initial }: { joueurs: { id: string; nom: string; archive?: boolean }[]; competitions: CompetCal[]; responsable: boolean; moi: string[]; /** Prefilled from the post-competition notification. */ initial?: { competition: string; date: string } }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [info, setInfo] = useState<RetourP | null>(null);
-  const [choisis, setChoisis] = useState<string[]>(moi.slice(0, 1));
+  const depart = initial?.competition ? competitions.find((c) => c.nom === initial.competition && (!initial.date || initial.date === c.date)) || competitions.find((c) => c.nom === initial.competition) : undefined;
+  const [ev, setEv] = useState<string>(depart?.id || "");
+  const [mode, setMode] = useState<"" | "ind" | "eq">("");
+  const [jour, setJour] = useState("");
+  const [choisis, setChoisis] = useState<string[]>([]);
   const [equipe, setEquipe] = useState("");
   const [rang, setRang] = useState("");
   const [cat, setCat] = useState("");
-  const [compet, setCompet] = useState(initial?.competition || "");
-  const [date, setDate] = useState(initial?.date || "");
   const [cherche, setCherche] = useState("");
+  const [toutes, setToutes] = useState(false);
+  const [q, setQ] = useState("");
+  const c = competitions.find((x) => x.id === ev);
+  const jours = c ? joursDe(c) : [];
+  const listeEv = competitions.filter((x) => !q || x.nom.toLowerCase().includes(q.toLowerCase()));
+  const vus = toutes || q ? listeEv : listeEv.slice(0, 6);
   const proposes = joueurs.filter((j) => !choisis.includes(j.id) && (!cherche || j.nom.toLowerCase().includes(cherche.toLowerCase()))).slice(0, cherche ? 8 : 0);
+  const choisirEv = (id: string) => { setEv(id); const x = competitions.find((y) => y.id === id); setJour(x && joursDe(x).length === 1 ? x.date : ""); };
+  const choisirMode = (m: "ind" | "eq") => { setMode(m); if (m === "ind") { setEquipe(""); setChoisis((x) => x.slice(0, 1).length ? x.slice(0, 1) : moi.slice(0, 1)); if (jour === "tout") setJour(""); } };
+  const ajouterJ = (id: string) => { setChoisis((x) => (mode === "ind" ? [id] : [...x, id])); setCherche(""); };
+  const manque = !c ? "Choisis la compétition" : !mode ? "Individuel ou par équipe ?" : jours.length > 1 && !jour ? "Choisis le jour" : mode === "ind" && choisis.length !== 1 ? "Choisis le joueur" : mode === "eq" && !equipe ? "Choisis l'équipe (Team A / Team B)" : !rang ? "Choisis le résultat" : null;
   const envoyer = (fd: FormData) => start(async () => {
-    choisis.forEach((c) => fd.append("joueurs", c));
+    choisis.forEach((x) => fd.append("joueurs", x));
     const r = await ajouterResultat(fd);
     setInfo(r);
-    if (r.ok) { setRang(""); setCompet(""); setDate(""); setChoisis(moi.slice(0, 1)); setEquipe(""); router.refresh(); }
+    if (r.ok) { setRang(""); setChoisis(mode === "ind" ? [] : choisis); router.refresh(); }
   });
   return (
-    <form action={envoyer} className="pa-form">
+    <form action={envoyer} className="pa-form af">
       {!responsable ? <p className="muted small">Ton résultat sera vérifié par le responsable palmarès avant d&apos;apparaître.</p> : null}
-      <label className="f">Compétition
-        <input className="input" name="competition" list="pa-compets" required value={compet} placeholder="Ex. Open de Frameries" onChange={(e) => {
-          setCompet(e.target.value);
-          const c = competitions.find((x) => x.nom === e.target.value);
-          if (c) setDate(c.date);
-        }} />
-        <datalist id="pa-compets">{competitions.map((c) => <option key={c.nom + c.date} value={c.nom}>{c.date}</option>)}</datalist>
-      </label>
-      <label className="f">Date <small className="muted">(la saison est calculée toute seule)</small>
-        <input className="input" type="date" name="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </label>
-      <div className="f">Joueur(s)
-        <div className="pa-chips">
-          {choisis.map((id) => <button type="button" key={id} className="pa-chip on" onClick={() => setChoisis((c) => c.filter((x) => x !== id))}>{joueurs.find((j) => j.id === id)?.nom || "?"} ✕</button>)}
-          {["Team A", "Team B"].map((t) => <button type="button" key={t} className={`pa-chip${equipe === t ? " on" : ""}`} onClick={() => setEquipe((e) => (e === t ? "" : t))}>👥 {t}</button>)}
-        </div>
-        <input className="input" placeholder="🔎 Ajouter un joueur…" value={cherche} onChange={(e) => setCherche(e.target.value)} />
-        {proposes.length ? <div className="pa-chips">{proposes.map((j) => <button type="button" key={j.id} className="pa-chip" onClick={() => { setChoisis((c) => [...c, j.id]); setCherche(""); }}>+ {j.nom}{j.archive ? " (ancien)" : ""}</button>)}</div> : null}
-        <input type="hidden" name="equipe" value={equipe} />
+      <input type="hidden" name="ev" value={ev} />
+      <input type="hidden" name="jour" value={jour === "tout" ? (c?.date || "") : jour} />
+      <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="equipe" value={equipe} />
+      <input type="hidden" name="categorie" value={cat} />
+      <input type="hidden" name="rang" value={rang} />
+
+      <div className="af-etape"><span className="af-n">1</span><b>La compétition</b> <small className="muted">(dans nos évènements)</small></div>
+      {competitions.length > 6 ? <input className="input" type="search" placeholder="🔎 Chercher une compétition…" value={q} onChange={(e) => setQ(e.target.value)} /> : null}
+      <div className="af-evs">
+        {vus.map((x) => (
+          <button type="button" key={x.id} className={`af-ev${ev === x.id ? " on" : ""}`} onClick={() => choisirEv(x.id)}>
+            <b>{x.nom}</b>
+            <small>📅 {jourCourt(x.date)}{x.fin && x.fin > x.date ? " · 2 jours" : ""}{x.lieu ? ` · ${x.lieu}` : ""}</small>
+          </button>
+        ))}
+        {!vus.length ? <p className="vide">Aucune compétition passée dans le calendrier. Ajoute d&apos;abord l&apos;évènement (Staff → Évènements).</p> : null}
       </div>
-      <div className="f">Catégorie
-        <div className="pa-chips">{CATEGORIES_P.slice(0, 10).map((c) => <button type="button" key={c} className={`pa-chip${cat === c ? " on" : ""}`} onClick={() => setCat((x) => (x === c ? "" : c))}>{c}</button>)}</div>
-        <input type="hidden" name="categorie" value={cat} />
-      </div>
-      <div className="f">Résultat
-        <div className="pa-rangs">{RANGS.map((r) => <button type="button" key={r.id} className={`pa-chip${rang === r.id ? " on" : ""}`} onClick={() => setRang(r.id)}>{r.ic} {r.court}</button>)}</div>
-        <input type="hidden" name="rang" value={rang} />
-        {rang === "Autre place" ? <input className="input" name="place" type="number" min={1} max={999} placeholder="Place obtenue (ex. 9)" required /> : null}
-      </div>
-      <label className="pa-coche"><input type="checkbox" name="parEquipe" /> Résultat par équipe</label>
-      <label className="f">Lien vers les résultats <small className="muted">(facultatif)</small><input className="input" name="lien" type="url" placeholder="https://…" /></label>
+      {!toutes && !q && listeEv.length > 6 ? <button type="button" className="btn en-mini" onClick={() => setToutes(true)}>Voir les {listeEv.length - 6} autres compétitions</button> : null}
+
+      {c ? (
+        <>
+          <div className="af-etape"><span className="af-n">2</span><b>Individuel ou par équipe ?</b></div>
+          <div className="af-2">
+            <button type="button" className={`af-gros${mode === "ind" ? " on" : ""}`} onClick={() => choisirMode("ind")}>👤<b>Individuel</b></button>
+            <button type="button" className={`af-gros eq${mode === "eq" ? " on" : ""}`} onClick={() => choisirMode("eq")}>👥<b>Par équipe</b></button>
+          </div>
+        </>
+      ) : null}
+
+      {c && mode && jours.length > 1 ? (
+        <>
+          <div className="af-etape"><span className="af-n">3</span><b>Quel jour ?</b> <small className="muted">{mode === "ind" ? "(un tournoi individuel se joue sur un jour)" : ""}</small></div>
+          <div className="pa-chips">
+            {jours.map((d) => <button type="button" key={d} className={`pa-chip af-jour${jour === d ? " on" : ""}`} onClick={() => setJour(d)}>{jourLong(d)}</button>)}
+            {mode === "eq" ? <button type="button" className={`pa-chip af-jour${jour === "tout" ? " on" : ""}`} onClick={() => setJour("tout")}>Les {jours.length} jours</button> : null}
+          </div>
+        </>
+      ) : null}
+
+      {c && mode ? (
+        <>
+          <div className="af-etape"><span className="af-n">{jours.length > 1 ? 4 : 3}</span><b>{mode === "ind" ? "Le joueur" : "L'équipe"}</b></div>
+          {mode === "eq" ? (
+            <div className="af-2">
+              {["Team A", "Team B"].map((t) => <button type="button" key={t} className={`af-gros eq${equipe === t ? " on" : ""}`} onClick={() => setEquipe(t)}><span className="af-team">TEAM<small>{t.slice(5)}</small></span></button>)}
+            </div>
+          ) : null}
+          <div className="pa-chips">
+            {choisis.map((id) => <button type="button" key={id} className="pa-chip on" onClick={() => setChoisis((x) => x.filter((y) => y !== id))}>{joueurs.find((j) => j.id === id)?.nom || "?"} ✕</button>)}
+          </div>
+          {mode === "eq" || !choisis.length ? <input className="input" placeholder={mode === "eq" ? "🔎 Ajouter les joueurs de l'équipe (facultatif)…" : "🔎 Chercher le joueur…"} value={cherche} onChange={(e) => setCherche(e.target.value)} /> : null}
+          {proposes.length ? <div className="pa-chips">{proposes.map((j) => <button type="button" key={j.id} className="pa-chip" onClick={() => ajouterJ(j.id)}>+ {j.nom}{j.archive ? " (ancien)" : ""}</button>)}</div> : null}
+
+          <div className="af-etape"><span className="af-n">{jours.length > 1 ? 5 : 4}</span><b>La catégorie</b></div>
+          <div className="pa-chips">{CATEGORIES_P.slice(0, 10).map((x) => <button type="button" key={x} className={`pa-chip${cat === x ? " on" : ""}`} onClick={() => setCat((y) => (y === x ? "" : x))}>{x}</button>)}</div>
+
+          <div className="af-etape"><span className="af-n">{jours.length > 1 ? 6 : 5}</span><b>Le résultat</b></div>
+          <div className="af-rangs">
+            {RANGS_SAISIE.map((r) => (
+              <button type="button" key={r.id} className={`af-rang ${classeRang(r.place)}${rang === r.id ? " on" : ""}`} onClick={() => setRang(r.id)}>
+                <Trophee place={r.place} equipe={mode === "eq"} taille={r.place === 1 ? 46 : 38} /><b>{r.court}</b>
+              </button>
+            ))}
+          </div>
+          {rang === "Vainqueur" || rang === "Finaliste" ? (
+            <div className="af-finale">
+              <p className="af-finale-t">⚔️ Le match de la finale <small className="muted">(facultatif)</small></p>
+              <div className="af-score">
+                <span><small>{mode === "eq" ? equipe || "Nous" : joueurs.find((j) => j.id === choisis[0])?.nom.split(" ")[0] || "Nous"}</small><input className="input num" name="fNous" inputMode="numeric" maxLength={2} placeholder="–" /></span>
+                <b>–</b>
+                <span><small>Adversaire</small><input className="input num" name="fEux" inputMode="numeric" maxLength={2} placeholder="–" /></span>
+              </div>
+              <input className="input" name="fAdv" maxLength={80} placeholder={mode === "eq" ? "Contre quelle équipe ? (ex. Rome)" : "Contre qui ? (ex. Jean Dupont)"} />
+            </div>
+          ) : null}
+          <label className="f">Lien vers les résultats <small className="muted">(facultatif)</small><input className="input" name="lien" type="url" placeholder="https://…" /></label>
+        </>
+      ) : null}
+
       {info ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
-      <button className="btn primary" type="submit" disabled={pending || !rang} style={{ minHeight: 50 }}>{pending ? "Enregistrement…" : responsable ? "✅ Enregistrer dans le palmarès" : "📨 Proposer ce résultat"}</button>
+      <button className="btn primary" type="submit" disabled={pending || Boolean(manque)} style={{ minHeight: 52 }}>{pending ? "Enregistrement…" : manque ? manque : responsable ? "✅ Enregistrer dans le palmarès" : "📨 Proposer ce résultat"}</button>
     </form>
   );
 }
