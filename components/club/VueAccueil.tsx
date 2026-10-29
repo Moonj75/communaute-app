@@ -123,7 +123,6 @@ export default function VueAccueil(p: {
         blocs={[
           { id: "vue", titre: "Vue générale", ic: "🏁", contenu: score },
           { id: "club", titre: "Le club", ic: "🏆", badge: natAuto ? `${natAuto}e` : now?.national ? `${now.national}e` : null, contenu: <><ClubDuo nat={p.clubsComplet?.nat || []} equipes={p.clubsComplet?.equipes || []} eug={eug} moi={p.moi} /><p className="sec-title">Derniers résultats</p><BlocResultats resultats={p.resultats} evs={p.evs} noms={p.noms} /></> },
-          { id: "entrainements", titre: "Entraînements", ic: "🎯", href: "/entrainements", contenu: null },
         ]}
       />
       <p className="foot">Connecté en tant que {p.email}.</p>
