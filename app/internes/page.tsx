@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Blocs from "@/components/Blocs";
 import { displayName, getVue } from "@/lib/profil";
 import { lireCompet, lireCompetitions, lireEnCours } from "@/lib/internes-db";
-import { matchsAValider, situations, TYPES, type Competition, type TypeCompet } from "@/lib/internes";
+import { matchsAValider, matchsSansScore, situations, TYPES, type Competition, type TypeCompet } from "@/lib/internes";
 import { droitsValideur } from "@/lib/valideurs";
 import AValider from "@/components/internes/AValider";
 import MesMatchs from "@/components/internes/MesMatchs";
@@ -58,6 +58,9 @@ export default async function CompetitionsClub({ searchParams }: { searchParams:
   const droits = await droitsValideur(supabase, user.email, profil?.role === "admin");
   const aValider = droits.ok ? matchsAValider(enCours) : [];
   const blocValider = droits.ok ? { id: "a-valider", titre: "À valider", ic: "✅", badge: aValider.length || null, contenu: <AValider items={aValider} miens={droits.miens} /> } : null;
+  // Validators: type and validate the score of any match of the stages in progress (their own included).
+  const sansScore = droits.ok ? matchsSansScore(enCours) : [];
+  const blocSaisie = droits.ok ? { id: "saisir", titre: "Saisir un score", ic: "✍️", badge: sansScore.length || null, contenu: <AValider items={sansScore} miens={droits.miens} saisie /> } : null;
   const aJouer = sits.reduce((n, x) => n + x.aJouer.length, 0);
   const mes = { id: "mes-matchs", titre: "Mes matchs", ic: "⚔️", badge: aJouer || null, contenu: <MesMatchs sits={sits} famille={moi.length > 1} /> };
 
@@ -67,7 +70,7 @@ export default async function CompetitionsClub({ searchParams }: { searchParams:
       <main className="wrap">
         <section className="hello"><span className="kicker">Au club</span><h2>Compétitions du club</h2><p>Le championnat et la coupe des Lions : classements, matchs et résultats.</p></section>
         {/* Everyone sees the standings and the matches; « Mes matchs » only for those who play. */}
-        <Blocs page="Compétitions du club" blocs={[...(sits.length ? [mes] : []), ...(blocValider ? [blocValider] : []), ...parts]} />
+        <Blocs page="Compétitions du club" blocs={[...(sits.length ? [mes] : []), ...(blocValider ? [blocValider] : []), ...(blocSaisie ? [blocSaisie] : []), ...parts]} />
       </main>
     </>
   );

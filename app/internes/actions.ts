@@ -43,7 +43,9 @@ export async function proposerScore(matchId: string, joueurId: string, mesButs: 
     const prop: Proposition = { a: jeSuisA ? moi : lui, b: jeSuisA ? lui : moi, v: ko && moi === lui ? vainqueur : null, le: new Date().toISOString() };
     const autre = jeSuisA ? m.prop_b : m.prop_a;
 
-    if (memeScore(prop, autre)) {
+    // A validator (or an administrator) typing his own match: validated at once, no need to wait for the opponent.
+    const droits = await droitsValideur(supabase, user.email, profil?.role === "admin");
+    if (droits.ok || memeScore(prop, autre)) {
       // Both players agree: the match is validated.
       const maj = { buts_a: prop.a, buts_b: prop.b, vainqueur: prop.v, joue: true, prop_a: null, prop_b: null, maj_le: new Date().toISOString() };
       const { error } = await db.from("ci_matchs").update(maj).eq("id", matchId);
@@ -52,7 +54,7 @@ export async function proposerScore(matchId: string, joueurId: string, mesButs: 
       const info = await suite(db, m.competition_id);
       revalidatePath("/internes");
       revalidatePath("/staff/internes", "layout");
-      return { ok: true, valide: true, message: info || "✅ Les deux scores sont identiques : le match est validé et le classement est à jour !" };
+      return { ok: true, valide: true, message: info || (droits.ok && !memeScore(prop, autre) ? "✅ Score validé (tu es valideur) : le classement est à jour !" : "✅ Les deux scores sont identiques : le match est validé et le classement est à jour !") };
     }
 
     const { error } = await db.from("ci_matchs").update(jeSuisA ? { prop_a: prop } : { prop_b: prop }).eq("id", matchId);
@@ -88,8 +90,8 @@ export async function proposerScore(matchId: string, joueurId: string, mesButs: 
 }
 
 /**
- * A validator (or an administrator) validates a score waiting in the club competitions, after his confirmation.
- * He never validates a match he plays himself. Both players get a word in their mailbox.
+ * A validator (or an administrator) types / validates the score of any match of the club competitions
+ * (waiting or not, his own included), after his confirmation. Both players get a word in their mailbox.
  */
 export async function validerMatch(matchId: string, butsA: number, butsB: number, vainqueur: string | null = null): Promise<RetourScore> {
   try {
@@ -103,7 +105,6 @@ export async function validerMatch(matchId: string, butsA: number, butsB: number
     const m = brut as Match | null;
     if (!m) return { ok: false, message: "Match introuvable." };
     if (m.joue) return { ok: false, message: "Ce match est déjà validé." };
-    if ((m.a && droits.miens.includes(m.a)) || (m.b && droits.miens.includes(m.b))) return { ok: false, message: "Tu ne peux pas valider un match que tu joues : un autre valideur doit le faire." };
     const { data: c } = await db.from("ci_competitions").select("etape,statut,nom").eq("id", m.competition_id).single();
     if (!c || c.statut !== "en_cours" || c.etape !== m.etape) return { ok: false, message: "Cette étape est terminée." };
     const a = Math.max(0, Math.min(99, Math.round(Number(butsA)))), b = Math.max(0, Math.min(99, Math.round(Number(butsB))));
