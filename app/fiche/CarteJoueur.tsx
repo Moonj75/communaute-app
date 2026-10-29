@@ -114,7 +114,7 @@ export function CarteJoueur({ f, famille, photoUrl, places, cag }: { f: Fiche; f
                 {[0, 1].map((c) => (
                   <span key={c} className="fx-pc" aria-hidden={c === 1 ? true : undefined}>
                     {tour.map((t, i) => (
-                      <span key={i} className="fx-pi">🏅 {t}</span>
+                      <span key={i} className="fx-pi">{/^\p{Extended_Pictographic}/u.test(t) ? t : `🏅 ${t}`}</span>
                     ))}
                   </span>
                 ))}

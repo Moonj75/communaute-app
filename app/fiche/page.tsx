@@ -9,7 +9,7 @@ import { listeDef } from "@/lib/classements-types";
 import { MesClassements } from "@/components/club/Classements";
 import { lireExtraits } from "@/lib/classements-lire";
 import { essayer, lirePalmares } from "@/lib/club";
-import { libelleRang, sansTirets, triResultats } from "@/lib/palmares-types";
+import { icRang, libelleRang, sansTirets, triResultats } from "@/lib/palmares-types";
 import { PalmaresJoueur } from "@/components/Palmares";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +33,10 @@ export default async function FichePage() {
   const palma = (await essayer(lirePalmares)).data || [];
   const sesResultats = (id: string) => palma.filter((r) => r.joueurs.includes(sansTirets(id))).sort(triResultats);
   const fiches = fiches0.map((f) => {
-    const forts = sesResultats(f.notion_id).filter((r) => r.statut === "Validé" && (r.rang === "Vainqueur" || r.rang === "Finaliste"));
-    return forts.length ? { ...f, palmares: forts.slice(0, 12).map((r) => `${libelleRang(r)} ${r.competition}${r.categorie ? ` (${r.categorie})` : ""} ${r.saison || ""}`.trim()).join("\n") } : f;
+    // Titles first, then finals, then semi-finals (20 at most), each with its medal.
+    const ordre = { Vainqueur: 0, Finaliste: 1, "Demi-finaliste": 2 } as Record<string, number>;
+    const forts = sesResultats(f.notion_id).filter((r) => r.statut === "Validé" && r.rang in ordre).sort((a, b) => ordre[a.rang] - ordre[b.rang] || triResultats(a, b));
+    return forts.length ? { ...f, palmares: forts.slice(0, 20).map((r) => `${icRang(r.rang)} ${libelleRang(r)} ${r.competition}${r.categorie ? ` (${r.categorie})` : ""} · ${r.saison || ""}`.trim()).join("\n") } : f;
   });
   const famille = fiches.length > 1;
   const synced = fiches.map((f) => f.synced_at).filter(Boolean).sort().pop();
