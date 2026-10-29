@@ -511,3 +511,19 @@ export function matchsAValider(competitions: { c: Competition; groupes: Groupe[]
   const quand = (x: AValider) => [x.match.prop_a?.le, x.match.prop_b?.le].filter(Boolean).sort()[0] || "";
   return out.sort((x, y) => quand(x).localeCompare(quand(y)));
 }
+
+/** Every match of the stages in progress with no score typed yet (validators type the score directly). */
+export function matchsSansScore(competitions: { c: Competition; groupes: Groupe[]; matchs: Match[] }[]): AValider[] {
+  const out: AValider[] = [];
+  for (const { c, groupes, matchs } of competitions) {
+    if (c.statut !== "en_cours") continue;
+    const tous = groupes.flatMap((g) => g.joueurs);
+    const nom = (id: string) => tous.find((j) => j.id === id) || { id, nom: "?" };
+    for (const m of matchs) {
+      if (m.etape !== c.etape || m.joue || !m.a || !m.b || m.prop_a || m.prop_b) continue;
+      const g = groupes.find((x) => x.id === m.groupe_id);
+      out.push({ match: m, competId: c.id, compet: c.nom, etape: c.etapes[c.etape]?.nom || "", groupe: g?.nom || "", a: nom(m.a), b: nom(m.b), ko: m.tour != null, desaccord: false });
+    }
+  }
+  return out;
+}
