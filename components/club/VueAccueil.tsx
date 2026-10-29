@@ -9,7 +9,7 @@ import LogoFistf from "@/components/LogoFistf";
 import Defile from "./Defile";
 import PhotoAccueil from "./PhotoAccueil";
 import { PalmaresAccueil } from "@/components/Palmares";
-import type { ResultatP } from "@/lib/palmares-types";
+import type { Exploit } from "@/lib/palmares-types";
 
 export type Gens = { prenom: string | null; cagnotte: number | null; roles: string[] | null; actif: boolean }[];
 
@@ -35,7 +35,7 @@ export default function VueAccueil(p: {
   clubsComplet?: { nat: LigneClassement[]; equipes: LigneClassement[] };
   moi?: string[];
   /** The club's palmarès (Notion), names by fiche id without dashes. */
-  palmares?: { resultats: ResultatP[]; noms: Record<string, string>; totaux: { or: number; argent: number; bronze: number; total: number } };
+  palmares?: { exploits: Exploit[]; totaux: { or: number; argent: number; bronze: number; total: number } };
 }) {
   const { gens } = p;
   const roles = [...new Set(gens.flatMap((g) => g.roles || []))];
@@ -127,7 +127,7 @@ export default function VueAccueil(p: {
         blocs={[
           { id: "vue", titre: "Vue générale", ic: "🏁", contenu: score },
           { id: "club", titre: "Le club", ic: "🏆", badge: natAuto ? `${natAuto}e` : now?.national ? `${now.national}e` : null, contenu: <><ClubDuo nat={p.clubsComplet?.nat || []} equipes={p.clubsComplet?.equipes || []} eug={eug} moi={p.moi} /><p className="sec-title">Derniers résultats</p><BlocResultats resultats={p.resultats} evs={p.evs} noms={p.noms} /></> },
-          ...(p.palmares?.resultats.length ? [{ id: "palmares", titre: "Palmarès", ic: "🏅", badge: String(p.palmares.totaux.or), contenu: <PalmaresAccueil resultats={p.palmares.resultats} noms={p.palmares.noms} totaux={p.palmares.totaux} /> }] : []),
+          ...(p.palmares?.exploits.length ? [{ id: "palmares", titre: "Palmarès", ic: "🏆", badge: String(p.palmares.totaux.or), contenu: <PalmaresAccueil exploits={p.palmares.exploits} totaux={p.palmares.totaux} /> }] : []),
         ]}
       />
       <p className="foot">Connecté en tant que {p.email}.</p>
