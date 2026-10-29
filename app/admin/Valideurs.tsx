@@ -36,7 +36,7 @@ export default function Valideurs({ joueurs }: { joueurs: J[] }) {
   };
   return (
     <div className="vl">
-      <p className="muted small">Un valideur voit, dans « Compétitions du club », les scores en attente et peut les valider (avec confirmation), comme un administrateur, sauf ses propres matchs. Le rôle est enregistré dans Notion (« Rôles » → ✅ Valideur chpt interne). <b>{nb} valideur{nb > 1 ? "s" : ""}</b>.</p>
+      <p className="muted small">Un valideur voit, dans « Compétitions du club », les scores en attente et peut les valider, et il peut aussi mettre lui-même le score de n'importe quel match (les siens compris) : validé aussitôt, après confirmation. Le rôle est enregistré dans Notion (« Rôles » → ✅ Valideur chpt interne). <b>{nb} valideur{nb > 1 ? "s" : ""}</b>.</p>
       <div className="cg-tete">
         <div className="rp-liste-choix" role="radiogroup" aria-label="Quels membres montrer">
           <button type="button" className={`rp-seg${!voirTous ? " on" : ""}`} onClick={() => setVoirTous(false)}>Membres actifs</button>
