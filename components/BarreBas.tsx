@@ -26,6 +26,7 @@ const JOUEUR: Item[] = [
 /** Staff side: six headings, each page in one place only. */
 const STAFF: Item[] = [
   { href: "/staff/inscriptions", label: "Tableau de bord", ic: "tableau", desc: "Inscriptions, relances", c: "bleu", g: "Compétitions & déplacements" },
+  { href: "/staff/evenements", label: "Évènements", ic: "calendrier", desc: "Ajouter, compléter le calendrier", c: "canard", g: "Compétitions & déplacements" },
   { href: "/staff/logistique", label: "Fiches logistiques", ic: "valise", desc: "Remplir et publier", c: "rose", g: "Compétitions & déplacements" },
   { href: "/staff/internes", label: "Compétitions internes", ic: "coupe", desc: "Championnat et coupe du club", c: "magenta", g: "Compétitions & déplacements" },
   { href: "/admin/valideurs", label: "Valideurs", ic: "coche", desc: "Qui valide les scores", c: "magenta", g: "Compétitions & déplacements" },

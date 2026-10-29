@@ -20,6 +20,7 @@ export type PageSection = {
 const COULEURS: [string, string][] = [
   ["/staff/inscriptions", "bleu"],
   ["/staff/planning", "violet"],
+  ["/staff/evenements", "canard"],
   ["/staff/logistique", "rose"],
   ["/staff/notifications", "orange"],
   ["/staff/classements", "canard"],
