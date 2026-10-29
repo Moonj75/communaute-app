@@ -74,7 +74,7 @@ export default function CagnotteAdmin({ joueurs, mouvements, bareme, evenements 
   const [lignes, setLignes] = useState(() => (bareme || []).map((x) => ({ id: x.id, nom: x.nom, ic: x.ic, unite: x.unite, taux: String(x.taux).replace(".", ","), actif: x.actif })));
   useEffect(() => { setLignes((bareme || []).map((x) => ({ id: x.id, nom: x.nom, ic: x.ic, unite: x.unite, taux: Number(x.taux).toFixed(2).replace(".", ","), actif: x.actif }))); }, [bareme]);
 
-  const onglets: [Onglet, string, number | null][] = [["soldes", "📊 Soldes", null], ["valider", "✅ À valider", attente.length || null], ["attribuer", "💰 Attribuer", null], ["depense", "💸 Dépense", null], ["bareme", "📋 Barème", null]];
+  const onglets: [Onglet, string, number | null][] = [["soldes", "📊 Soldes", null], ["valider", "✅ À valider", attente.length || null], ["attribuer", "💰 Attribuer", null], ["depense", "💸 Dépense", null], ["bareme", "📋 Barème", (bareme || []).filter((b) => !b.actif && Number(b.taux) === 0).length || null]];
 
   return (
     <div className="ca">
@@ -197,6 +197,15 @@ export default function CagnotteAdmin({ joueurs, mouvements, bareme, evenements 
                 </select>
                 <span className="cg-saisie"><input className="input num" inputMode="decimal" value={l.taux} aria-label="Tarif" onChange={(e) => setLignes((x) => x.map((y, k) => (k === i ? { ...y, taux: e.target.value.replace(/[^\d,.]/g, "").slice(0, 8) } : y)))} /><i aria-hidden="true">€</i></span>
                 <label className="rp-tous"><input type="checkbox" checked={l.actif} onChange={(e) => setLignes((x) => x.map((y, k) => (k === i ? { ...y, actif: e.target.checked } : y)))} /> active</label>
+                {/* A role added in Notion arrives here by itself, inactive at 0 €: choose how it is paid. */}
+                {!l.actif && (Number(l.taux.replace(",", ".")) || 0) === 0 ? (
+                  <span className="ca-neuf" style={{ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "6px 8px", borderRadius: 10, background: "#fff4bf", color: "#5a4700", fontSize: 13 }}>
+                    <b>🆕 Nouveau rôle à configurer :</b>
+                    <button type="button" className="btn en-mini" onClick={() => setLignes((x) => x.map((y, k) => (k === i ? { ...y, unite: "forfait", actif: true } : y)))}>📅 Forfait annuel</button>
+                    <button type="button" className="btn en-mini" onClick={() => setLignes((x) => x.map((y, k) => (k === i ? { ...y, unite: "heure", actif: true } : y)))}>⏱️ À l&apos;heure</button>
+                    <small>puis indique le montant et enregistre.</small>
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>

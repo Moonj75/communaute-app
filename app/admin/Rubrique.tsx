@@ -6,7 +6,7 @@ import Blocs, { type BlocDef } from "@/components/Blocs";
 import SyncPanel from "./SyncPanel";
 import CagnotteAdmin from "./CagnotteAdmin";
 import type { Bareme, Mouvement } from "@/lib/cagnotte";
-import { lireEvenementsLies } from "@/lib/cagnotte-db";
+import { assurerBaremeRoles, lireEvenementsLies } from "@/lib/cagnotte-db";
 import Valideurs from "./Valideurs";
 import Mails from "./Mails";
 import Archives from "./Archives";
@@ -48,6 +48,8 @@ export default async function PageAdmin({ rubrique }: { rubrique: Rubrique }) {
   if (!user) redirect("/login");
   if (profil?.role !== "admin") redirect("/");
 
+  // Each club role (Notion « Rôles ») gets its line in the kitty scale, to configure (flat rate or per hour).
+  if (veut("cagnottes")) await assurerBaremeRoles(supabase).catch(() => 0);
   const [{ data: membres }, { data: profils }, { data: joueurs }, supersRes, mvtRes, barRes, demRes, contactsRes] = await Promise.all([
     supabase.from("membres").select("email,nom,prenom,role,actif,synced_at,invite_le").order("nom"),
     supabase.from("profils").select("email"),
