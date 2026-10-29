@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getVue } from "./profil";
-import { TAGS, creerResultat, lireMembresRoles, lirePalmares, retirerResultat, validerResultatNotion } from "./club";
+import { TAGS, creerResultat, lireCalendrier, lireMembresRoles, lirePalmares, retirerResultat, validerResultatNotion } from "./club";
 import { RANGS, ROLE_PALMARES, saisonDe, sansTirets, titreDe, typeDe, type Rang } from "./palmares-types";
 import { clientAdmin } from "./supabase/admin";
 import { deposer } from "./courrier";
@@ -46,24 +46,35 @@ export async function ajouterResultat(fd: FormData): Promise<RetourP> {
   if (!q) return { ok: false, message: "Reconnecte-toi." };
   if (q.apercu) return { ok: false, message: "Mode aperçu : rien n'est enregistré." };
   const v = (k: string, n = 200) => String(fd.get(k) || "").replace(/\s+/g, " ").trim().slice(0, n);
-  const competition = v("competition", 150);
+  // The competition is one of the club's events (calendar): its name and dates come from there.
+  const ev = (await lireCalendrier().catch(() => [])).find((e) => e.id === v("ev", 60));
+  if (!ev || !ev.date) return { ok: false, message: "Choisis la compétition dans la liste des évènements." };
+  const competition = ev.nom.slice(0, 150);
   const rang = v("rang", 40) as Rang;
+  const mode = v("mode", 4);
   const joueurs = [...new Set(fd.getAll("joueurs").map((x) => sansTirets(String(x))).filter((x) => /^[0-9a-f]{32}$/i.test(x)))].slice(0, 8);
-  const equipe = ["Team A", "Team B"].includes(v("equipe")) ? v("equipe") : null;
+  const equipe = mode === "eq" && ["Team A", "Team B"].includes(v("equipe")) ? v("equipe") : null;
   const categorie = v("categorie", 30) || null;
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(v("date")) ? v("date") : null;
+  const debut = ev.date.slice(0, 10), fin = (ev.fin || ev.date).slice(0, 10);
+  const jour = /^\d{4}-\d{2}-\d{2}$/.test(v("jour")) ? v("jour") : "";
+  if (fin > debut && !jour) return { ok: false, message: "Choisis le jour du résultat." };
+  const date = jour && jour >= debut && jour <= fin ? jour : debut;
   const lien = /^https?:\/\//i.test(v("lien", 300)) ? v("lien", 300) : null;
-  if (!competition) return { ok: false, message: "Indique la compétition." };
-  if (!RANGS.some((r) => r.id === rang)) return { ok: false, message: "Choisis le résultat obtenu." };
-  if (!joueurs.length && !equipe) return { ok: false, message: "Choisis au moins un joueur (ou une équipe du club)." };
-  const placeLibre = Number(v("place", 4)) || null;
-  const place = rang === "Autre place" ? placeLibre : RANGS.find((r) => r.id === rang)!.place;
-  if (rang === "Autre place" && !place) return { ok: false, message: "Indique la place obtenue." };
-  const saison = date ? saisonDe(date) : v("saison", 12) || saisonDe(new Date().toISOString().slice(0, 10));
+  if (!["Huitième de finaliste", "Quart de finaliste", "Demi-finaliste", "Finaliste", "Vainqueur"].includes(rang)) return { ok: false, message: "Choisis le résultat obtenu." };
+  if (mode !== "ind" && mode !== "eq") return { ok: false, message: "Individuel ou par équipe ?" };
+  if (mode === "ind" && joueurs.length !== 1) return { ok: false, message: "Un résultat individuel : choisis un seul joueur." };
+  if (mode === "eq" && !equipe) return { ok: false, message: "Choisis l'équipe du club (Team A ou Team B)." };
+  const place = RANGS.find((r) => r.id === rang)!.place;
+  const saison = saisonDe(date);
+  // Final (winner or finalist): its score, seen from the club (« 3-1 »), and the opponent — both optional.
+  const finale = rang === "Vainqueur" || rang === "Finaliste";
+  const bn = (k: string) => { const x = v(k, 3); return /^\d{1,2}$/.test(x) ? x : ""; };
+  const scoreFinale = finale && bn("fNous") && bn("fEux") ? `${bn("fNous")}-${bn("fEux")}` : null;
+  const adversaire = finale ? v("fAdv", 80) || null : null;
   const statut = q.responsable ? "Validé" : "À valider";
-  const parEquipe = Boolean(equipe) || fd.get("parEquipe") === "on";
+  const parEquipe = mode === "eq";
   try {
-    await creerResultat({ joueurs, equipe, rang, place, competition, categorie, saison, date, type: typeDe(competition), parEquipe, statut, proposePar: q.nom, lien });
+    await creerResultat({ joueurs, equipe, rang, place, competition, categorie, saison, date, type: typeDe(competition), parEquipe, statut, proposePar: q.nom, lien, scoreFinale, adversaire });
   } catch (e) {
     return { ok: false, message: "Notion : " + (e instanceof Error ? e.message : "erreur") };
   }
