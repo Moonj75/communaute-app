@@ -8,6 +8,7 @@ import { prochainesCompetitions } from "@/lib/notion";
 import { lireClubs, lireEugies } from "@/lib/classements-lire";
 import { lireInfosPubliques } from "@/lib/club";
 import { salutation } from "@/lib/salut";
+import { cleSaison, compter } from "@/lib/palmares-types";
 import { essayer, lireCalendrier, lireClassementsClub, lirePalmares, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
 
 export const dynamic = "force-dynamic";
@@ -38,8 +39,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
     lireClubs(supabase),
     essayer(lirePalmares),
   ]);
+  // Palmarès: only the totals and the 5 latest exploits are sent to the phone (not the 500+ results).
+  const valides = (palma.data || []).filter((r) => r.statut === "Validé");
+  const derniersP = valides.filter((r) => ["Vainqueur", "Finaliste", "Demi-finaliste"].includes(r.rang)).sort((a, b) => cleSaison(b.saison) - cleSaison(a.saison) || b.cree.localeCompare(a.cree)).slice(0, 5);
   const nomsP: Record<string, string> = {};
-  for (const [k, v] of noms.data || []) nomsP[k.replace(/-/g, "")] = v;
+  const tousNoms = new Map([...(noms.data || [])].map(([k, v]) => [k.replace(/-/g, ""), v]));
+  for (const r of derniersP) for (const j of r.joueurs) nomsP[j] = tousNoms.get(j) || "?";
   const next = compets[0];
   const moi = ((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id);
 
@@ -79,7 +84,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
           eug={eug}
           clubsComplet={clubsComplet}
           moi={((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id)}
-          palmares={{ resultats: palma.data || [], noms: nomsP }}
+          palmares={{ resultats: derniersP, noms: nomsP, totaux: compter(valides) }}
         />
       </main>
     </>
