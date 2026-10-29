@@ -811,3 +811,37 @@ export async function optionsRoles(): Promise<string[]> {
   const d = (await notion(`data_sources/${ds}`, { method: "GET", revalidate: 600, tags: [TAGS.club] })) as { properties?: Record<string, { multi_select?: { options?: { name: string }[] } }> };
   return (d.properties?.["Rôles"]?.multi_select?.options || []).map((o) => o.name).filter(Boolean);
 }
+
+
+/* ---------- Événements du calendrier (créés / complétés depuis l'appli) ---------- */
+function proprietesEvenement(e: import("./evenements-types").EvSaisie) {
+  const d = (v: string | null) => ({ date: v ? { start: v } : null });
+  const sel = (v: string | null) => ({ select: v ? { name: v } : null });
+  return {
+    Nom: { title: [{ type: "text", text: { content: e.nom.slice(0, 200) } }] },
+    "Type d'évènement": sel(e.type),
+    "Compétitions": sel(e.competition),
+    Date: { date: { start: e.date, end: e.fin && e.fin > e.date ? e.fin : null } },
+    Lieu: rt(e.lieu),
+    "Type de déplacement": sel(e.deplacement),
+    "Décision participation": sel(e.decision),
+    "Priorité": { multi_select: e.priorite.map((name) => ({ name })) },
+    "Ouverture des inscriptions": d(e.ouverture),
+    "Date limite de réponse": d(e.limite),
+    "Date de validation": d(e.validation),
+    "Logistique véhicule": { checkbox: e.covoiturage },
+    Notes: rt(e.notes),
+  };
+}
+/** New event in the Notion « Calendrier Déplacements ». Returns the page id. */
+export async function creerEvenement(e: import("./evenements-types").EvSaisie): Promise<string> {
+  const pg = (await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS.calendrier }, properties: proprietesEvenement(e) } })) as Page;
+  return pg.id;
+}
+/** Completes / corrects an event of the calendar. */
+export async function majEvenement(id: string, e: import("./evenements-types").EvSaisie, garderNom = false) {
+  const properties: Record<string, unknown> = proprietesEvenement(e);
+  // The name written in Notion may carry a coloured mark (« 🔵 ») the app does not show: kept when unchanged.
+  if (garderNom) delete properties.Nom;
+  await notion(`pages/${id}`, { method: "PATCH", body: { properties } });
+}
