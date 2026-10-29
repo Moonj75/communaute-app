@@ -12,15 +12,17 @@ function SaisieCode({ email, recommencer }: { email: string; recommencer: () => 
   const [state, action, pending] = useActionState(verifierCode, initialCode);
   const [aide, setAide] = useState(false);
   const champ = useRef<HTMLInputElement>(null);
+  // Length typed before the last change: a jump of several digits at once = pasted or filled in by the phone.
+  const avant = useRef(0);
   useEffect(() => { champ.current?.focus(); }, []);
   if (state.status === "aide" && state.cas) return <Aide cas={state.cas} email={email} />;
   if (aide) return <Aide cas="code" email={email} />;
   return (
-    <form action={action} className="login-code">
+    <form action={action} className="login-code" onSubmit={(e) => { if (pending) e.preventDefault(); }}>
       <div className="notice ok" role="status">
         <b>📬 Mail envoyé à {email}.</b>
         <br />
-        Il contient un <b>code à 6 chiffres</b> : tape-le ci-dessous. Pense à regarder dans les courriers indésirables.
+        Il contient un <b>code de connexion</b> (des chiffres) : tape-le en entier ci-dessous, puis appuie sur « Entrer ». Pense à regarder dans les courriers indésirables.
       </div>
       {state.status === "error" ? <div className="notice err" role="alert">{state.message}</div> : null}
       <input type="hidden" name="email" value={email} />
@@ -38,7 +40,11 @@ function SaisieCode({ email, recommencer }: { email: string; recommencer: () => 
           placeholder="123456"
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "");
-            if (v.length === 6 && !pending) e.target.form?.requestSubmit();
+            const saut = v.length - avant.current;
+            avant.current = v.length;
+            // Sent by itself only when the whole code arrives at once (paste, phone suggestion).
+            // Typed by hand: never sent in the middle (the code can be longer than 6 digits) — the button does it.
+            if (saut >= 4 && v.length >= 6 && !pending) e.target.form?.requestSubmit();
           }}
         />
       </label>

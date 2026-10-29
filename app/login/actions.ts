@@ -79,14 +79,14 @@ export async function verifierCode(_prev: CodeState, formData: FormData): Promis
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const code = String(formData.get("code") || "").replace(/\D/g, "");
   if (!EMAIL_RE.test(email)) return { status: "error", message: "Adresse e-mail manquante : recommence la connexion." };
-  if (code.length < 6 || code.length > 10) return { status: "error", message: "Tape le code à 6 chiffres reçu par e-mail." };
+  if (code.length < 6 || code.length > 10) return { status: "error", message: "Tape tous les chiffres du code reçu par e-mail." };
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
   if (error) {
     const msg = (error.message || "").toLowerCase();
     if (msg.includes("database error") || msg.includes("acces_refuse")) return { status: "aide", cas: "inconnu" };
     if (error.status === 429 || msg.includes("rate limit")) return { status: "error", message: "Trop d'essais. Patiente une minute." };
-    return { status: "error", message: "Code incorrect ou expiré. Vérifie le dernier mail reçu, ou redemande un code." };
+    return { status: "error", message: "Code incorrect ou expiré. Vérifie que tu as tapé TOUS les chiffres du dernier mail reçu, ou redemande un code." };
   }
   // A former member (archived) cannot use the app: out again, to the page to ask for a comeback.
   const { data: p } = await supabase.from("profils").select("archive,role").eq("email", email).maybeSingle();
