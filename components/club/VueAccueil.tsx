@@ -114,7 +114,7 @@ export default function VueAccueil(p: {
   return (
     <>
       <section className="hello">
-        <span className="kicker">{p.isAdmin ? "Staff · Administrateur" : famille ? "Compte famille" : "Joueur"}</span>
+        <span className="kicker">{p.isAdmin ? "Staff · Administrateur" : famille ? "Compte famille" : p.sansCompet && roles.length ? roles.join(" · ") : "Joueur"}</span>
         <h2>
           {p.salut}, <span className="perso">{p.name}</span>
         </h2>
