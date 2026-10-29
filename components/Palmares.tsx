@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { CATEGORIES_P, JEUNES, RANGS, cleSaison, compter, icRang, libelleRang, triMedailles, triResultats, type ResultatP } from "@/lib/palmares-types";
 import { ajouterResultat, importerHistorique, rafraichirPalmares, supprimerResultat, traiterProposition, type RetourP } from "@/lib/palmares-actions";
 import "./palmares.css";
+import Vitrine from "./Vitrine";
+import type { Exploit } from "@/lib/palmares-types";
 
 type Noms = Record<string, string>;
 const quiDe = (r: ResultatP, noms: Noms) => [...r.joueurs.map((j) => noms[j] || "?"), ...(r.equipe ? [r.equipe] : [])].join(", ");
@@ -121,14 +123,11 @@ export function PalmaresJoueur({ resultats }: { resultats: ResultatP[] }) {
 }
 
 /** Home page block: key figures and the latest exploits, with the way to the full page. */
-export function PalmaresAccueil({ resultats, noms, totaux }: { resultats: ResultatP[]; noms: Noms; /** Counted on the server (the home page only receives the 5 latest results). */ totaux?: ReturnType<typeof compter> }) {
-  const valides = resultats.filter((r) => r.statut === "Validé");
-  const derniers = [...valides].filter((r) => ["Vainqueur", "Finaliste", "Demi-finaliste"].includes(r.rang)).sort((a, b) => cleSaison(b.saison) - cleSaison(a.saison) || b.cree.localeCompare(a.cree)).slice(0, 5);
+export function PalmaresAccueil({ exploits, totaux }: { /** Chosen on the server: victories first, newest first. */ exploits: Exploit[]; totaux: ReturnType<typeof compter> }) {
   return (
     <div className="pa">
-      <Compteurs m={totaux || compter(valides)} total />
-      <p className="pa-h">✨ Derniers exploits</p>
-      <ul className="pa-liste">{derniers.map((r) => <Ligne key={r.id} r={r} noms={noms} />)}</ul>
+      <Vitrine exploits={exploits} />
+      <Compteurs m={totaux} total />
       <a className="btn primary pa-ajout" href="/palmares">🏆 Tout le palmarès du club →</a>
     </div>
   );
