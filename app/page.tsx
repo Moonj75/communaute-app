@@ -8,7 +8,7 @@ import { prochainesCompetitions } from "@/lib/notion";
 import { lireClubs, lireEugies } from "@/lib/classements-lire";
 import { lireInfosPubliques } from "@/lib/club";
 import { salutation } from "@/lib/salut";
-import { cleSaison, compter, placeDe, triVitrine, type Exploit } from "@/lib/palmares-types";
+import { avecDates, cleSaison, compter, placeDe, triVitrine, type Exploit } from "@/lib/palmares-types";
 import { essayer, lireCalendrier, lireClassementsClub, lirePalmares, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +41,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
   ]);
   // Palmarès showcase: only the totals and 12 highlights are sent to the phone — the last two seasons first
   // (victories, then finals, then semi-finals, newest first), completed with the older victories.
-  const valides = (palma.data || []).filter((r) => r.statut === "Validé" && placeDe(r) !== null && (placeDe(r) || 99) <= 3);
+  const valides = avecDates((palma.data || []).filter((r) => r.statut === "Validé" && placeDe(r) !== null && (placeDe(r) || 99) <= 3), cal.data || []);
   const tousNoms = new Map([...(noms.data || [])].map(([k, v]) => [k.replace(/-/g, ""), v]));
   const derniere = Math.max(0, ...valides.map((r) => cleSaison(r.saison)));
   const recents = valides.filter((r) => cleSaison(r.saison) >= derniere - 1).sort(triVitrine);
