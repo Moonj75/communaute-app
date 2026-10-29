@@ -1,3 +1,4 @@
+// 🏠 PAGE D'ACCUEIL : ce fichier va dans le dossier « app » (github.com/Moonj75/communaute-app/upload/main/app).
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import VueAccueil, { type Gens } from "@/components/club/VueAccueil";
@@ -7,7 +8,7 @@ import { prochainesCompetitions } from "@/lib/notion";
 import { lireClubs, lireEugies } from "@/lib/classements-lire";
 import { lireInfosPubliques } from "@/lib/club";
 import { salutation } from "@/lib/salut";
-import { essayer, lireCalendrier, lireClassementsClub, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
+import { essayer, lireCalendrier, lireClassementsClub, lirePalmares, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
   if (!user) redirect("/login");
   const name = displayName(profil, user.email);
 
-  const [{ data: fiches }, compets, cl, res, se, cal, noms, eug, clubsComplet] = await Promise.all([
+  const [{ data: fiches }, compets, cl, res, se, cal, noms, eug, clubsComplet, palma] = await Promise.all([
     supabase.from("joueurs").select("*").eq("email", (user.email || "").toLowerCase()),
     prochainesCompetitions(2),
     essayer(lireClassementsClub),
@@ -35,7 +36,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
     essayer(nomsJoueurs),
     lireEugies(supabase),
     lireClubs(supabase),
+    essayer(lirePalmares),
   ]);
+  const nomsP: Record<string, string> = {};
+  for (const [k, v] of noms.data || []) nomsP[k.replace(/-/g, "")] = v;
   const next = compets[0];
   const moi = ((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id);
 
@@ -75,6 +79,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
           eug={eug}
           clubsComplet={clubsComplet}
           moi={((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id)}
+          palmares={{ resultats: palma.data || [], noms: nomsP }}
         />
       </main>
     </>
