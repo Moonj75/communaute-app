@@ -8,8 +8,8 @@ import { prochainesCompetitions } from "@/lib/notion";
 import { lireClubs, lireEugies } from "@/lib/classements-lire";
 import { lireInfosPubliques } from "@/lib/club";
 import { salutation } from "@/lib/salut";
-import { avecDates, cleSaison, compter, placeDe, triVitrine, type Exploit } from "@/lib/palmares-types";
-import { essayer, lireCalendrier, lireClassementsClub, lirePalmares, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
+import { avecDates, cleSaison, compter, placeDe, sansArchives, triVitrine, type Exploit } from "@/lib/palmares-types";
+import { essayer, lireCalendrier, lireClassementsClub, lireMembresRoles, lirePalmares, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
   if (!user) redirect("/login");
   const name = displayName(profil, user.email);
 
-  const [{ data: fiches }, compets, cl, res, se, cal, noms, eug, clubsComplet, palma] = await Promise.all([
+  const [{ data: fiches }, compets, cl, res, se, cal, noms, eug, clubsComplet, palma, membresR] = await Promise.all([
     supabase.from("joueurs").select("*").eq("email", (user.email || "").toLowerCase()),
     prochainesCompetitions(2),
     essayer(lireClassementsClub),
@@ -38,10 +38,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
     lireEugies(supabase),
     lireClubs(supabase),
     essayer(lirePalmares),
+    essayer(lireMembresRoles),
   ]);
   // Palmarès showcase: only the totals and 12 highlights are sent to the phone — the last two seasons first
   // (victories, then finals, then semi-finals, newest first), completed with the older victories.
-  const valides = avecDates((palma.data || []).filter((r) => r.statut === "Validé" && placeDe(r) !== null && (placeDe(r) || 99) <= 3), cal.data || []);
+  // Archived players stay in Notion but are no longer shown.
+  const archives = (membresR.data || []).filter((m) => m.archive).map((m) => m.notion_id);
+  const valides = avecDates(sansArchives(palma.data || [], archives).filter((r) => r.statut === "Validé" && placeDe(r) !== null && (placeDe(r) || 99) <= 3), cal.data || []);
   const tousNoms = new Map([...(noms.data || [])].map(([k, v]) => [k.replace(/-/g, ""), v]));
   const derniere = Math.max(0, ...valides.map((r) => cleSaison(r.saison)));
   const recents = valides.filter((r) => cleSaison(r.saison) >= derniere - 1).sort(triVitrine);
@@ -89,7 +92,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
           eug={eug}
           clubsComplet={clubsComplet}
           moi={((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id)}
-          palmares={{ exploits, totaux: compter((palma.data || []).filter((r) => r.statut === "Validé")) }}
+          palmares={{ exploits, totaux: compter(sansArchives(palma.data || [], archives).filter((r) => r.statut === "Validé")) }}
         />
       </main>
     </>
