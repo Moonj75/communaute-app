@@ -88,3 +88,18 @@ export function titreDe(r: { rang: Rang; place: number | null; competition: stri
   const lib = r.rang === "Autre place" && r.place ? `${r.place}e place` : r.rang;
   return `${icRang(r.rang)} ${lib} · ${r.competition}${r.categorie ? ` (${r.categorie})` : ""}`;
 }
+
+/** Rank words: « Victoire » and « Finale » big and shining, the others smaller. */
+export const motRang = (place: number | null, court = false) =>
+  place === 1 ? "Victoire" : place === 2 ? "Finale" : place === 3 ? (court ? "½ finale" : "Demi-finale") : place === 5 ? (court ? "¼ finale" : "Quart de finale") : place === 9 ? (court ? "8e finale" : "8e de finale") : place === 17 ? "16e de finale" : place ? `${place}e place` : "Participation";
+export const classeRang = (place: number | null) => (place === 1 ? "r1" : place === 2 ? "r2" : place === 3 ? "r3" : "rx");
+/** Place used for the picture (rank without number → its usual place). */
+export const placeDe = (r: Pick<ResultatP, "rang" | "place">) => r.place ?? RANGS.find((x) => x.id === r.rang)?.place ?? null;
+
+/** Highlight order: victories first (newest first), then finals, then semi-finals, then the rest. */
+export function triVitrine(a: ResultatP, b: ResultatP) {
+  const n = (r: ResultatP) => { const p = placeDe(r); return p === 1 ? 0 : p === 2 ? 1 : p === 3 ? 2 : 3; };
+  return n(a) - n(b) || cleSaison(b.saison) - cleSaison(a.saison) || (b.date || "").localeCompare(a.date || "") || b.cree.localeCompare(a.cree);
+}
+/** One highlight of the showcase / of the card band. */
+export type Exploit = { id: string; place: number | null; equipe: boolean; competition: string; categorie: string | null; saison: string | null; qui: string };
