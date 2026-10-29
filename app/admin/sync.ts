@@ -109,7 +109,9 @@ export async function synchroniserNotion(): Promise<SyncState> {
       nom: titulaire.nom,
       prenom: titulaire.prenom,
       role: gens.some((g) => g.admin) || isMe ? "admin" : "joueur",
-      actif: gens.some((g) => g.actif) || isMe,
+      // Active player, or someone with a function in the club (Rôles: ouvreur, buvette, responsable palmarès…)
+      // even if he does not play: he reads the whole app like a member, and works in his own function.
+      actif: gens.some((g) => g.actif || (!g.archive && g.roles.length > 0)) || isMe,
       // Every fiche of this e-mail archived: the account is archived (no more login).
       archive: !isMe && gens.every((g) => g.archive),
       notion_id: titulaire.notionId,
