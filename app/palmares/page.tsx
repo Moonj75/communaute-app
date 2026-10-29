@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import { displayName, getVue } from "@/lib/profil";
 import { essayer, lireCalendrier, lireMembresRoles, lirePalmares, nomsJoueurs } from "@/lib/club";
 import { ROLE_PALMARES, avecDates, sansArchives, sansTirets } from "@/lib/palmares-types";
-import { AValider, AjoutResultat, ImportHistorique, PalmaresPages } from "@/components/Palmares";
+import { AValider, AjoutResultat, ImportHistorique, PalmaresPages, type CompetCal } from "@/components/Palmares";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Palmarès · SC Lions d'Eugies" };
@@ -31,9 +31,13 @@ export default async function PalmaresPage({ searchParams }: { searchParams: Pro
   const joueurs = membres
     .map((m) => ({ id: sansTirets(m.notion_id), nom: [m.prenom, m.nom].filter(Boolean).join(" ") || noms[sansTirets(m.notion_id)] || "?", archive: m.archive }))
     .sort((a, b) => Number(a.archive) - Number(b.archive) || a.nom.localeCompare(b.nom, "fr"));
-  // Competitions of the last 14 months (and the coming ones), proposed in the form.
-  const depuis = new Date(Date.now() - 425 * 86400000).toISOString().slice(0, 10);
-  const competitions = (calR.data || []).filter((e) => (e.date || "") >= depuis).map((e) => ({ nom: e.nom, date: (e.date || "").slice(0, 10) })).sort((a, b) => b.date.localeCompare(a.date));
+  // The form only offers the club's competitions (calendar) already started, from the last two years.
+  const depuis = new Date(Date.now() - 730 * 86400000).toISOString().slice(0, 10);
+  const auj = new Date().toISOString().slice(0, 10);
+  const competitions: CompetCal[] = (calR.data || [])
+    .filter((e) => e.date && e.date.slice(0, 10) >= depuis && e.date.slice(0, 10) <= auj && (!e.type || e.type === "Compétition") && !e.annule && !e.nePasFaire)
+    .map((e) => ({ id: e.id, nom: e.nom, date: e.date!.slice(0, 10), fin: e.fin ? e.fin.slice(0, 10) : null, lieu: e.lieu || null }))
+    .sort((a, b) => b.date.localeCompare(a.date));
   const aValider = resultats.filter((r) => r.statut === "À valider");
 
   return (
