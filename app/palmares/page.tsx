@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import { displayName, getVue } from "@/lib/profil";
 import { essayer, lireCalendrier, lireMembresRoles, lirePalmares, nomsJoueurs } from "@/lib/club";
-import { ROLE_PALMARES, sansTirets } from "@/lib/palmares-types";
+import { ROLE_PALMARES, avecDates, sansTirets } from "@/lib/palmares-types";
 import { AValider, AjoutResultat, ImportHistorique, PalmaresPages } from "@/components/Palmares";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,8 @@ export default async function PalmaresPage({ searchParams }: { searchParams: Pro
   const admin = profil?.role === "admin" && !apercu;
   const email = (user.email || "").toLowerCase();
   const [res, nomsR, membresR, calR] = await Promise.all([essayer(lirePalmares), essayer(nomsJoueurs), essayer(lireMembresRoles), essayer(lireCalendrier)]);
-  const resultats = res.data || [];
+  // The day of each result, found in the club calendar when it was not typed (to show the month).
+  const resultats = avecDates(res.data || [], calR.data || []);
   const noms: Record<string, string> = {};
   for (const [k, v] of nomsR.data || []) noms[sansTirets(k)] = v;
   const membres = membresR.data || [];
