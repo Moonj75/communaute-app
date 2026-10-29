@@ -6,6 +6,9 @@ import LogoFistf from "@/components/LogoFistf";
 import { categorieFinale } from "@/lib/categories";
 import CagnotteFiche from "@/components/cagnotte/CagnotteFiche";
 import type { Bareme, EvenementLie, Mouvement } from "@/lib/cagnotte";
+import { Trophee } from "@/components/Trophee";
+import { classeRang, motRang } from "@/lib/palmares-types";
+import "@/components/palmares.css";
 
 export type Fiche = {
   notion_id: string;
@@ -46,7 +49,7 @@ const place = (n: number | null | undefined) => (n ? <>{n}<sup>{n === 1 ? "er" :
  * the honours scroll from right to left in a band at the bottom of the card. The kitty sits apart, below.
  * `places` = the player's places read from the latest imported rankings (always up to date).
  */
-export function CarteJoueur({ f, famille, photoUrl, places, cag }: { f: Fiche; famille: boolean; photoUrl: string | null; places?: PlacesVivantes; /** Kitty history (null = not installed yet). */ cag?: { mouvements: Mouvement[] | null; bareme: Bareme[]; noms: Record<string, string>; evenements?: EvenementLie[] } }) {
+export function CarteJoueur({ f, famille, photoUrl, places, cag, trophees = [] }: { /** Palmarès (Notion): cup / medal, rank word, competition. */ trophees?: { place: number | null; equipe: boolean; texte: string }[]; f: Fiche; famille: boolean; photoUrl: string | null; places?: PlacesVivantes; /** Kitty history (null = not installed yet). */ cag?: { mouvements: Mouvement[] | null; bareme: Bareme[]; noms: Record<string, string>; evenements?: EvenementLie[] } }) {
   const full = [f.prenom, f.nom].filter(Boolean).join(" ");
   const cagnotte = Number(f.cagnotte) || 0;
   const titres = (f.palmares || "").split(/\n+/).map((t) => t.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
@@ -109,7 +112,17 @@ export function CarteJoueur({ f, famille, photoUrl, places, cag }: { f: Fiche; f
         <div className="fx-palma" role="region" aria-label="Palmarès">
           <span className="fx-pk">🏆 Palmarès</span>
           <div className="fx-pv">
-            {tour.length ? (
+            {trophees.length ? (
+              <div className="fx-pp" style={{ animationDuration: `${Math.max(18, trophees.reduce((n, t) => n + t.texte.length + 12, 0) * 0.3)}s` }}>
+                {[0, 1].map((c) => (
+                  <span key={c} className="fx-pc" aria-hidden={c === 1 ? true : undefined}>
+                    {(trophees.length < 3 ? [...trophees, ...trophees, ...trophees] : trophees).map((t, i) => (
+                      <span key={i} className="fx-tr"><Trophee place={t.place} equipe={t.equipe} taille={28} delai={(i % 5) * 0.6} /><em className={classeRang(t.place)}>{motRang(t.place, true)}</em>{t.texte}</span>
+                    ))}
+                  </span>
+                ))}
+              </div>
+            ) : tour.length ? (
               <div className="fx-pp" style={{ animationDuration: `${duree}s` }}>
                 {[0, 1].map((c) => (
                   <span key={c} className="fx-pc" aria-hidden={c === 1 ? true : undefined}>

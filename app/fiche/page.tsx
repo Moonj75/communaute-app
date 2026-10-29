@@ -9,7 +9,7 @@ import { listeDef } from "@/lib/classements-types";
 import { MesClassements } from "@/components/club/Classements";
 import { lireExtraits } from "@/lib/classements-lire";
 import { essayer, lirePalmares } from "@/lib/club";
-import { icRang, libelleRang, sansTirets, triResultats } from "@/lib/palmares-types";
+import { placeDe, sansTirets, triResultats, triVitrine } from "@/lib/palmares-types";
 import { PalmaresJoueur } from "@/components/Palmares";
 
 export const dynamic = "force-dynamic";
@@ -32,12 +32,11 @@ export default async function FichePage() {
   // Palmarès (Notion « Palmarès du club »): the card's scrolling band shows the titles and finals.
   const palma = (await essayer(lirePalmares)).data || [];
   const sesResultats = (id: string) => palma.filter((r) => r.joueurs.includes(sansTirets(id))).sort(triResultats);
-  const fiches = fiches0.map((f) => {
-    // Titles first, then finals, then semi-finals (20 at most), each with its medal.
-    const ordre = { Vainqueur: 0, Finaliste: 1, "Demi-finaliste": 2 } as Record<string, number>;
-    const forts = sesResultats(f.notion_id).filter((r) => r.statut === "Validé" && r.rang in ordre).sort((a, b) => ordre[a.rang] - ordre[b.rang] || triResultats(a, b));
-    return forts.length ? { ...f, palmares: forts.slice(0, 20).map((r) => `${icRang(r.rang)} ${libelleRang(r)} ${r.competition}${r.categorie ? ` (${r.categorie})` : ""} · ${r.saison || ""}`.trim()).join("\n") } : f;
-  });
+  // The card's scrolling band: victories first (newest first), then finals, then semi-finals — 20 at most.
+  const tropheesDe = (id: string) =>
+    sesResultats(id).filter((r) => r.statut === "Validé" && (placeDe(r) || 99) <= 3).sort(triVitrine).slice(0, 20)
+      .map((r) => ({ place: placeDe(r), equipe: r.parEquipe || Boolean(r.equipe), texte: `${r.competition}${r.categorie ? ` (${r.categorie})` : ""} · ${r.saison || ""}${r.parEquipe || r.equipe ? " · 👥 équipe" : ""}` }));
+  const fiches = fiches0;
   const famille = fiches.length > 1;
   const synced = fiches.map((f) => f.synced_at).filter(Boolean).sort().pop();
 
@@ -96,7 +95,7 @@ export default async function FichePage() {
                 titre: [f.prenom, f.nom].filter(Boolean).join(" "),
                 ic: f.titulaire || !famille ? "🦁" : "🐾",
                 badge: f.categorie || null,
-                contenu: <CarteJoueur f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} places={aClassements ? places[i] : undefined} cag={cags[i]} />,
+                contenu: <CarteJoueur f={f} trophees={tropheesDe(f.notion_id)} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} places={aClassements ? places[i] : undefined} cag={cags[i]} />,
               },
               {
                 id: `pa-${f.notion_id.slice(0, 8)}`,
