@@ -5,6 +5,7 @@ import Blocs from "@/components/Blocs";
 import LogoFistf from "@/components/LogoFistf";
 import { LISTES, SOURCES, libelleMois, listeDef, pts, couleurCategorie, type LigneClassement, type ListeDef } from "@/lib/classements-types";
 import { Evo, LogoClub, clubCourt, couleurRang } from "./Classements";
+import "./duo.css";
 
 /** Rankings already received during this visit: switching back to one is instant. */
 const memoire = new Map<string, LigneClassement[]>();

@@ -13,3 +13,17 @@
 .duo2 .clv-t tr.cible td.rg { font-size: 20px; }
 .duo2-tout { display: block; padding: 9px 14px; border-top: 1px solid var(--line2); font-size: 13px; font-weight: 800; color: var(--n-national); text-decoration: none; text-align: right; }
 .duo2.monde .duo2-tout { color: var(--n-open); }
+
+/* Classements page: same compact look as the home block (one line per row, our line in the middle, bigger). */
+.clv .clv-t { font-size: 13.5px; }
+.clv .clv-t td { padding: 6px 6px; }
+.clv .clv-t thead th { padding: 7px 6px; }
+.clv .clv-t td.nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clv .clv-t .clv-club { display: inline; margin-left: 6px; font-size: 10.5px; letter-spacing: .02em; }
+.clv .clv-t .clv-club .logo-club { width: 14px; height: 14px; vertical-align: -2px; }
+.clv .clv-t td.rg { font-style: italic; font-size: 17px; }
+.clv .clv-t .cat-c { font-size: 10.5px; padding: 1px 7px; }
+.clv .clv-t tr.cible td { font-size: 15px; padding-top: 10px; padding-bottom: 10px; }
+.clv .clv-t tr.cible td.rg { font-size: 21px; }
+.clv-panel { max-width: 620px; margin-left: auto; margin-right: auto; }
+.clv-barre, .clv-tabs, .cl-legende { max-width: 620px; margin-left: auto; margin-right: auto; width: 100%; }
