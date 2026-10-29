@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getVue } from "./profil";
 import { TAGS, creerResultat, lireCalendrier, lireMembresRoles, lirePalmares, retirerResultat, validerResultatNotion } from "./club";
+import { estCompetition } from "./club-types";
 import { RANGS, ROLE_PALMARES, saisonDe, sansTirets, titreDe, typeDe, type Rang } from "./palmares-types";
 import { clientAdmin } from "./supabase/admin";
 import { deposer } from "./courrier";
@@ -48,7 +49,7 @@ export async function ajouterResultat(fd: FormData): Promise<RetourP> {
   const v = (k: string, n = 200) => String(fd.get(k) || "").replace(/\s+/g, " ").trim().slice(0, n);
   // The competition is one of the club's events (calendar): its name and dates come from there.
   const ev = (await lireCalendrier().catch(() => [])).find((e) => e.id === v("ev", 60));
-  if (!ev || !ev.date) return { ok: false, message: "Choisis la compétition dans la liste des évènements." };
+  if (!ev || !ev.date || !estCompetition(ev) || ev.jourSpecial) return { ok: false, message: "Choisis une compétition dans la liste (un palmarès ne concerne que les compétitions)." };
   const competition = ev.nom.slice(0, 150);
   const rang = v("rang", 40) as Rang;
   const mode = v("mode", 4);
@@ -64,6 +65,9 @@ export async function ajouterResultat(fd: FormData): Promise<RetourP> {
   if (mode !== "ind" && mode !== "eq") return { ok: false, message: "Individuel ou par équipe ?" };
   if (mode === "ind" && joueurs.length !== 1) return { ok: false, message: "Un résultat individuel : choisis un seul joueur." };
   if (mode === "eq" && !equipe) return { ok: false, message: "Choisis l'équipe du club (Team A ou Team B)." };
+  // A player adds his own results only (they are checked by the responsable palmarès).
+  const mesIds = q.fiches.map((f) => sansTirets(f.notion_id));
+  if (!q.responsable && !joueurs.some((j) => mesIds.includes(j))) return { ok: false, message: "Tu peux ajouter seulement tes propres résultats (ou ceux de ton équipe, avec toi dedans)." };
   const place = RANGS.find((r) => r.id === rang)!.place;
   const saison = saisonDe(date);
   // Final (winner or finalist): its score, seen from the club (« 3-1 »), and the opponent — both optional.
