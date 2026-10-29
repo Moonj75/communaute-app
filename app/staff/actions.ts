@@ -2,7 +2,8 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getSessionProfil } from "@/lib/profil";
-import { creerTache, modifierTache, TAGS } from "@/lib/club";
+import { creerEvenement, creerFiche, creerTache, lireCalendrier, majEvenement, modifierTache, TAGS } from "@/lib/club";
+import { COMPETITIONS_EV, DECISIONS, DEPLACEMENTS, PRIORITES_EV, TYPES_EV, type EvSaisie } from "@/lib/evenements-types";
 import { PRIORITES } from "@/lib/club-types";
 
 export type Retour = { ok: boolean; message?: string };
@@ -92,6 +93,53 @@ export async function enregistrerConcernes(evId: string, ids: string[], tousActi
     revalidatePath("/staff/inscriptions");
     revalidatePath("/inscriptions");
     return { ok: true, message: propres.length && propres.length < tousActifs ? `✓ Formulaire réservé à ${propres.length} joueur(s). Les autres comptent « Non ».` : "✓ Formulaire ouvert à tous les joueurs actifs." };
+  } catch (e) {
+    return erreur(e);
+  }
+}
+
+
+/**
+ * Staff: creates an event of the calendar from the app (every field of Notion « Calendrier Déplacements »),
+ * or completes / corrects one (id given). A competition the club goes to also gets its logistics sheet.
+ */
+export async function enregistrerEvenement(fd: FormData): Promise<Retour & { id?: string }> {
+  try {
+    await exigerAdmin();
+    const v = (k: string, n = 200) => String(fd.get(k) || "").replace(/\s+/g, " ").trim().slice(0, n);
+    const jour = (k: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v(k)) ? v(k) : null);
+    const parmi = <T extends readonly string[]>(k: string, l: T) => ((l as readonly string[]).includes(v(k)) ? v(k) : null);
+    const e: EvSaisie = {
+      nom: v("nom", 150),
+      type: parmi("type", TYPES_EV) || "Compétition",
+      competition: parmi("competition", COMPETITIONS_EV),
+      date: jour("date") || "",
+      fin: jour("fin"),
+      lieu: v("lieu", 120) || null,
+      deplacement: parmi("deplacement", DEPLACEMENTS),
+      decision: parmi("decision", DECISIONS),
+      priorite: fd.getAll("priorite").map(String).filter((x) => (PRIORITES_EV as readonly string[]).includes(x)),
+      ouverture: jour("ouverture"),
+      limite: jour("limite"),
+      validation: jour("validation"),
+      covoiturage: fd.get("covoiturage") === "on",
+      notes: v("notes", 1500) || null,
+    };
+    if (!e.nom) return { ok: false, message: "Donne un nom à l'évènement." };
+    if (!e.date) return { ok: false, message: "Indique la date de l'évènement." };
+    if (e.ouverture && e.limite && e.limite < e.ouverture) return { ok: false, message: "La date limite doit venir après l'ouverture des inscriptions." };
+    if (e.limite && e.validation && e.validation < e.limite) return { ok: false, message: "La validation doit venir après la date limite de réponse." };
+    const id = v("id", 60);
+    let pageId = id;
+    if (id) {
+      const avant = (await lireCalendrier()).find((x) => x.id === id);
+      await majEvenement(id, e, Boolean(avant && avant.nom === e.nom));
+    } else pageId = await creerEvenement(e);
+    // A competition the club goes to gets its logistics sheet (once).
+    if (fd.get("fiche") === "on" && pageId) await creerFiche(pageId, e.nom).catch(() => null);
+    Object.values(TAGS).forEach((t) => revalidateTag(t));
+    revalidatePath("/", "layout");
+    return { ok: true, id: pageId, message: id ? `✓ « ${e.nom} » mis à jour dans Notion.` : `✓ « ${e.nom} » ajouté au calendrier (Notion).` };
   } catch (e) {
     return erreur(e);
   }
