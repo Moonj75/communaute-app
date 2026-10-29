@@ -278,11 +278,19 @@ export function AjoutResultat({ joueurs, competitions, responsable, moi, initial
   const jours = c ? joursDe(c) : [];
   const listeEv = competitions.filter((x) => !q || x.nom.toLowerCase().includes(q.toLowerCase()));
   const vus = toutes || q ? listeEv : listeEv.slice(0, 6);
-  const proposes = joueurs.filter((j) => !choisis.includes(j.id) && (!cherche || j.nom.toLowerCase().includes(cherche.toLowerCase()))).slice(0, cherche ? 8 : 0);
+  // A player (not responsable) adds his own result: individual = himself (or one of his family fiches);
+  // team = he is in it, with his teammates if he wants.
+  const miens = joueurs.filter((j) => moi.includes(j.id));
+  const proposes = (!responsable && mode === "ind" ? miens : joueurs).filter((j) => !choisis.includes(j.id) && (!cherche || j.nom.toLowerCase().includes(cherche.toLowerCase()) || (!responsable && mode === "ind"))).slice(0, cherche || (!responsable && mode === "ind") ? 8 : 0);
   const choisirEv = (id: string) => { setEv(id); const x = competitions.find((y) => y.id === id); setJour(x && joursDe(x).length === 1 ? x.date : ""); };
-  const choisirMode = (m: "ind" | "eq") => { setMode(m); if (m === "ind") { setEquipe(""); setChoisis((x) => x.slice(0, 1).length ? x.slice(0, 1) : moi.slice(0, 1)); if (jour === "tout") setJour(""); } };
+  const choisirMode = (m: "ind" | "eq") => {
+    setMode(m);
+    if (m === "ind") { setEquipe(""); setChoisis((x) => (!responsable ? moi.slice(0, 1) : x.slice(0, 1).length ? x.slice(0, 1) : moi.slice(0, 1))); if (jour === "tout") setJour(""); }
+    else if (!responsable) setChoisis((x) => (x.some((y) => moi.includes(y)) ? x : [...moi.slice(0, 1), ...x]));
+  };
   const ajouterJ = (id: string) => { setChoisis((x) => (mode === "ind" ? [id] : [...x, id])); setCherche(""); };
-  const manque = !c ? "Choisis la compétition" : !mode ? "Individuel ou par équipe ?" : jours.length > 1 && !jour ? "Choisis le jour" : mode === "ind" && choisis.length !== 1 ? "Choisis le joueur" : mode === "eq" && !equipe ? "Choisis l'équipe (Team A / Team B)" : !rang ? "Choisis le résultat" : null;
+  const sansMoi = !responsable && moi.length > 0 && !choisis.some((y) => moi.includes(y));
+  const manque = !c ? "Choisis la compétition" : sansMoi && mode ? "Ton propre résultat : ajoute-toi" : !mode ? "Individuel ou par équipe ?" : jours.length > 1 && !jour ? "Choisis le jour" : mode === "ind" && choisis.length !== 1 ? "Choisis le joueur" : mode === "eq" && !equipe ? "Choisis l'équipe (Team A / Team B)" : !rang ? "Choisis le résultat" : null;
   const envoyer = (fd: FormData) => start(async () => {
     choisis.forEach((x) => fd.append("joueurs", x));
     const r = await ajouterResultat(fd);
@@ -291,7 +299,7 @@ export function AjoutResultat({ joueurs, competitions, responsable, moi, initial
   });
   return (
     <form action={envoyer} className="pa-form af">
-      {!responsable ? <p className="muted small">Ton résultat sera vérifié par le responsable palmarès avant d&apos;apparaître.</p> : null}
+      {!responsable ? <p className="notice">📨 Ajoute <b>ton propre résultat</b> : il sera vérifié par le responsable palmarès, puis il apparaîtra dans ton palmarès et celui du club.</p> : null}
       <input type="hidden" name="ev" value={ev} />
       <input type="hidden" name="jour" value={jour === "tout" ? (c?.date || "") : jour} />
       <input type="hidden" name="mode" value={mode} />
@@ -343,7 +351,7 @@ export function AjoutResultat({ joueurs, competitions, responsable, moi, initial
           <div className="pa-chips">
             {choisis.map((id) => <button type="button" key={id} className="pa-chip on" onClick={() => setChoisis((x) => x.filter((y) => y !== id))}>{joueurs.find((j) => j.id === id)?.nom || "?"} ✕</button>)}
           </div>
-          {mode === "eq" || !choisis.length ? <input className="input" placeholder={mode === "eq" ? "🔎 Ajouter les joueurs de l'équipe (facultatif)…" : "🔎 Chercher le joueur…"} value={cherche} onChange={(e) => setCherche(e.target.value)} /> : null}
+          {(mode === "eq" || !choisis.length) && (responsable || mode === "eq") ? <input className="input" placeholder={mode === "eq" ? "🔎 Ajouter les joueurs de l'équipe (facultatif)…" : "🔎 Chercher le joueur…"} value={cherche} onChange={(e) => setCherche(e.target.value)} /> : null}
           {proposes.length ? <div className="pa-chips">{proposes.map((j) => <button type="button" key={j.id} className="pa-chip" onClick={() => ajouterJ(j.id)}>+ {j.nom}{j.archive ? " (ancien)" : ""}</button>)}</div> : null}
 
           <div className="af-etape"><span className="af-n">{jours.length > 1 ? 5 : 4}</span><b>La catégorie</b></div>
