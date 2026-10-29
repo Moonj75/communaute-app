@@ -6,8 +6,7 @@ import LogoFistf from "@/components/LogoFistf";
 import { categorieFinale } from "@/lib/categories";
 import CagnotteFiche from "@/components/cagnotte/CagnotteFiche";
 import type { Bareme, EvenementLie, Mouvement } from "@/lib/cagnotte";
-import { Trophee } from "@/components/Trophee";
-import { classeRang, motRang } from "@/lib/palmares-types";
+import BandePalmares from "@/components/BandePalmares";
 import "@/components/palmares.css";
 
 export type Fiche = {
@@ -109,19 +108,11 @@ export function CarteJoueur({ f, famille, photoUrl, places, cag, trophees = [] }
           </div>
         </div>
 
-        <div className="fx-palma" role="region" aria-label="Palmarès">
+        <div className={`fx-palma${trophees.length ? " bp-avec" : ""}`} role="region" aria-label="Palmarès">
           <span className="fx-pk">🏆 Palmarès</span>
           <div className="fx-pv">
             {trophees.length ? (
-              <div className="fx-pp" style={{ animationDuration: `${Math.max(18, trophees.reduce((n, t) => n + t.texte.length + 12, 0) * 0.3)}s` }}>
-                {[0, 1].map((c) => (
-                  <span key={c} className="fx-pc" aria-hidden={c === 1 ? true : undefined}>
-                    {(trophees.length < 3 ? [...trophees, ...trophees, ...trophees] : trophees).map((t, i) => (
-                      <span key={i} className="fx-tr"><Trophee place={t.place} equipe={t.equipe} taille={28} delai={(i % 5) * 0.6} /><em className={classeRang(t.place)}>{motRang(t.place, true)}</em>{t.texte}</span>
-                    ))}
-                  </span>
-                ))}
-              </div>
+              <BandePalmares trophees={trophees} />
             ) : tour.length ? (
               <div className="fx-pp" style={{ animationDuration: `${duree}s` }}>
                 {[0, 1].map((c) => (
