@@ -116,3 +116,21 @@
 .pk-cat { position: absolute; top: 6px; right: 6px; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 6px; background: #1d1716; color: #fff; }
 .pk-x { position: absolute; top: 4px; left: 4px; }
 @media (prefers-reduced-motion: reduce) { .pk-pl.r1, .pk-pl.r2 { animation: none; } }
+
+/* Pages du palmarès (une page = un écran) */
+.pa-ecran { gap: 10px; }
+.pa-ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vk-cup { flex: none; filter: drop-shadow(0 0 10px rgba(255, 213, 74, .7)); }
+.pk-sp { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; background: linear-gradient(160deg, #241b19, #3a1512); color: #fff; }
+.pk-sp-v { display: flex; align-items: center; gap: 6px; }
+.pk-sp-v b { font-family: var(--font-display); font-style: italic; font-weight: 900; font-size: 34px; line-height: 1; color: #ffd54a; text-shadow: 0 2px 0 #5a3d00, 0 0 12px rgba(255, 213, 74, .45); }
+.pk-sp.eq .pk-sp-v b { color: #7ff; text-shadow: 0 2px 0 #004a55, 0 0 12px rgba(0, 229, 255, .45); }
+.pk-sp-v small { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #eadfd7; }
+.pk-sp-a { font-size: 12.5px; font-weight: 800; color: #eadfd7; }
+.pk-pc-cup { display: block; height: 50px; margin-top: -4px; filter: drop-shadow(0 0 10px rgba(255, 240, 160, .9)); }
+.pk-pv { display: block; margin-top: 3px; }
+.pk-pv b { font-family: var(--font-display); font-style: italic; font-weight: 900; font-size: 26px; line-height: 1; color: #fff3b0; text-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.pk-pc.p1 .pk-pv b { font-size: 32px; color: #fff; text-shadow: 0 2px 0 #5a3d00, 0 0 14px rgba(255, 240, 160, .9); }
+.pk-hv { font-family: var(--font-display); font-style: italic; font-size: 17px; color: #b07c00; }
+.pk-pc.p1 { min-height: 132px; } .pk-pc.p2 { min-height: 112px; } .pk-pc.p3 { min-height: 100px; }
+.pk-pc .pk-av { width: 34px; height: 34px; font-size: 13px; margin: 2px auto; }
