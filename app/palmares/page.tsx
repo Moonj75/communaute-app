@@ -11,7 +11,10 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Palmarès · SC Lions d'Eugies" };
 
 /** The club's palmarès: honours board and every result; add a result; results to validate (responsable / staff). */
-export default async function PalmaresPage() {
+export default async function PalmaresPage({ searchParams }: { searchParams: Promise<{ c?: string; d?: string }> }) {
+  // From the notification sent the day after a competition: the form is already filled with it.
+  const sp = await searchParams;
+  const pre = { competition: (sp.c || "").slice(0, 150), date: /^\d{4}-\d{2}-\d{2}$/.test(sp.d || "") ? sp.d! : "" };
   const { user, profil, apercu } = await getVue();
   if (!user) redirect("/login");
   const admin = profil?.role === "admin" && !apercu;
@@ -38,9 +41,10 @@ export default async function PalmaresPage() {
         {res.erreur ? <div className="notice err">{res.erreur}</div> : null}
         <Blocs
           page="Palmarès"
+          initial={pre.competition ? "ajouter" : undefined}
           blocs={[
             { id: "club", titre: "Palmarès du club", ic: "🏆", badge: String(resultats.filter((r) => r.statut === "Validé" && r.rang === "Vainqueur").length), contenu: <PalmaresClub resultats={resultats} noms={noms} gerer={responsable} /> },
-            { id: "ajouter", titre: "Ajouter un résultat", ic: "➕", contenu: <AjoutResultat joueurs={joueurs} competitions={competitions} responsable={responsable} moi={miennes.map((m) => sansTirets(m.notion_id))} /> },
+            { id: "ajouter", titre: "Ajouter un résultat", ic: "➕", contenu: <AjoutResultat joueurs={joueurs} competitions={competitions} responsable={responsable} moi={miennes.map((m) => sansTirets(m.notion_id))} initial={pre} /> },
             ...(responsable ? [{ id: "valider", titre: "À valider", ic: "⏳", badge: aValider.length ? String(aValider.length) : null, contenu: <AValider liste={aValider} noms={noms} /> }] : []),
             ...(admin && resultats.length < 519 ? [{ id: "import", titre: "Historique", ic: "📥", contenu: <ImportHistorique deja={resultats.length} /> }] : []),
           ]}
