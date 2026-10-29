@@ -103,3 +103,20 @@ export function triVitrine(a: ResultatP, b: ResultatP) {
 }
 /** One highlight of the showcase / of the card band. */
 export type Exploit = { id: string; place: number | null; equipe: boolean; competition: string; categorie: string | null; saison: string | null; date?: string | null; qui: string };
+
+const simple = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\b(19|20)\d{2}\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+/**
+ * Results without a day (history, or typed without date): the date of the same competition in the club calendar,
+ * in the same season, when it can be found (« Open de Frameries » 2026/2027 → the calendar event of that season).
+ */
+export function avecDates<T extends Pick<ResultatP, "competition" | "saison" | "date">>(liste: T[], evs: { nom: string; date: string | null }[]): T[] {
+  const cal = evs.filter((e) => e.date).map((e) => ({ n: simple(e.nom), d: e.date!.slice(0, 10), s: saisonDe(e.date!.slice(0, 10)) }));
+  if (!cal.length) return liste;
+  return liste.map((r) => {
+    if (r.date || !r.saison) return r;
+    const c = simple(r.competition);
+    if (c.length < 4) return r;
+    const ev = cal.find((e) => e.s === r.saison && (e.n === c || e.n.includes(c) || c.includes(e.n)));
+    return ev ? { ...r, date: ev.d } : r;
+  });
+}
