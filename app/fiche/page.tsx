@@ -8,6 +8,9 @@ import { lireEvenementsLies, lireHistoriques } from "@/lib/cagnotte-db";
 import { listeDef } from "@/lib/classements-types";
 import { MesClassements } from "@/components/club/Classements";
 import { lireExtraits } from "@/lib/classements-lire";
+import { essayer, lirePalmares } from "@/lib/club";
+import { libelleRang, sansTirets, triResultats } from "@/lib/palmares-types";
+import { PalmaresJoueur } from "@/components/Palmares";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +28,14 @@ export default async function FichePage() {
   if (res.error) res = await lire(COLS + ",photo_path,classement_belge,classement_international,palmares");
   if (res.error) res = await lire(COLS + ",photo_path");
   if (res.error) res = await lire(COLS);
-  const fiches = ((res.data || []) as unknown) as Fiche[];
+  const fiches0 = ((res.data || []) as unknown) as Fiche[];
+  // Palmarès (Notion « Palmarès du club »): the card's scrolling band shows the titles and finals.
+  const palma = (await essayer(lirePalmares)).data || [];
+  const sesResultats = (id: string) => palma.filter((r) => r.joueurs.includes(sansTirets(id))).sort(triResultats);
+  const fiches = fiches0.map((f) => {
+    const forts = sesResultats(f.notion_id).filter((r) => r.statut === "Validé" && (r.rang === "Vainqueur" || r.rang === "Finaliste"));
+    return forts.length ? { ...f, palmares: forts.slice(0, 12).map((r) => `${libelleRang(r)} ${r.competition}${r.categorie ? ` (${r.categorie})` : ""} ${r.saison || ""}`.trim()).join("\n") } : f;
+  });
   const famille = fiches.length > 1;
   const synced = fiches.map((f) => f.synced_at).filter(Boolean).sort().pop();
 
@@ -85,6 +95,13 @@ export default async function FichePage() {
                 ic: f.titulaire || !famille ? "🦁" : "🐾",
                 badge: f.categorie || null,
                 contenu: <CarteJoueur f={f} famille={famille} photoUrl={f.photo_path ? urls.get(f.photo_path) || null : null} places={aClassements ? places[i] : undefined} cag={cags[i]} />,
+              },
+              {
+                id: `pa-${f.notion_id.slice(0, 8)}`,
+                titre: famille ? `Palmarès · ${f.prenom || f.nom}` : "Mon palmarès",
+                ic: "🏅",
+                badge: sesResultats(f.notion_id).filter((r) => r.statut === "Validé" && r.rang === "Vainqueur").length || null,
+                contenu: <PalmaresJoueur resultats={sesResultats(f.notion_id)} />,
               },
               {
                 id: `cl-${f.notion_id.slice(0, 8)}`,
