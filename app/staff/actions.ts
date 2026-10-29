@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getSessionProfil } from "@/lib/profil";
-import { creerEvenement, creerFiche, creerTache, lireCalendrier, majEvenement, modifierTache, TAGS } from "@/lib/club";
+import { creerEvenement, creerFiche, creerTache, lireCalendrier, majEvenement, majObjectif, modifierTache, TAGS } from "@/lib/club";
 import { COMPETITIONS_EV, DECISIONS, DEPLACEMENTS, PRIORITES_EV, TYPES_EV, type EvSaisie } from "@/lib/evenements-types";
 import { PRIORITES } from "@/lib/club-types";
 
@@ -135,8 +135,12 @@ export async function enregistrerEvenement(fd: FormData): Promise<Retour & { id?
       const avant = (await lireCalendrier()).find((x) => x.id === id);
       await majEvenement(id, e, Boolean(avant && avant.nom === e.nom));
     } else pageId = await creerEvenement(e);
-    // A competition the club goes to gets its logistics sheet (once).
-    if (fd.get("fiche") === "on" && pageId) await creerFiche(pageId, e.nom).catch(() => null);
+    // A competition the club goes to gets its logistics sheet (once). The players' target is kept on it.
+    const objTxt = v("objectif", 3);
+    const objectif = objTxt ? Math.max(1, Math.min(99, Math.round(Number(objTxt)) || 0)) || null : null;
+    let ficheId = v("ficheId", 60) || null;
+    if (!ficheId && pageId && (fd.get("fiche") === "on" || objectif)) ficheId = await creerFiche(pageId, e.nom).catch(() => null);
+    if (ficheId && (objectif || fd.get("objectifAvant"))) await majObjectif(ficheId, objectif).catch(() => null);
     Object.values(TAGS).forEach((t) => revalidateTag(t));
     revalidatePath("/", "layout");
     return { ok: true, id: pageId, message: id ? `✓ « ${e.nom} » mis à jour dans Notion.` : `✓ « ${e.nom} » ajouté au calendrier (Notion).` };
