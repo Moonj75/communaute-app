@@ -766,9 +766,12 @@ function versResultat(pg: Page): ResultatP {
     cree: pg.created_time,
   };
 }
-/** Every result of the club (validated and proposed); 5 minutes in cache, refreshed at once after a change. */
+/**
+ * Every result of the club (validated and proposed). The palmarès only changes after a competition or an end-of-season
+ * standing: kept 7 days, refreshed at once after any change made in the app (or « Mettre à jour depuis Notion »).
+ */
 export async function lirePalmares(frais = false): Promise<ResultatP[]> {
-  const pages = await toutLire(DS.palmares, frais ? 0 : 300, TAGS.palmares);
+  const pages = await toutLire(DS.palmares, frais ? 0 : 7 * 24 * 3600, TAGS.palmares);
   return pages.map(versResultat);
 }
 /** A new result in the Notion « Palmarès du club ». Returns the page id. */

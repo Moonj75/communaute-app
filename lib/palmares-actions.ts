@@ -134,3 +134,11 @@ export async function importerHistorique(): Promise<RetourP> {
   const reste = liste.length - lot.length;
   return { ok: true, message: reste ? `${lot.length} résultats importés, encore ${reste}…` : "Historique complet ✓", reste };
 }
+
+/** « Mettre à jour depuis Notion »: after a change made directly in Notion (otherwise read again every hour). */
+export async function rafraichirPalmares(): Promise<RetourP> {
+  const q = await qui();
+  if (!q?.responsable) return { ok: false, message: "Réservé au responsable palmarès et au staff." };
+  fini();
+  return { ok: true, message: "À jour avec Notion ✓" };
+}
