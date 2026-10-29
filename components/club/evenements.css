@@ -1,0 +1,20 @@
+/* Staff : créer / compléter un évènement du calendrier. */
+.ee { display: flex; flex-direction: column; gap: 12px; }
+.ee-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ee-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ee-2 > *, .ee-3 > * { min-width: 0; }
+.ee-2 .input, .ee-3 .input { width: 100%; min-width: 0; box-sizing: border-box; }
+.ee-choix { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.ee-choix button { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-weight: 700; font-size: 13px; cursor: pointer; }
+.ee-choix button.on { box-shadow: inset 0 0 0 2px #00e5ff; border-color: transparent; }
+.ee-dates { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: var(--sunk); }
+.ee-dates-t { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }
+.ee-coche { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.ee-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.ee-manque { display: block; margin: 0; font-size: 12.5px; font-weight: 700; color: #8a5a00; background: #fff4bf; border-radius: 8px; padding: 4px 8px; }
+.ee-ok { font-size: 12.5px; font-weight: 700; color: #3b7d00; }
+.ee-ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--sunk); }
+.ee-ligne.incomplet { box-shadow: inset 4px 0 0 #ffb84d; }
+.ee-l-t { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ee-l-t small { color: var(--muted); }
+.ee-liste { display: flex; flex-direction: column; gap: 6px; }
