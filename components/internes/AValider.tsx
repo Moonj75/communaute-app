@@ -1,100 +1,69 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import type { AValider as Item, Proposition } from "@/lib/internes";
+import { useState } from "react";
+import type { AValider as Item } from "@/lib/internes";
 import { validerMatch } from "@/app/internes/actions";
-
-type Choix = { item: Item; a: number; b: number; v: string | null };
+import FeuilleScore from "./FeuilleScore";
 
 /**
- * Validators: the scores typed by the players and not validated yet. One tap on a score, a confirmation,
- * and the match counts in the standings. A validator never validates his own match.
+ * Validators: the scores typed by the players and not validated yet, one card per match.
+ * A tap opens the score sheet with the players' scores ready: one more tap and it counts in the standings.
  */
-export default function AValider({ items, miens, saisie: modeSaisie = false }: { items: Item[]; miens: string[]; /** « Saisir un score »: every match with no score yet. */ saisie?: boolean }) {
+export default function AValider({ items }: { items: Item[]; miens?: string[] }) {
   const router = useRouter();
-  const [choix, setChoix] = useState<Choix | null>(null);
-  const [autre, setAutre] = useState<Record<string, { a: string; b: string }>>({});
+  const [ouvert, setOuvert] = useState<Item | null>(null);
   const [info, setInfo] = useState<{ ok: boolean; message: string } | null>(null);
   const [faits, setFaits] = useState<string[]>([]);
-  const [pending, start] = useTransition();
-
   const [q, setQ] = useState("");
   const t = q.trim().toLowerCase();
   const liste = items.filter((x) => !faits.includes(x.match.id) && (!t || `${x.a.nom} ${x.b.nom} ${x.groupe}`.toLowerCase().includes(t)));
-  const confirmer = () =>
-    start(async () => {
-      if (!choix) return;
-      if (choix.item.ko && choix.a === choix.b && !choix.v) { setInfo({ ok: false, message: "Match nul : choisis qui passe." }); return; }
-      const r = await validerMatch(choix.item.match.id, choix.a, choix.b, choix.item.ko && choix.a === choix.b ? choix.v : null);
-      setInfo(r);
-      if (r.ok) { setFaits((f) => [...f, choix.item.match.id]); setChoix(null); router.refresh(); }
-    });
+  const prenom = (n: string) => n.split(" ")[0];
 
-  if (!liste.length && !t) return <div className="av-vide"><span aria-hidden="true">✅</span><b>{modeSaisie ? "Tous les matchs ont un score" : "Aucun score à valider"}</b><small>{modeSaisie ? "Les matchs de l'étape en cours apparaîtront ici." : "Tout est à jour. Les nouveaux scores mis par les joueurs apparaîtront ici."}</small>{info?.ok ? <p className="notice ok">{info.message}</p> : null}</div>;
+  if (!liste.length && !t) return <div className="av-vide"><span aria-hidden="true">✅</span><b>Aucun score à valider</b><small>Tout est à jour. Pour mettre un score toi-même, touche la case du match dans le tableau du championnat ou de la coupe.</small>{info?.ok ? <p className="notice ok">{info.message}</p> : null}</div>;
 
   return (
-    <div className="av">
-      <p className="muted small">{modeSaisie ? "Tous les matchs de l'étape en cours sans score. Mets le score : une confirmation est demandée, puis il compte aussitôt dans le classement." : "Scores mis par les joueurs, en attente. Choisis le bon score : une confirmation est toujours demandée avant de valider."}</p>
+    <div className="av av2">
+      <p className="muted small">Scores mis par les joueurs. Touche un match pour le valider (ou corriger le score).</p>
       {items.length > 6 ? <input className="input" type="search" placeholder="🔎 Chercher un joueur…" value={q} onChange={(e) => setQ(e.target.value)} /> : null}
-      {info && !choix ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
-      <ul className="av-l">
+      {info && !ouvert ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
+      <ul className="av2-l">
         {liste.map((it) => {
           const { match: m, a, b } = it;
-          const moi = false; // validators may now validate every match, their own included
-          void miens;
-          const props = [m.prop_a ? { qui: a, p: m.prop_a } : null, m.prop_b ? { qui: b, p: m.prop_b } : null].filter(Boolean) as { qui: { id: string; nom: string }; p: Proposition }[];
-          const saisie = autre[m.id] || { a: "", b: "" };
+          const p = m.prop_a || m.prop_b;
           return (
-            <li key={m.id} className={`av-c${it.desaccord ? " desac" : ""}${moi ? " moi" : ""}`}>
-              <p className="av-ou">{it.compet} · {it.etape}{it.groupe ? ` · ${it.groupe}` : ""}</p>
-              <p className="av-duel"><b>{a.nom}</b><i>contre</i><b>{b.nom}</b></p>
-              {props.length ? <p className={`av-etat${it.desaccord ? " desac" : ""}`}>{it.desaccord ? "⚠️ Les deux joueurs ont mis des scores différents" : "⏳ Un joueur a mis le score, l'autre n'a pas encore confirmé"}</p> : null}
-              {moi ? <p className="av-moi">🙅 C&apos;est ton match : un autre valideur doit le valider.</p> : (
-                <div className="av-props">
-                  {props.map(({ qui, p }) => (
-                    <button key={qui.id} type="button" className="av-prop" onClick={() => { setInfo(null); setChoix({ item: it, a: p.a, b: p.b, v: p.v }); }}>
-                      <small>Score mis par {qui.nom.split(" ")[0]}</small>
-                      <span><b className="num">{p.a}–{p.b}</b>{p.v ? <em> · {p.v === a.id ? a.nom.split(" ")[0] : b.nom.split(" ")[0]} passe</em> : null}</span>
-                      <strong>Valider ce score</strong>
-                    </button>
-                  ))}
-                  <span className="av-autre">
-                    <small>{props.length ? "Autre score" : "Score du match"}</small>
-                    <span className="ig-champs">
-                      <input inputMode="numeric" aria-label={`Buts de ${a.nom}`} value={saisie.a} onChange={(e) => setAutre((x) => ({ ...x, [m.id]: { ...saisie, a: e.target.value.replace(/\D/g, "").slice(0, 2) } }))} />
-                      <b>–</b>
-                      <input inputMode="numeric" aria-label={`Buts de ${b.nom}`} value={saisie.b} onChange={(e) => setAutre((x) => ({ ...x, [m.id]: { ...saisie, b: e.target.value.replace(/\D/g, "").slice(0, 2) } }))} />
-                    </span>
-                    <button type="button" className="btn" disabled={saisie.a === "" || saisie.b === ""} onClick={() => { setInfo(null); setChoix({ item: it, a: Number(saisie.a), b: Number(saisie.b), v: null }); }}>Valider</button>
-                  </span>
-                </div>
-              )}
+            <li key={m.id}>
+              <button type="button" className={`av2-c${it.desaccord ? " desac" : ""}`} onClick={() => { setInfo(null); setOuvert(it); }}>
+                <span className="av2-ou">{it.compet} · {it.etape}{it.groupe ? ` · ${it.groupe}` : ""}</span>
+                <span className="av2-duel">
+                  <b>{a.nom}</b>
+                  <span className="av2-s num">{it.desaccord ? "?" : p ? `${p.a}–${p.b}` : "–"}</span>
+                  <b>{b.nom}</b>
+                </span>
+                <span className="av2-etat">{it.desaccord ? "⚠️ Scores différents" : `⏳ Mis par ${prenom(m.prop_a ? a.nom : b.nom)}, en attente`}<em>Valider ›</em></span>
+              </button>
             </li>
           );
         })}
       </ul>
-
-      {choix ? (
-        <div className="ig-fond" onClick={() => !pending && setChoix(null)}>
-          <div className="ig-saisie av-conf" role="dialog" aria-label="Confirmer la validation" onClick={(e) => e.stopPropagation()}>
-            <p className="ig-qui">Confirmer la validation</p>
-            <p className="av-conf-s"><b>{choix.item.a.nom}</b><span className="num">{choix.a}–{choix.b}</span><b>{choix.item.b.nom}</b></p>
-            {choix.item.ko && choix.a === choix.b ? (
-              <select className="input" value={choix.v || ""} onChange={(e) => setChoix({ ...choix, v: e.target.value || null })} aria-label="Qui passe ?">
-                <option value="">Match nul : qui passe ?</option>
-                <option value={choix.item.a.id}>{choix.item.a.nom}</option>
-                <option value={choix.item.b.id}>{choix.item.b.nom}</option>
-              </select>
-            ) : null}
-            <p className="muted small">Ce score comptera aussitôt dans le classement. Les deux joueurs seront prévenus.</p>
-            <span className="ig-btns">
-              <button type="button" className="btn primary" disabled={pending} onClick={confirmer}>{pending ? "…" : "✓ Oui, valider"}</button>
-              <button type="button" className="btn" disabled={pending} onClick={() => setChoix(null)}>Annuler</button>
-            </span>
-            {info && !info.ok ? <p className="notice err">{info.message}</p> : null}
-          </div>
-        </div>
+      {ouvert ? (
+        <FeuilleScore
+          titre="Valider le score"
+          ou={`${ouvert.compet} · ${ouvert.etape}${ouvert.groupe ? ` · ${ouvert.groupe}` : ""}`}
+          gauche={{ id: ouvert.a.id, nom: ouvert.a.nom }}
+          droite={{ id: ouvert.b.id, nom: ouvert.b.nom }}
+          init={{ a: (ouvert.match.prop_a || ouvert.match.prop_b)?.a ?? 0, b: (ouvert.match.prop_a || ouvert.match.prop_b)?.b ?? 0, v: (ouvert.match.prop_a || ouvert.match.prop_b)?.v ?? null }}
+          propositions={[ouvert.match.prop_a ? { auteur: prenom(ouvert.a.nom), ...ouvert.match.prop_a } : null, ouvert.match.prop_b ? { auteur: prenom(ouvert.b.nom), ...ouvert.match.prop_b } : null].filter((x): x is NonNullable<typeof x> => Boolean(x))}
+          ko={ouvert.ko ? "passe" : null}
+          note="Le score compte aussitôt dans le classement. Les deux joueurs sont prévenus."
+          enregistrer={async (x, y, v) => {
+            const r = await validerMatch(ouvert.match.id, x, y, v);
+            setInfo(r);
+            if (r.ok) { setFaits((f) => [...f, ouvert.match.id]); router.refresh(); }
+            return r;
+          }}
+          fermer={() => setOuvert(null)}
+        />
       ) : null}
     </div>
   );

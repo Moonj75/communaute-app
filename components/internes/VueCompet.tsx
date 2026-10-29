@@ -11,8 +11,8 @@ import Barrage from "./Barrage";
  * One club competition: its stages (chips), and for the chosen stage each group with its standings
  * and its cross table of matches — or the knockout table. Same view for players (read only) and staff (scores).
  */
-export default function VueCompet({ c, groupes, matchs, etape, editable = false, moi = [], lien, titre }: {
-  c: Competition; groupes: Groupe[]; matchs: Match[]; etape?: number; editable?: boolean; moi?: string[];
+export default function VueCompet({ c, groupes, matchs, etape, editable = false, valideur = false, moi = [], lien, titre }: {
+  c: Competition; groupes: Groupe[]; matchs: Match[]; etape?: number; editable?: boolean; /** Validator: scores typed right in the tables, counted at once. */ valideur?: boolean; moi?: string[];
   /** Address of a stage (for the chips). */
   lien: (k: number) => string;
   /** Name of the competition, shown small in the fixed band. */
@@ -63,13 +63,13 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
       {!gs.length ? unique(<p className="vide">Cette étape n&apos;a pas encore commencé.</p>, e?.nom || "", "") : e?.format === "barrage" ? unique(
         <section className="panel ci-g ci-barrage">
           <div className="hd"><h2>⚔️ {e.nom}</h2><span className="muted small">{ms.filter((m) => m.joue).length} joué{ms.filter((m) => m.joue).length > 1 ? "s" : ""} sur {ms.length} barrage{ms.length > 1 ? "s" : ""}</span></div>
-          <div className="bd"><Barrage blocs={blocsBarrage} editable={editable && c.statut === "en_cours" && k === c.etape} moi={moi} nomHaut={nomHaut} nomBas={nomBas} /></div>
+          <div className="bd"><Barrage blocs={blocsBarrage} editable={editable && c.statut === "en_cours" && k === c.etape} valideur={valideur} ou={`${c.nom} · ${e.nom}`} moi={moi} nomHaut={nomHaut} nomBas={nomBas} /></div>
         </section>, e.nom, `${ms.filter((m) => m.joue).length}/${ms.length} barrages joués`,
       ) : e?.format === "elimination" ? unique(
         gs.map((g, gi) => (
           <section key={g.id} className={`panel ci-g${gs.length > 1 ? (gi === 0 ? " niv-haut" : gi === gs.length - 1 ? " niv-bas" : "") : ""}`}>
             {gs.length > 1 ? <div className="hd"><h2>{g.nom}</h2><span className="muted small">{g.joueurs.length} joueurs</span></div> : null}
-            <div className="bd"><TableauFinal joueurs={g.joueurs} matchs={ms.filter((m) => m.groupe_id === g.id)} editable={editable && c.statut === "en_cours"} moi={moi} /></div>
+            <div className="bd"><TableauFinal joueurs={g.joueurs} matchs={ms.filter((m) => m.groupe_id === g.id)} editable={editable && c.statut === "en_cours"} valideur={valideur} ou={`${c.nom} · ${e.nom}${gs.length > 1 ? ` · ${g.nom}` : ""}`} moi={moi} /></div>
           </section>
         )), e.nom, `${gs.length} tableau${gs.length > 1 ? "x" : ""}`,
       ) : (
@@ -138,7 +138,7 @@ export default function VueCompet({ c, groupes, matchs, etape, editable = false,
                 {monte && commence ? <p className="ci-leg"><span className="ci-leg-1">👑 1er</span><span className="ci-leg-h" title={e?.passage === "qualifies" ? undefined : avantBarrage ? `Montent directement en ${legHaut}` : `Vont en ${legHaut}`}>{e?.passage === "qualifies" ? `Accès ${suivante?.nom || "étape suivante"}` : `Accès ${legHaut}`}</span>{avantBarrage && finBarrage > monte ? <span className="ci-leg-b" title={`Match de barrage : le gagnant va en ${legHaut}, le perdant en ${legBas}`}>Barrage</span> : null}{zoneBas ? <span className="ci-leg-d" title={`Vont en ${legBas}`}>Accès {legBas}</span> : null}<span><b className="ci-up">▲</b>/<b className="ci-down">▼</b> places au dernier match</span></p> : null}
                 </div>
                 <div className="ci-duo-mx">
-                                <Grille joueurs={g.joueurs} matchs={mg} editable={editable && c.statut === "en_cours" && k === c.etape} moi={moi} />
+                                <Grille joueurs={g.joueurs} matchs={mg} editable={editable && c.statut === "en_cours" && k === c.etape} valideur={valideur} ou={`${c.nom} · ${e?.nom || ""} · ${g.nom}`} moi={moi} />
                 </div>
               </div>
             </section>

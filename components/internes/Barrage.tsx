@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { etatSaisie, gagnant, type Match } from "@/lib/internes";
 import { saisirScore } from "@/app/staff/internes/actions";
+import { validerMatch } from "@/app/internes/actions";
+import FeuilleScore from "./FeuilleScore";
 
 type J = { id: string; nom: string; rang: number };
 export type BlocBarrage = { nom: string; haut: J[]; seul: J | null; duels: { x: J; y: J; match: Match | null }[]; bas: J[] };
@@ -12,31 +14,23 @@ export type BlocBarrage = { nom: string; haut: J[]; seul: J | null; duels: { x: 
  * Play-off stage: for each group of the stage before, who goes straight up, the play-off matches
  * (the winner goes up, the loser goes down) and who goes straight down. The staff types the scores here.
  */
-export default function Barrage({ blocs, editable = false, moi = [], nomHaut, nomBas }: { blocs: BlocBarrage[]; editable?: boolean; moi?: string[]; nomHaut: string; nomBas: string }) {
+export default function Barrage({ blocs, editable = false, valideur = false, ou, moi = [], nomHaut, nomBas }: { blocs: BlocBarrage[]; editable?: boolean; valideur?: boolean; ou?: string; moi?: string[]; nomHaut: string; nomBas: string }) {
   const router = useRouter();
   const [ouvert, setOuvert] = useState<{ m: Match; x: J; y: J } | null>(null);
-  const [sx, setSx] = useState("");
-  const [sy, setSy] = useState("");
-  const [qui, setQui] = useState<string | null>(null);
   const [info, setInfo] = useState<{ ok: boolean; message: string } | null>(null);
-  const [pending, start] = useTransition();
 
   // Scores read from the side of x (the better placed one).
   const buts = (m: Match, x: string) => (m.a === x ? [m.buts_a, m.buts_b] : [m.buts_b, m.buts_a]) as [number | null, number | null];
-  const ouvrir = (m: Match, x: J, y: J) => {
-    const [a, b] = buts(m, x.id);
-    setOuvert({ m, x, y }); setSx(a == null ? "" : String(a)); setSy(b == null ? "" : String(b)); setQui(m.vainqueur); setInfo(null);
+  const ouvrir = (m: Match, x: J, y: J) => { setOuvert({ m, x, y }); setInfo(null); };
+  const enregistrer = async (gx: number | null, gy: number | null, v: string | null) => {
+    if (!ouvert) return { ok: false, message: "" };
+    const { m, x } = ouvert;
+    const [ba, bb] = m.a === x.id ? [gx, gy] : [gy, gx];
+    const r = valideur ? await validerMatch(m.id, ba!, bb!, v) : await saisirScore(m.id, ba, bb, v);
+    setInfo(r);
+    if (r.ok) router.refresh();
+    return r;
   };
-  const valider = () =>
-    start(async () => {
-      if (!ouvert) return;
-      if (sx === "" || sy === "") { setInfo({ ok: false, message: "Entre les deux scores." }); return; }
-      const { m, x } = ouvert;
-      const [ba, bb] = m.a === x.id ? [Number(sx), Number(sy)] : [Number(sy), Number(sx)];
-      const r = await saisirScore(m.id, ba, bb, sx === sy ? qui : null);
-      setInfo(r);
-      if (r.ok) { setOuvert(null); router.refresh(); }
-    });
 
   const puce = (j: J, sens: "h" | "b") => (
     <li key={j.id} className={`br-p ${sens}${moi.includes(j.id) ? " moi" : ""}`}><span className="br-r num">{j.rang}</span>{j.nom}</li>
@@ -76,7 +70,7 @@ export default function Barrage({ blocs, editable = false, moi = [], nomHaut, no
                       {m?.joue && a === c && w ? <small className="br-tab">{(w === x.id ? x : y).nom.split(" ")[0]} passe</small> : null}
                     </span>
                     {joueur(y, w, true)}
-                    {editable && m ? <button type="button" className="br-edit" onClick={() => ouvrir(m, x, y)}>{m.joue ? "✎ Corriger" : "⚽ Mettre le score"}</button> : null}
+                    {editable && m && (!valideur || !m.joue) ? <button type="button" className="br-edit" onClick={() => ouvrir(m, x, y)}>{m.joue ? "✎ Corriger" : "⚽ Mettre le score"}</button> : null}
                   </div>
                 );
               })}
@@ -91,34 +85,20 @@ export default function Barrage({ blocs, editable = false, moi = [], nomHaut, no
         </section>
       ))}
       {info && !ouvert ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
-      {ouvert ? (
-        <div className="ig-fond" onClick={() => setOuvert(null)}>
-          <div className="ig-saisie" role="dialog" aria-label="Score du barrage" onClick={(e) => e.stopPropagation()}>
-            <p className="ig-qui">Score du barrage</p>
-            <div className="ig-duel">
-              <span className="ig-j">{ouvert.x.nom}</span>
-              <span className="ig-champs">
-                <input inputMode="numeric" aria-label={`Buts de ${ouvert.x.nom}`} value={sx} onChange={(e) => setSx(e.target.value.replace(/\D/g, "").slice(0, 2))} autoFocus />
-                <b>–</b>
-                <input inputMode="numeric" aria-label={`Buts de ${ouvert.y.nom}`} value={sy} onChange={(e) => setSy(e.target.value.replace(/\D/g, "").slice(0, 2))} onKeyDown={(e) => e.key === "Enter" && valider()} />
-              </span>
-              <span className="ig-j">{ouvert.y.nom}</span>
-            </div>
-            {sx !== "" && sx === sy ? (
-              <select className="input" value={qui || ""} onChange={(e) => setQui(e.target.value || null)} aria-label="Qui monte ?">
-                <option value="">Match nul : qui monte ? (prolongations / tirs)</option>
-                <option value={ouvert.x.id}>{ouvert.x.nom}</option>
-                <option value={ouvert.y.id}>{ouvert.y.nom}</option>
-              </select>
-            ) : null}
-            <span className="ig-btns">
-              <button type="button" className="btn primary" disabled={pending} onClick={valider}>{pending ? "…" : "✓ Valider"}</button>
-              <button type="button" className="btn" onClick={() => setOuvert(null)}>Annuler</button>
-            </span>
-            {info && !info.ok ? <p className="notice err">{info.message}</p> : null}
-          </div>
-        </div>
-      ) : null}
+      {ouvert ? (() => {
+        const { m, x, y } = ouvert;
+        const [a, c] = buts(m, x.id);
+        const props = [m.prop_a ? { qui: m.a, p: m.prop_a } : null, m.prop_b ? { qui: m.b, p: m.prop_b } : null].filter((z): z is { qui: string | null; p: NonNullable<Match["prop_a"]> } => Boolean(z)).map(({ qui, p }) => {
+          const [pa, pb] = m.a === x.id ? [p.a, p.b] : [p.b, p.a];
+          return { auteur: ((qui === x.id ? x : y).nom || "?").split(" ")[0], a: pa, b: pb, v: p.v };
+        });
+        return (
+          <FeuilleScore titre="Score du barrage" ou={ou} gauche={{ id: x.id, nom: x.nom, n: `${x.rang}e` }} droite={{ id: y.id, nom: y.nom, n: `${y.rang}e` }}
+            init={{ a: a ?? props[0]?.a ?? 0, b: c ?? props[0]?.b ?? 0, v: m.vainqueur }} propositions={props} ko="monte"
+            note={valideur ? "Le score compte aussitôt. Les deux joueurs sont prévenus." : undefined}
+            enregistrer={enregistrer} fermer={() => setOuvert(null)} />
+        );
+      })() : null}
     </div>
   );
 }

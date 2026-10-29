@@ -1,16 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { etatSaisie, type JoueurCompet, type Match } from "@/lib/internes";
 import { saisirScore } from "@/app/staff/internes/actions";
+import { validerMatch } from "@/app/internes/actions";
+import FeuilleScore from "./FeuilleScore";
 
 /**
  * Cross table of a group: each player in a row and in a column; the half below the diagonal is barred,
  * each match is in the half above (score read from the row player's side). The staff types the score
  * right in the cell; the standings are updated at once.
  */
-export default function Grille({ joueurs, matchs, editable = false, moi = [] }: { joueurs: JoueurCompet[]; matchs: Match[]; editable?: boolean; moi?: string[] }) {
+export default function Grille({ joueurs, matchs, editable = false, valideur = false, ou, moi = [] }: { joueurs: JoueurCompet[]; matchs: Match[]; editable?: boolean; /** Validator (not staff): types the score of the matches not played yet, it counts at once. */ valideur?: boolean; /** Competition · stage · group, shown on the score sheet. */ ou?: string; moi?: string[] }) {
   const router = useRouter();
   const [ouvert, setOuvert] = useState<string | null>(null);
   /** The match chosen (tap) or under the mouse: its two players and its box light up. */
@@ -35,31 +37,25 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
   const colVisee = (id: string) => Boolean(vise && vise.c === id);
   const iR = vise ? joueurs.findIndex((j) => j.id === vise.r) : -1;
   const iC = vise ? joueurs.findIndex((j) => j.id === vise.c) : -1;
-  const [x, setX] = useState("");
-  const [y, setY] = useState("");
   const [info, setInfo] = useState<{ ok: boolean; message: string } | null>(null);
-  const [pending, start] = useTransition();
 
   const trouver = (i: string, j: string) => matchs.find((m) => (m.a === i && m.b === j) || (m.a === j && m.b === i));
   const vu = (m: Match, ligne: string) => (m.a === ligne ? [m.buts_a, m.buts_b] : [m.buts_b, m.buts_a]) as [number | null, number | null];
 
+  const peut = (m: Match) => editable && (!valideur || !m.joue);
   const ouvrir = (m: Match, ligne: string) => {
-    if (!editable) return;
-    const [a, b] = vu(m, ligne);
+    if (!peut(m)) return;
     setOuvert(`${m.id}|${ligne}`);
-    setX(a == null ? "" : String(a));
-    setY(b == null ? "" : String(b));
     setInfo(null);
   };
-  const valider = (m: Match, ligne: string, effacer = false) =>
-    start(async () => {
-      const gx = effacer ? null : Number(x), gy = effacer ? null : Number(y);
-      if (!effacer && (x === "" || y === "" || Number.isNaN(gx) || Number.isNaN(gy))) { setInfo({ ok: false, message: "Entre les deux scores." }); return; }
-      const [ba, bb] = m.a === ligne ? [gx, gy] : [gy, gx];
-      const r = await saisirScore(m.id, ba, bb);
-      setInfo(r);
-      if (r.ok) { setOuvert(null); router.refresh(); }
-    });
+  /** Saves the score typed on the sheet (read from the row player's side). */
+  const enregistrer = async (m: Match, ligne: string, gx: number | null, gy: number | null) => {
+    const [ba, bb] = m.a === ligne ? [gx, gy] : [gy, gx];
+    const r = valideur ? await validerMatch(m.id, ba!, bb!) : await saisirScore(m.id, ba, bb);
+    setInfo(r);
+    if (r.ok) router.refresh();
+    return r;
+  };
 
   const joues = matchs.filter((m) => m.joue).length;
   // Scores typed by a player and not validated yet (shown under the table).
@@ -133,11 +129,11 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
                   const res = m.joue ? " ok" : es === "desaccord" ? " att desac" : es !== "aucun" ? " att" : "";
                   const cle = `${m.id}|${r.id}`;
                   return (
-                    <td key={c.id} className={`ig-m${res}${editable ? " edit" : ""}${ouvert === cle ? " on" : ""}${vise && vise.r === r.id && vise.c === c.id ? " hl" : ""}${vise && ((i === iR && j > i && j < iC) || (j === iC && i < iR && j > i)) ? " trace" : ""}`}
+                    <td key={c.id} className={`ig-m${res}${peut(m) ? " edit" : ""}${ouvert === cle ? " on" : ""}${vise && vise.r === r.id && vise.c === c.id ? " hl" : ""}${vise && ((i === iR && j > i && j < iC) || (j === iC && i < iR && j > i)) ? " trace" : ""}`}
                       onMouseEnter={() => setSurvol({ r: r.id, c: c.id })}>
                       {ouvert === cle ? <span className="ig-btn"><span className="num">✎</span></span> : (
-                        <button type="button" className="ig-btn" onClick={() => { setSel({ r: r.id, c: c.id }); if (editable) ouvrir(m, r.id); }} aria-label={`${r.nom} contre ${c.nom}`}>
-                          {m.joue ? <span className="num">{a}–{b}</span> : etatSaisie(m) === "desaccord" ? <span className="ig-prop" title="Les deux joueurs ont mis des scores différents">⚠️</span> : etatSaisie(m) !== "aucun" ? <span className="ig-prop" title="Un joueur a mis le score, l'autre doit confirmer">⏳</span> : <span className="ig-pas">{editable ? "+" : "·"}</span>}
+                        <button type="button" className="ig-btn" onClick={() => { setSel({ r: r.id, c: c.id }); ouvrir(m, r.id); }} aria-label={`${r.nom} contre ${c.nom}`}>
+                          {m.joue ? <span className="num">{a}–{b}</span> : etatSaisie(m) === "desaccord" ? <span className="ig-prop" title="Les deux joueurs ont mis des scores différents">⚠️</span> : etatSaisie(m) !== "aucun" ? <span className="ig-prop" title="Un joueur a mis le score, l'autre doit confirmer">⏳</span> : <span className="ig-pas">{peut(m) ? "+" : "·"}</span>}
                         </button>
                       )}
                     </td>
@@ -160,7 +156,7 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
           return (
             <div className="ig-car" aria-label="Scores en attente de validation">
               <button type="button" className="ig-car-f" onClick={() => aller(i - 1)} disabled={attente.length < 2} aria-label="Score en attente précédent">‹</button>
-              <button type="button" className={`ig-att-b${desac ? " desac" : ""}${pointe ? " on" : ""}`} onClick={() => { setSel(cl); if (editable) ouvrir(m, cl.r); }} title={desac ? "Les deux joueurs ont mis des scores différents" : `Mis par ${qui}, l'autre doit confirmer`}>
+              <button type="button" className={`ig-att-b${desac ? " desac" : ""}${pointe ? " on" : ""}`} onClick={() => { setSel(cl); ouvrir(m, cl.r); }} title={desac ? "Les deux joueurs ont mis des scores différents" : `Mis par ${qui}, l'autre doit confirmer`}>
                 {desac ? "⚠️" : "⏳"} {x} <b className="num">{p}</b> {y}
               </button>
               <button type="button" className="ig-car-f" onClick={() => aller(i + 1)} disabled={attente.length < 2} aria-label="Score en attente suivant">›</button>
@@ -170,39 +166,26 @@ export default function Grille({ joueurs, matchs, editable = false, moi = [] }: 
         })() : <span className="ig-att-vide">✓ Aucun score en attente</span>}
       </div>
       {info ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
-      {mo && lui && autre ? (
-        <div className="ig-fond" onClick={() => setOuvert(null)}>
-          <div className="ig-saisie" role="dialog" aria-label="Score du match" onClick={(e) => e.stopPropagation()}>
-            <p className="ig-qui">Score du match</p>
-            <div className="ig-duel">
-              <span className="ig-j">{lui.nom}</span>
-              <span className="ig-champs">
-                <input inputMode="numeric" aria-label={`Buts de ${lui.nom}`} value={x} onChange={(e) => setX(e.target.value.replace(/\D/g, "").slice(0, 2))} autoFocus />
-                <b>–</b>
-                <input inputMode="numeric" aria-label={`Buts de ${autre.nom}`} value={y} onChange={(e) => setY(e.target.value.replace(/\D/g, "").slice(0, 2))} onKeyDown={(e) => e.key === "Enter" && valider(mo, ligne)} />
-              </span>
-              <span className="ig-j">{autre.nom}</span>
-            </div>
-            {/* Scores typed by the players themselves (waiting, or different). */}
-            {[mo.prop_a ? { qui: mo.a, p: mo.prop_a } : null, mo.prop_b ? { qui: mo.b, p: mo.prop_b } : null].filter(Boolean).map((x) => {
-              const auteur = joueurs.find((j) => j.id === x!.qui)?.nom || "?";
-              const [vl, va] = mo.a === ligne ? [x!.p.a, x!.p.b] : [x!.p.b, x!.p.a];
-              return (
-                <p key={x!.qui} className="ig-propo">
-                  <span>Score mis par <b>{auteur}</b> : <b className="num">{vl}–{va}</b></span>
-                  <button type="button" className="btn" onClick={() => { setX(String(vl)); setY(String(va)); }}>Reprendre</button>
-                </p>
-              );
-            })}
-            <span className="ig-btns">
-              <button type="button" className="btn primary" disabled={pending} onClick={() => valider(mo, ligne)}>{pending ? "…" : "✓ Valider"}</button>
-              {mo.joue ? <button type="button" className="btn" disabled={pending} onClick={() => valider(mo, ligne, true)}>🗑️ Effacer</button> : null}
-              <button type="button" className="btn" onClick={() => setOuvert(null)}>Annuler</button>
-            </span>
-            {info && !info.ok ? <p className="notice err">{info.message}</p> : null}
-          </div>
-        </div>
-      ) : null}
+      {mo && lui && autre ? (() => {
+        const [vl, va] = vu(mo, ligne);
+        const props = [mo.prop_a ? { qui: mo.a, p: mo.prop_a } : null, mo.prop_b ? { qui: mo.b, p: mo.prop_b } : null].filter((x): x is { qui: string | null; p: NonNullable<Match["prop_a"]> } => Boolean(x)).map(({ qui, p }) => {
+          const [pa, pb] = mo.a === ligne ? [p.a, p.b] : [p.b, p.a];
+          return { auteur: (joueurs.find((j) => j.id === qui)?.nom || "?").split(" ")[0], a: pa, b: pb };
+        });
+        return (
+          <FeuilleScore
+            ou={ou}
+            gauche={{ id: lui.id, nom: lui.nom, n: joueurs.indexOf(lui) + 1 }}
+            droite={{ id: autre.id, nom: autre.nom, n: joueurs.indexOf(autre) + 1 }}
+            init={{ a: vl ?? props[0]?.a ?? 0, b: va ?? props[0]?.b ?? 0 }}
+            propositions={props}
+            note={valideur ? "Le score compte aussitôt dans le classement. Les deux joueurs sont prévenus." : undefined}
+            enregistrer={(x, y) => enregistrer(mo, ligne, x, y)}
+            effacer={!valideur && mo.joue ? () => enregistrer(mo, ligne, null, null) : undefined}
+            fermer={() => setOuvert(null)}
+          />
+        );
+      })() : null}
     </div>
   );
 }
