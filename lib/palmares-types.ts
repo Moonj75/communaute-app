@@ -120,3 +120,15 @@ export function avecDates<T extends Pick<ResultatP, "competition" | "saison" | "
     return ev ? { ...r, date: ev.d } : r;
   });
 }
+
+/**
+ * Archived players stay in Notion but no longer show in the app: their names are taken off the results,
+ * and a result with nobody left (no other player, no club team) is not shown.
+ */
+export function sansArchives<T extends Pick<ResultatP, "joueurs" | "equipe">>(liste: T[], archives: Iterable<string>): T[] {
+  const a = new Set([...archives].map(sansTirets));
+  if (!a.size) return liste;
+  return liste
+    .map((r) => (r.joueurs.some((j) => a.has(j)) ? { ...r, joueurs: r.joueurs.filter((j) => !a.has(j)) } : r))
+    .filter((r) => r.joueurs.length || r.equipe);
+}
