@@ -1,3 +1,4 @@
+// 🏁 PAGE MES INSCRIPTIONS : ce fichier va dans le dossier « app/inscriptions » (github.com/Moonj75/communaute-app/upload/main/app/inscriptions).
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import VueInscriptions from "@/components/club/VueInscriptions";
@@ -20,7 +21,7 @@ export default async function InscriptionsPage() {
       <Header subtitle="Mes inscriptions" profil={profil} name={displayName(profil, user.email)} apercu={apercu} />
       <main className="wrap">
         {famille.length && !famille.some(competiteur) ? (
-          <div className="notice">Ton statut au club est « sans compétitions officielles » : tu n&apos;as aucun formulaire de compétition à remplir. Tout le reste de l&apos;appli reste ouvert pour toi.</div>
+          <div className="notice">Tu ne joues pas de compétition cette saison (statut « sans compétitions officielles » ou fonction au club sans jouer) : tu n&apos;as aucun formulaire de compétition à remplir. Tout le reste de l&apos;appli reste ouvert pour toi.</div>
         ) : (
           <VueInscriptions evs={cal.data || []} parts={parts.data || []} famille={famille.filter(competiteur)} erreur={cal.erreur || parts.erreur} elig={elig} />
         )}
