@@ -190,7 +190,7 @@ export function PalmaresPages({ resultats, noms, gerer = false, outils, initial 
         {choixSaison}
         {gerer ? <button type="button" title="Mettre à jour depuis Notion" disabled={pending} onClick={() => start(async () => { await rafraichirPalmares(); router.refresh(); })}>🔄</button> : null}
       </div>
-      <Roue key={`${f}-${sz}`} crans={crans} voisins={3}
+      <Roue key={`${f}-${sz}`} crans={crans} voisins={3} auto
         outil={gerer ? (c) => <button type="button" className="pa-x" disabled={pending} title="Retirer ce résultat" onClick={() => { if (window.confirm("Retirer ce résultat ?")) start(async () => { await supprimerResultat(c.id); router.refresh(); }); }}>✕</button> : undefined} />
     </div>
   );
@@ -230,7 +230,7 @@ export function PalmaresAccueil({ exploits, totaux }: { /** Chosen on the server
   return (
     <div className="pa">
       <Victoires m={totaux} sous="du club, toutes saisons" />
-      <Roue crans={exploits} auto voisins={2} />
+      <Roue crans={exploits} auto compact voisins={2} />
       <a className="btn primary pa-ajout" href="/palmares">🏆 Tout le palmarès du club →</a>
     </div>
   );

@@ -134,3 +134,41 @@
 .pk-hv { font-family: var(--font-display); font-style: italic; font-size: 17px; color: #b07c00; }
 .pk-pc.p1 { min-height: 132px; } .pk-pc.p2 { min-height: 112px; } .pk-pc.p3 { min-height: 100px; }
 .pk-pc .pk-av { width: 34px; height: 34px; font-size: 13px; margin: 2px auto; }
+
+/* Fiche: the palmarès band stops on each result, big and lit up in the middle. */
+.fx-palma.bp-avec { height: 70px; }
+.bp { position: relative; flex: 1; min-width: 0; height: 100%; overflow: hidden; cursor: pointer; }
+.bp-piste { position: absolute; top: 0; bottom: 0; left: 0; display: flex; align-items: center; gap: 22px; white-space: nowrap; transition: transform 1s cubic-bezier(.45, .05, .25, 1); will-change: transform; }
+.bp-t { display: inline-flex; align-items: center; gap: 6px; color: rgba(232, 238, 243, .55); font-size: 12px; font-weight: 600; transform: scale(.92); opacity: .6; transition: transform .6s ease, opacity .6s ease, background .6s ease, box-shadow .6s ease; padding: 4px 8px; border-radius: 12px; }
+.bp-t em { font-style: italic; font-weight: 900; text-transform: uppercase; font-size: 11px; color: #9fdcf0; }
+.bp-t.r1 em { color: #ffd54a; } .bp-t.r2 em { color: #e3e9ee; } .bp-t.r3 em { color: #f0b27a; }
+.bp-t.on { transform: scale(1); opacity: 1; color: #fff; font-size: 14.5px; font-weight: 800; padding: 3px 12px 3px 6px; background: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .04)); box-shadow: 0 0 0 2px #00e5ff, 0 0 18px rgba(0, 229, 255, .55), inset 0 1px 0 rgba(255, 255, 255, .35), 0 6px 10px -4px rgba(0, 0, 0, .7); text-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
+.bp-t.on em { font-family: var(--font-display); font-size: 22px; letter-spacing: .02em; }
+.bp-t.on.r1 em { font-size: 26px; text-shadow: 0 2px 0 #5a3d00, 0 0 12px rgba(255, 213, 74, .7); }
+.bp-t.on.r1 .trophee { filter: drop-shadow(0 0 10px rgba(255, 213, 74, .85)); }
+.bp-t.on.r1 { box-shadow: 0 0 0 2px #ffd54a, 0 0 20px rgba(255, 213, 74, .55), inset 0 1px 0 rgba(255, 255, 255, .35), 0 6px 10px -4px rgba(0, 0, 0, .7); }
+@media (prefers-reduced-motion: reduce) { .bp-piste, .bp-t { transition: none; } }
+/* v2: grows, stays, shrinks, then the next one (scale only: the band never jumps). */
+.bp-piste { gap: 30px; }
+.bp-t { transform: scale(.82); transition: transform .65s cubic-bezier(.3, 1.4, .5, 1), opacity .6s ease, background .6s ease, box-shadow .6s ease; }
+.bp-t.on { transform: scale(.9); font-size: 13px; }
+.bp-t.on em { font-size: 17px; }
+.bp-t.on.r1 em { font-size: 19px; }
+.bp-t.gros { transform: scale(1.32); z-index: 2; }
+.bp-t:not(.on) { box-shadow: none; background: none; }
+/* v3: two lines (rank word, then the event), so the result fits the band on a phone. */
+.bp-piste { gap: 18px; }
+.bp-t { white-space: normal; padding: 3px 10px 3px 5px; }
+.bp-c { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
+.bp-x { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 150px; font-size: 11px; }
+.bp-t:not(.on) .bp-x { -webkit-line-clamp: 1; max-width: 110px; }
+.bp-t.on .bp-x { font-size: 11.5px; }
+.bp-t.gros { transform: scale(1.12); }
+.bp-t.on .trophee { width: 40px; height: 40px; }
+.bp-t.on svg.trophee { width: 52px !important; height: 52px !important; transition: width .5s, height .5s; }
+.bp-t svg.trophee { flex: none; }
+.bp-t.on .bp-x { max-width: 165px; }
+.bp-t.on em { font-size: 20px; }
+.bp-t.on.r1 em { font-size: 23px; }
+.fx-palma.bp-avec { height: 80px; }
+.bp-t.gros { transform: scale(1.06); }
