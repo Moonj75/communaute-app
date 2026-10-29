@@ -11,7 +11,7 @@ type Choix = { item: Item; a: number; b: number; v: string | null };
  * Validators: the scores typed by the players and not validated yet. One tap on a score, a confirmation,
  * and the match counts in the standings. A validator never validates his own match.
  */
-export default function AValider({ items, miens }: { items: Item[]; miens: string[] }) {
+export default function AValider({ items, miens, saisie: modeSaisie = false }: { items: Item[]; miens: string[]; /** « Saisir un score »: every match with no score yet. */ saisie?: boolean }) {
   const router = useRouter();
   const [choix, setChoix] = useState<Choix | null>(null);
   const [autre, setAutre] = useState<Record<string, { a: string; b: string }>>({});
@@ -19,7 +19,9 @@ export default function AValider({ items, miens }: { items: Item[]; miens: strin
   const [faits, setFaits] = useState<string[]>([]);
   const [pending, start] = useTransition();
 
-  const liste = items.filter((x) => !faits.includes(x.match.id));
+  const [q, setQ] = useState("");
+  const t = q.trim().toLowerCase();
+  const liste = items.filter((x) => !faits.includes(x.match.id) && (!t || `${x.a.nom} ${x.b.nom} ${x.groupe}`.toLowerCase().includes(t)));
   const confirmer = () =>
     start(async () => {
       if (!choix) return;
@@ -29,23 +31,25 @@ export default function AValider({ items, miens }: { items: Item[]; miens: strin
       if (r.ok) { setFaits((f) => [...f, choix.item.match.id]); setChoix(null); router.refresh(); }
     });
 
-  if (!liste.length) return <div className="av-vide"><span aria-hidden="true">✅</span><b>Aucun score à valider</b><small>Tout est à jour. Les nouveaux scores mis par les joueurs apparaîtront ici.</small>{info?.ok ? <p className="notice ok">{info.message}</p> : null}</div>;
+  if (!liste.length && !t) return <div className="av-vide"><span aria-hidden="true">✅</span><b>{modeSaisie ? "Tous les matchs ont un score" : "Aucun score à valider"}</b><small>{modeSaisie ? "Les matchs de l'étape en cours apparaîtront ici." : "Tout est à jour. Les nouveaux scores mis par les joueurs apparaîtront ici."}</small>{info?.ok ? <p className="notice ok">{info.message}</p> : null}</div>;
 
   return (
     <div className="av">
-      <p className="muted small">Scores mis par les joueurs, en attente. Choisis le bon score : une confirmation est toujours demandée avant de valider. Tu ne peux pas valider un match que tu joues.</p>
+      <p className="muted small">{modeSaisie ? "Tous les matchs de l'étape en cours sans score. Mets le score : une confirmation est demandée, puis il compte aussitôt dans le classement." : "Scores mis par les joueurs, en attente. Choisis le bon score : une confirmation est toujours demandée avant de valider."}</p>
+      {items.length > 6 ? <input className="input" type="search" placeholder="🔎 Chercher un joueur…" value={q} onChange={(e) => setQ(e.target.value)} /> : null}
       {info && !choix ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
       <ul className="av-l">
         {liste.map((it) => {
           const { match: m, a, b } = it;
-          const moi = miens.includes(a.id) || miens.includes(b.id);
+          const moi = false; // validators may now validate every match, their own included
+          void miens;
           const props = [m.prop_a ? { qui: a, p: m.prop_a } : null, m.prop_b ? { qui: b, p: m.prop_b } : null].filter(Boolean) as { qui: { id: string; nom: string }; p: Proposition }[];
           const saisie = autre[m.id] || { a: "", b: "" };
           return (
             <li key={m.id} className={`av-c${it.desaccord ? " desac" : ""}${moi ? " moi" : ""}`}>
               <p className="av-ou">{it.compet} · {it.etape}{it.groupe ? ` · ${it.groupe}` : ""}</p>
               <p className="av-duel"><b>{a.nom}</b><i>contre</i><b>{b.nom}</b></p>
-              <p className={`av-etat${it.desaccord ? " desac" : ""}`}>{it.desaccord ? "⚠️ Les deux joueurs ont mis des scores différents" : "⏳ Un joueur a mis le score, l'autre n'a pas encore confirmé"}</p>
+              {props.length ? <p className={`av-etat${it.desaccord ? " desac" : ""}`}>{it.desaccord ? "⚠️ Les deux joueurs ont mis des scores différents" : "⏳ Un joueur a mis le score, l'autre n'a pas encore confirmé"}</p> : null}
               {moi ? <p className="av-moi">🙅 C&apos;est ton match : un autre valideur doit le valider.</p> : (
                 <div className="av-props">
                   {props.map(({ qui, p }) => (
@@ -56,7 +60,7 @@ export default function AValider({ items, miens }: { items: Item[]; miens: strin
                     </button>
                   ))}
                   <span className="av-autre">
-                    <small>Autre score</small>
+                    <small>{props.length ? "Autre score" : "Score du match"}</small>
                     <span className="ig-champs">
                       <input inputMode="numeric" aria-label={`Buts de ${a.nom}`} value={saisie.a} onChange={(e) => setAutre((x) => ({ ...x, [m.id]: { ...saisie, a: e.target.value.replace(/\D/g, "").slice(0, 2) } }))} />
                       <b>–</b>
