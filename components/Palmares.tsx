@@ -1,0 +1,241 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { CATEGORIES_P, JEUNES, RANGS, cleSaison, compter, icRang, libelleRang, triMedailles, triResultats, type ResultatP } from "@/lib/palmares-types";
+import { ajouterResultat, importerHistorique, supprimerResultat, traiterProposition, type RetourP } from "@/lib/palmares-actions";
+import "./palmares.css";
+
+type Noms = Record<string, string>;
+const quiDe = (r: ResultatP, noms: Noms) => [...r.joueurs.map((j) => noms[j] || "?"), ...(r.equipe ? [r.equipe] : [])].join(", ");
+
+/** One line of result: medal, rank · competition, who (optional) and category, season. */
+function Ligne({ r, noms, montrerQui = true, actions }: { r: ResultatP; noms?: Noms; montrerQui?: boolean; actions?: React.ReactNode }) {
+  return (
+    <li className={`pa-l${r.statut === "À valider" ? " attente" : ""}`}>
+      <span className="pa-md" aria-hidden="true">{icRang(r.rang)}</span>
+      <span className="pa-t">
+        <b>{libelleRang(r)}</b> · {r.competition}
+        <small>{[montrerQui && noms ? quiDe(r, noms) : null, r.categorie, r.parEquipe && !r.equipe ? "par équipe" : null].filter(Boolean).join(" · ")}</small>
+      </span>
+      <span className="pa-s">{r.saison || ""}</span>
+      {actions}
+    </li>
+  );
+}
+
+function Compteurs({ m, total }: { m: ReturnType<typeof compter>; total?: boolean }) {
+  return (
+    <div className="pa-tot">
+      <div><b>{m.or}</b><span>🥇 {total ? "titres" : ""}</span></div>
+      <div><b>{m.argent}</b><span>🥈 {total ? "finales" : ""}</span></div>
+      <div><b>{m.bronze}</b><span>🥉 {total ? "demi-finales" : ""}</span></div>
+      {!total ? <div><b>{m.total}</b><span>résultats</span></div> : null}
+    </div>
+  );
+}
+
+/** Results grouped by season, newest first; the oldest seasons fold away. */
+function ParSaison({ liste, noms, montrerQui, ouvertes = 3, actions }: { liste: ResultatP[]; noms?: Noms; montrerQui?: boolean; ouvertes?: number; actions?: (r: ResultatP) => React.ReactNode }) {
+  const [tout, setTout] = useState(false);
+  const saisons = useMemo(() => {
+    const m = new Map<string, ResultatP[]>();
+    for (const r of [...liste].sort(triResultats)) m.set(r.saison || "Sans date", [...(m.get(r.saison || "Sans date") || []), r]);
+    return [...m.entries()].sort((a, b) => cleSaison(b[0]) - cleSaison(a[0]));
+  }, [liste]);
+  const vues = tout ? saisons : saisons.slice(0, ouvertes);
+  if (!liste.length) return <p className="vide">Pas encore de résultat… le premier arrive ! 💪</p>;
+  return (
+    <div className="pa-saisons">
+      {vues.map(([s, l]) => (
+        <section key={s}>
+          <p className="pa-sz">{s} <small>{l.length} résultat{l.length > 1 ? "s" : ""}</small></p>
+          <ul className="pa-liste">{l.map((r) => <Ligne key={r.id} r={r} noms={noms} montrerQui={montrerQui} actions={actions?.(r)} />)}</ul>
+        </section>
+      ))}
+      {saisons.length > ouvertes ? <button type="button" className="btn pa-plus" onClick={() => setTout((t) => !t)}>{tout ? "Replier" : `Voir les ${saisons.length - ouvertes} saisons précédentes`}</button> : null}
+    </div>
+  );
+}
+
+const FILTRES: { id: string; nom: string; f: (r: ResultatP) => boolean }[] = [
+  { id: "tout", nom: "Tout", f: () => true },
+  { id: "be", nom: "🇧🇪 Belgique", f: (r) => r.type === "Belgique" },
+  { id: "int", nom: "🌍 International", f: (r) => r.type === "International" },
+  { id: "jeunes", nom: "🧒 Jeunes", f: (r) => JEUNES.test(r.categorie || "") },
+  { id: "eq", nom: "👥 Équipes", f: (r) => r.parEquipe || Boolean(r.equipe) },
+  { id: "club", nom: "🦁 Interne", f: (r) => r.type === "Interne" },
+];
+
+/** The club's palmarès: totals, filters, honours board (players and teams), results by season. */
+export function PalmaresClub({ resultats, noms, gerer = false }: { resultats: ResultatP[]; noms: Noms; gerer?: boolean }) {
+  const [f, setF] = useState("tout");
+  const [sz, setSz] = useState("");
+  const valides = resultats.filter((r) => r.statut === "Validé");
+  const filtre = FILTRES.find((x) => x.id === f)!.f;
+  const liste = valides.filter((r) => filtre(r) && (!sz || r.saison === sz));
+  const saisons = [...new Set(valides.map((r) => r.saison).filter((s): s is string => Boolean(s)))].sort((a, b) => cleSaison(b) - cleSaison(a));
+  const honneur = useMemo(() => {
+    const m = new Map<string, ResultatP[]>();
+    for (const r of liste) for (const k of r.joueurs.length ? r.joueurs : r.equipe ? [r.equipe] : []) m.set(k, [...(m.get(k) || []), r]);
+    return [...m.entries()].map(([k, l]) => ({ k, nom: noms[k] || k, m: compter(l) })).filter((x) => x.m.or + x.m.argent + x.m.bronze > 0).sort((a, b) => triMedailles(a.m, b.m)).slice(0, 10);
+  }, [liste, noms]);
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  return (
+    <div className="pa">
+      <Compteurs m={compter(liste)} total />
+      <div className="pa-filtres" role="tablist">
+        {FILTRES.map((x) => <button key={x.id} type="button" role="tab" aria-selected={f === x.id} className={f === x.id ? "on" : undefined} onClick={() => setF(x.id)}>{x.nom}</button>)}
+        <select className="pa-sel" value={sz} onChange={(e) => setSz(e.target.value)} aria-label="Saison">
+          <option value="">Toutes les saisons</option>
+          {saisons.map((s) => <option key={s}>{s}</option>)}
+        </select>
+      </div>
+      <p className="pa-h">🏆 Tableau d&apos;honneur</p>
+      <ol className="pa-hon">
+        {honneur.map((x, i) => (
+          <li key={x.k}><span className="pa-rk">{i + 1}</span><span className="pa-n">{x.nom}</span><span className="pa-m">🥇{x.m.or} 🥈{x.m.argent} 🥉{x.m.bronze}</span></li>
+        ))}
+      </ol>
+      <p className="pa-h">📜 Tous les résultats</p>
+      <ParSaison liste={liste} noms={noms} montrerQui ouvertes={sz ? 1 : 2}
+        actions={gerer ? (r) => <button type="button" className="pa-x" disabled={pending} title="Retirer ce résultat" onClick={() => { if (window.confirm(`Retirer « ${r.titre} » ?`)) start(async () => { await supprimerResultat(r.id); router.refresh(); }); }}>✕</button> : undefined} />
+    </div>
+  );
+}
+
+/** A player's own palmarès (in his fiche). */
+export function PalmaresJoueur({ resultats }: { resultats: ResultatP[] }) {
+  const valides = resultats.filter((r) => r.statut === "Validé");
+  const attente = resultats.filter((r) => r.statut === "À valider");
+  return (
+    <div className="pa">
+      <Compteurs m={compter(valides)} />
+      {attente.length ? <p className="muted small">⏳ {attente.length} résultat{attente.length > 1 ? "s" : ""} en attente de validation.</p> : null}
+      <ParSaison liste={valides} montrerQui={false} />
+      <a className="btn primary pa-ajout" href="/palmares#bloc-ajouter">➕ Ajouter un résultat</a>
+    </div>
+  );
+}
+
+/** Home page block: key figures and the latest exploits, with the way to the full page. */
+export function PalmaresAccueil({ resultats, noms }: { resultats: ResultatP[]; noms: Noms }) {
+  const valides = resultats.filter((r) => r.statut === "Validé");
+  const derniers = [...valides].filter((r) => ["Vainqueur", "Finaliste", "Demi-finaliste"].includes(r.rang)).sort((a, b) => cleSaison(b.saison) - cleSaison(a.saison) || b.cree.localeCompare(a.cree)).slice(0, 5);
+  return (
+    <div className="pa">
+      <Compteurs m={compter(valides)} total />
+      <p className="pa-h">✨ Derniers exploits</p>
+      <ul className="pa-liste">{derniers.map((r) => <Ligne key={r.id} r={r} noms={noms} />)}</ul>
+      <a className="btn primary pa-ajout" href="/palmares">🏆 Tout le palmarès du club →</a>
+    </div>
+  );
+}
+
+/** Form to add a result (validated at once for the people in charge, proposed for the others). */
+export function AjoutResultat({ joueurs, competitions, responsable, moi }: { joueurs: { id: string; nom: string; archive?: boolean }[]; competitions: { nom: string; date: string }[]; responsable: boolean; moi: string[] }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [info, setInfo] = useState<RetourP | null>(null);
+  const [choisis, setChoisis] = useState<string[]>(moi.slice(0, 1));
+  const [equipe, setEquipe] = useState("");
+  const [rang, setRang] = useState("");
+  const [cat, setCat] = useState("");
+  const [compet, setCompet] = useState("");
+  const [date, setDate] = useState("");
+  const [cherche, setCherche] = useState("");
+  const proposes = joueurs.filter((j) => !choisis.includes(j.id) && (!cherche || j.nom.toLowerCase().includes(cherche.toLowerCase()))).slice(0, cherche ? 8 : 0);
+  const envoyer = (fd: FormData) => start(async () => {
+    choisis.forEach((c) => fd.append("joueurs", c));
+    const r = await ajouterResultat(fd);
+    setInfo(r);
+    if (r.ok) { setRang(""); setCompet(""); setDate(""); setChoisis(moi.slice(0, 1)); setEquipe(""); router.refresh(); }
+  });
+  return (
+    <form action={envoyer} className="pa-form">
+      {!responsable ? <p className="muted small">Ton résultat sera vérifié par le responsable palmarès avant d&apos;apparaître.</p> : null}
+      <label className="f">Compétition
+        <input className="input" name="competition" list="pa-compets" required value={compet} placeholder="Ex. Open de Frameries" onChange={(e) => {
+          setCompet(e.target.value);
+          const c = competitions.find((x) => x.nom === e.target.value);
+          if (c) setDate(c.date);
+        }} />
+        <datalist id="pa-compets">{competitions.map((c) => <option key={c.nom + c.date} value={c.nom}>{c.date}</option>)}</datalist>
+      </label>
+      <label className="f">Date <small className="muted">(la saison est calculée toute seule)</small>
+        <input className="input" type="date" name="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </label>
+      <div className="f">Joueur(s)
+        <div className="pa-chips">
+          {choisis.map((id) => <button type="button" key={id} className="pa-chip on" onClick={() => setChoisis((c) => c.filter((x) => x !== id))}>{joueurs.find((j) => j.id === id)?.nom || "?"} ✕</button>)}
+          {["Team A", "Team B"].map((t) => <button type="button" key={t} className={`pa-chip${equipe === t ? " on" : ""}`} onClick={() => setEquipe((e) => (e === t ? "" : t))}>👥 {t}</button>)}
+        </div>
+        <input className="input" placeholder="🔎 Ajouter un joueur…" value={cherche} onChange={(e) => setCherche(e.target.value)} />
+        {proposes.length ? <div className="pa-chips">{proposes.map((j) => <button type="button" key={j.id} className="pa-chip" onClick={() => { setChoisis((c) => [...c, j.id]); setCherche(""); }}>+ {j.nom}{j.archive ? " (ancien)" : ""}</button>)}</div> : null}
+        <input type="hidden" name="equipe" value={equipe} />
+      </div>
+      <div className="f">Catégorie
+        <div className="pa-chips">{CATEGORIES_P.slice(0, 10).map((c) => <button type="button" key={c} className={`pa-chip${cat === c ? " on" : ""}`} onClick={() => setCat((x) => (x === c ? "" : c))}>{c}</button>)}</div>
+        <input type="hidden" name="categorie" value={cat} />
+      </div>
+      <div className="f">Résultat
+        <div className="pa-rangs">{RANGS.map((r) => <button type="button" key={r.id} className={`pa-chip${rang === r.id ? " on" : ""}`} onClick={() => setRang(r.id)}>{r.ic} {r.court}</button>)}</div>
+        <input type="hidden" name="rang" value={rang} />
+        {rang === "Autre place" ? <input className="input" name="place" type="number" min={1} max={999} placeholder="Place obtenue (ex. 9)" required /> : null}
+      </div>
+      <label className="pa-coche"><input type="checkbox" name="parEquipe" /> Résultat par équipe</label>
+      <label className="f">Lien vers les résultats <small className="muted">(facultatif)</small><input className="input" name="lien" type="url" placeholder="https://…" /></label>
+      {info ? <p className={`notice ${info.ok ? "ok" : "err"}`}>{info.message}</p> : null}
+      <button className="btn primary" type="submit" disabled={pending || !rang} style={{ minHeight: 50 }}>{pending ? "Enregistrement…" : responsable ? "✅ Enregistrer dans le palmarès" : "📨 Proposer ce résultat"}</button>
+    </form>
+  );
+}
+
+/** Responsable / staff: the results proposed by the players. */
+export function AValider({ liste, noms }: { liste: ResultatP[]; noms: Noms }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [info, setInfo] = useState<string | null>(null);
+  if (!liste.length) return <p className="vide">Rien à valider pour le moment ✓</p>;
+  return (
+    <div className="pa">
+      {info ? <p className="notice ok">{info}</p> : null}
+      <ul className="pa-liste">
+        {liste.map((r) => (
+          <Ligne key={r.id} r={r} noms={noms} actions={
+            <span className="pa-act">
+              <small>par {r.proposePar || "?"}</small>
+              <button type="button" className="btn primary en-mini" disabled={pending} onClick={() => start(async () => { const x = await traiterProposition(r.id, true); setInfo(x.message); router.refresh(); })}>✅ Valider</button>
+              <button type="button" className="btn en-mini" disabled={pending} onClick={() => start(async () => { const x = await traiterProposition(r.id, false); setInfo(x.message); router.refresh(); })}>✕ Refuser</button>
+            </span>
+          } />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Staff, once: imports the history (35 per round, goes on by itself until the end). */
+export function ImportHistorique({ deja }: { deja: number }) {
+  const router = useRouter();
+  const [enCours, setEnCours] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const lancer = async () => {
+    setEnCours(true);
+    for (let i = 0; i < 30; i++) {
+      const r = await importerHistorique().catch((e) => ({ ok: false, message: e instanceof Error ? e.message : "Erreur", reste: 0 }));
+      setMsg(r.message);
+      if (!r.ok || !r.reste) break;
+    }
+    setEnCours(false);
+    router.refresh();
+  };
+  return (
+    <div className="pa">
+      <p className="muted small">Copie dans Notion les 519 résultats du document du palmarès (1990 → 2026/2027). Les résultats déjà présents sont ignorés : tu peux relancer sans risque. {deja ? `${deja} résultats sont déjà dans Notion.` : ""}</p>
+      <button type="button" className="btn primary" disabled={enCours} onClick={lancer}>{enCours ? "Import en cours… garde la page ouverte" : "📥 Importer le palmarès historique"}</button>
+      {msg ? <p className="notice ok">{msg}</p> : null}
+    </div>
+  );
+}

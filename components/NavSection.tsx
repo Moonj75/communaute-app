@@ -30,6 +30,7 @@ const COULEURS: [string, string][] = [
   ["/admin/valideurs", "magenta"],
   ["/admin", "bronze"],
   ["/club/classements", "indigo"],
+  ["/palmares", "or"],
   ["/calendrier", "canard"],
   ["/inscriptions", "orange"],
   ["/fiche", "violet"],

@@ -1,0 +1,38 @@
+/* Palmarès du club : compteurs de médailles, filtres, tableau d'honneur, résultats par saison, ajout. */
+.pa { display: flex; flex-direction: column; gap: 10px; }
+.pa-tot { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; }
+.pa-tot div { background: linear-gradient(135deg, #1d1716, #4a0d0d); border-radius: 14px; padding: 10px 6px; text-align: center; color: #fff; box-shadow: inset 0 -3px 0 #ffd54a; }
+.pa-tot b { display: block; font-family: var(--font-display); font-style: italic; font-size: 26px; line-height: 1; color: #ffd54a; }
+.pa-tot span { font-size: 11.5px; color: #eadfd7; }
+.pa-filtres { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.pa-filtres::-webkit-scrollbar { display: none; }
+.pa-filtres button { flex: none; padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.pa-filtres button.on { box-shadow: inset 0 0 0 2px #00e5ff; border-color: transparent; }
+.pa-sel { flex: none; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-weight: 700; font-size: 13px; }
+.pa-h { margin: 6px 0 0; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.pa-hon { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pa-hon li { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 10px; background: var(--sunk); font-size: 14px; }
+.pa-hon li:nth-child(-n+3) { background: color-mix(in srgb, #ffd54a 16%, var(--sunk)); }
+.pa-rk { font-weight: 900; color: var(--gold-deep, #b8860b); }
+.pa-n { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pa-m { font-size: 12.5px; white-space: nowrap; }
+.pa-saisons { display: flex; flex-direction: column; gap: 8px; }
+.pa-sz { margin: 4px 0 4px; font-weight: 900; font-size: 14px; color: var(--fg); }
+.pa-sz small { font-weight: 600; color: var(--muted); font-size: 12px; }
+.pa-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pa-l { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 10px; background: var(--sunk); font-size: 14px; }
+.pa-l.attente { box-shadow: inset 3px 0 0 #ffb84d; }
+.pa-md { font-size: 20px; text-align: center; }
+.pa-t { min-width: 0; }
+.pa-t small { display: block; font-size: 12px; color: var(--muted); }
+.pa-s { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.pa-x { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; }
+.pa-act { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pa-act small { color: var(--muted); margin-right: auto; }
+.pa-plus, .pa-ajout { align-self: flex-start; }
+.pa-form { display: flex; flex-direction: column; gap: 12px; }
+.pa-chips, .pa-rangs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.pa-chip { padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-weight: 700; font-size: 13px; cursor: pointer; }
+.pa-chip.on { box-shadow: inset 0 0 0 2px #00e5ff; border-color: transparent; }
+.pa-rangs .pa-chip { flex: 1 0 30%; }
+.pa-coche { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }

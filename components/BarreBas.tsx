@@ -15,6 +15,7 @@ const JOUEUR: Item[] = [
   { href: "/calendrier", label: "Calendrier", ic: "calendrier", c: "canard", g: "Compétitions" },
   { href: "/inscriptions", label: "Inscriptions", ic: "drapeau", c: "orange", g: "Compétitions" },
   { href: "/internes", label: "Compétitions du club", ic: "coupe", c: "magenta", g: "Compétitions" },
+  { href: "/palmares", label: "Palmarès", ic: "etoile", desc: "Titres et résultats du club", c: "or", g: "Compétitions" },
   { href: "/club/classements", label: "Classements", ic: "podium", opt: true, desc: "Belges et mondiaux", c: "indigo", g: "Compétitions" },
   // Its own section, alone (no heading): the arrows of the bottom bar never lead into it from another page.
   { href: "/entrainements", label: "Entraînements", ic: "cible", c: "canard" },
