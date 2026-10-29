@@ -8,7 +8,7 @@ import { prochainesCompetitions } from "@/lib/notion";
 import { lireClubs, lireEugies } from "@/lib/classements-lire";
 import { lireInfosPubliques } from "@/lib/club";
 import { salutation } from "@/lib/salut";
-import { cleSaison, compter } from "@/lib/palmares-types";
+import { cleSaison, compter, placeDe, triVitrine, type Exploit } from "@/lib/palmares-types";
 import { essayer, lireCalendrier, lireClassementsClub, lirePalmares, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
 
 export const dynamic = "force-dynamic";
@@ -39,12 +39,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
     lireClubs(supabase),
     essayer(lirePalmares),
   ]);
-  // Palmarès: only the totals and the 5 latest exploits are sent to the phone (not the 500+ results).
-  const valides = (palma.data || []).filter((r) => r.statut === "Validé");
-  const derniersP = valides.filter((r) => ["Vainqueur", "Finaliste", "Demi-finaliste"].includes(r.rang)).sort((a, b) => cleSaison(b.saison) - cleSaison(a.saison) || b.cree.localeCompare(a.cree)).slice(0, 5);
-  const nomsP: Record<string, string> = {};
+  // Palmarès showcase: only the totals and 12 highlights are sent to the phone — the last two seasons first
+  // (victories, then finals, then semi-finals, newest first), completed with the older victories.
+  const valides = (palma.data || []).filter((r) => r.statut === "Validé" && placeDe(r) !== null && (placeDe(r) || 99) <= 3);
   const tousNoms = new Map([...(noms.data || [])].map(([k, v]) => [k.replace(/-/g, ""), v]));
-  for (const r of derniersP) for (const j of r.joueurs) nomsP[j] = tousNoms.get(j) || "?";
+  const derniere = Math.max(0, ...valides.map((r) => cleSaison(r.saison)));
+  const recents = valides.filter((r) => cleSaison(r.saison) >= derniere - 1).sort(triVitrine);
+  const anciens = valides.filter((r) => cleSaison(r.saison) < derniere - 1 && placeDe(r) === 1).sort(triVitrine);
+  const exploits: Exploit[] = [...recents, ...anciens].slice(0, 12).map((r) => ({
+    id: r.id, place: placeDe(r), equipe: r.parEquipe || Boolean(r.equipe), competition: r.competition, categorie: r.categorie, saison: r.saison,
+    qui: [...r.joueurs.map((j) => tousNoms.get(j) || "?"), ...(r.equipe ? [r.equipe] : [])].join(", "),
+  }));
   const next = compets[0];
   const moi = ((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id);
 
@@ -84,7 +89,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
           eug={eug}
           clubsComplet={clubsComplet}
           moi={((fiches || []) as { notion_id: string }[]).map((f) => f.notion_id)}
-          palmares={{ resultats: derniersP, noms: nomsP, totaux: compter(valides) }}
+          palmares={{ exploits, totaux: compter((palma.data || []).filter((r) => r.statut === "Validé")) }}
         />
       </main>
     </>
