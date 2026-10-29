@@ -1,0 +1,90 @@
+/* Palmarès du club: types and pure helpers (server and browser). One row = one result of a player or a club team. */
+
+/** Notion role of the person who keeps the palmarès (validates the results proposed by the players). */
+export const ROLE_PALMARES = "🏅 Responsable palmarès";
+
+export type Rang = "Vainqueur" | "Finaliste" | "Demi-finaliste" | "Quart de finaliste" | "Huitième de finaliste" | "Seizième de finaliste" | "Participation" | "Autre place";
+export type TypeCompet = "Belgique" | "International" | "Interne";
+
+export type ResultatP = {
+  id: string;
+  titre: string;
+  /** Player fiches (Notion ids, without dashes). */
+  joueurs: string[];
+  equipe: string | null;
+  rang: Rang;
+  place: number | null;
+  competition: string;
+  categorie: string | null;
+  saison: string | null;
+  date: string | null;
+  type: TypeCompet;
+  parEquipe: boolean;
+  statut: "Validé" | "À valider";
+  proposePar: string | null;
+  lien: string | null;
+  origine: string | null;
+  cree: string;
+};
+
+export const RANGS: { id: Rang; court: string; ic: string; place: number | null }[] = [
+  { id: "Vainqueur", court: "Vainqueur", ic: "🥇", place: 1 },
+  { id: "Finaliste", court: "Finaliste", ic: "🥈", place: 2 },
+  { id: "Demi-finaliste", court: "½ finale", ic: "🥉", place: 3 },
+  { id: "Quart de finaliste", court: "¼ finale", ic: "🎖️", place: 5 },
+  { id: "Huitième de finaliste", court: "1/8 finale", ic: "🎖️", place: 9 },
+  { id: "Seizième de finaliste", court: "1/16 finale", ic: "🎖️", place: 17 },
+  { id: "Participation", court: "Participation", ic: "🎖️", place: null },
+  { id: "Autre place", court: "Autre place", ic: "🎖️", place: null },
+];
+export const icRang = (r: Rang) => RANGS.find((x) => x.id === r)?.ic || "🎖️";
+/** « 9e place » for « Autre place », the rank name otherwise. */
+export const libelleRang = (r: ResultatP) => (r.rang === "Autre place" && r.place ? `${r.place}e place` : r.rang);
+
+export const CATEGORIES_P = ["Open", "U12", "U16", "U20", "Féminine", "Vétéran", "Super-vétéran", "A", "B", "C", "D1", "D2", "D3", "D4", "U10", "U15", "U19"];
+export const JEUNES = /^U\d+$/;
+
+/** International competitions (FISTF abroad, World / European cups…); the rest is Belgian, « du club » is internal. */
+const INTER = /monde|europe|europa|champions league|grand prix de france|gp de france|gillingham|caen|paris|ath[eè]nes|majorque|ludwi|tch[eè]que|ilioupoli|puylaurens|madrid|manchester|dewsb|lisbonne|malte|barcelone|vienne|haverhill|gibraltar|lorraine|issy|wattrelos|rome|elancourt|angleterre|portugal|espagne|allemagne|autriche|gr[eè]ce/i;
+export function typeDe(competition: string): TypeCompet {
+  if (/\bdu club\b/i.test(competition)) return "Interne";
+  return INTER.test(competition) ? "International" : "Belgique";
+}
+
+/** Season of a date: from September to August (« 2026/2027 »). */
+export function saisonDe(d: string) {
+  const a = Number(d.slice(0, 4));
+  const m = Number(d.slice(5, 7));
+  return m >= 9 ? `${a}/${a + 1}` : `${a - 1}/${a}`;
+}
+/** Sort key of a season (« 2021/2022 » < « 2022 » < « 2022/2023 »). */
+export function cleSaison(s: string | null) {
+  if (!s) return 0;
+  const m = s.match(/(\d{4})(?:\s*\/\s*(\d{2,4}))?/);
+  if (!m) return 0;
+  return Number(m[1]) + (m[2] ? 0.5 : 0);
+}
+
+export type Medailles = { or: number; argent: number; bronze: number; total: number };
+export function compter(liste: ResultatP[]): Medailles {
+  const m = { or: 0, argent: 0, bronze: 0, total: liste.length };
+  for (const r of liste) {
+    if (r.rang === "Vainqueur") m.or++;
+    else if (r.rang === "Finaliste") m.argent++;
+    else if (r.rang === "Demi-finaliste") m.bronze++;
+  }
+  return m;
+}
+/** Best first: gold, then silver, then bronze (Olympic order). */
+export const triMedailles = (a: Medailles, b: Medailles) => b.or - a.or || b.argent - a.argent || b.bronze - a.bronze || b.total - a.total;
+/** Newest season first, then best rank. */
+export function triResultats(a: ResultatP, b: ResultatP) {
+  return cleSaison(b.saison) - cleSaison(a.saison) || (b.date || "").localeCompare(a.date || "") || (a.place ?? 99) - (b.place ?? 99);
+}
+export const sansTirets = (id: string) => id.replace(/-/g, "");
+
+/** Title written in Notion: « 🥇 Vainqueur · Open de Frameries (U16) ». */
+export function titreDe(r: { rang: Rang; place: number | null; competition: string; categorie: string | null }) {
+  const lib = r.rang === "Autre place" && r.place ? `${r.place}e place` : r.rang;
+  return `${icRang(r.rang)} ${lib} · ${r.competition}${r.categorie ? ` (${r.categorie})` : ""}`;
+}

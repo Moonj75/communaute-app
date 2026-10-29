@@ -2,6 +2,8 @@ import "server-only";
 import type { Exercice as ExerciceT, RoleSeance, SeanceE } from "./entrainements-types";
 import { ROLES, limiteDe } from "./entrainements-types";
 import { CHAMPS, PROP_MASQUES, lireMasques, type Valeur } from "./logistique";
+import type { Rang, ResultatP, TypeCompet } from "./palmares-types";
+import { sansTirets, titreDe } from "./palmares-types";
 import type { ClassementClub, FicheLogistique, InfoPublique, Evenement, Participation, Reponse, Resultat, Seance, Tache } from "./club-types";
 
 /* Notion data sources of the « Deplacements » page (API version 2025-09-03). */
@@ -16,6 +18,7 @@ export const DS = {
   infos: process.env.NOTION_DS_INFOS || "bffe6a83-4398-43a7-a60d-5272d88784c3",
   listeActifs: process.env.NOTION_DS_LISTE_ACTIFS || "94e0d7b9-bb04-4a29-84a0-dc3cc5616432",
   exercices: process.env.NOTION_DS_EXERCICES || "e5f14fe9-fb66-49cc-9812-86570dadfc4d",
+  palmares: process.env.NOTION_DS_PALMARES || "0c30964f-cbff-486b-b385-72216b7e0982",
 };
 export const TAGS = {
   calendrier: "notion-calendrier",
@@ -23,6 +26,7 @@ export const TAGS = {
   taches: "notion-taches",
   club: "notion-club",
   entrainements: "notion-entrainements",
+  palmares: "notion-palmares",
 };
 
 const VERSION = "2025-09-03";
@@ -736,4 +740,71 @@ export async function lireMembresRoles(): Promise<MembreRoles[]> {
       archive: coche(p["Archivé"]),
     };
   });
+}
+
+
+/* ---------- Palmarès du club ---------- */
+function versResultat(pg: Page): ResultatP {
+  const p = pg.properties;
+  return {
+    id: pg.id,
+    titre: texte(p["Résultat"]) || "",
+    joueurs: rel(p["Joueurs"]).map(sansTirets),
+    equipe: choix(p["Équipe"]),
+    rang: (choix(p["Rang"]) || "Participation") as Rang,
+    place: nombreP(p["Place"]),
+    competition: texte(p["Compétition"]) || "",
+    categorie: choix(p["Catégorie"]),
+    saison: choix(p["Saison"]),
+    date: date(p["Date"]),
+    type: (choix(p["Type"]) || "Belgique") as TypeCompet,
+    parEquipe: coche(p["Par équipe"]),
+    statut: choix(p["Statut"]) === "À valider" ? "À valider" : "Validé",
+    proposePar: texte(p["Proposé par"]),
+    lien: (p["Lien résultats"]?.url as string | null) || null,
+    origine: texte(p["Texte d'origine"]),
+    cree: pg.created_time,
+  };
+}
+/** Every result of the club (validated and proposed); 5 minutes in cache, refreshed at once after a change. */
+export async function lirePalmares(frais = false): Promise<ResultatP[]> {
+  const pages = await toutLire(DS.palmares, frais ? 0 : 300, TAGS.palmares);
+  return pages.map(versResultat);
+}
+/** A new result in the Notion « Palmarès du club ». Returns the page id. */
+export async function creerResultat(r: { joueurs: string[]; equipe: string | null; rang: Rang; place: number | null; competition: string; categorie: string | null; saison: string | null; date: string | null; type: TypeCompet; parEquipe: boolean; statut: "Validé" | "À valider"; proposePar: string | null; lien: string | null; origine?: string | null }) {
+  const properties: Record<string, unknown> = {
+    "Résultat": { title: [{ type: "text", text: { content: titreDe(r).slice(0, 200) } }] },
+    Joueurs: { relation: r.joueurs.map((id) => ({ id })) },
+    Rang: { select: { name: r.rang } },
+    Place: { number: r.place },
+    "Compétition": rt(r.competition),
+    Type: { select: { name: r.type } },
+    "Par équipe": { checkbox: r.parEquipe },
+    Statut: { select: { name: r.statut } },
+    "Proposé par": rt(r.proposePar),
+    "Texte d'origine": rt(r.origine || null),
+  };
+  if (r.equipe) properties["Équipe"] = { select: { name: r.equipe } };
+  if (r.categorie) properties["Catégorie"] = { select: { name: r.categorie } };
+  if (r.saison) properties.Saison = { select: { name: r.saison } };
+  if (r.date) properties.Date = { date: { start: r.date } };
+  if (r.lien) properties["Lien résultats"] = { url: r.lien };
+  const pg = (await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS.palmares }, properties } })) as Page;
+  return pg.id;
+}
+export async function validerResultatNotion(id: string) {
+  await notion(`pages/${id}`, { method: "PATCH", body: { properties: { Statut: { select: { name: "Validé" } } } } });
+}
+/** Removes a result (to the Notion trash, it can be restored from there). */
+export async function retirerResultat(id: string) {
+  await notion(`pages/${id}`, { method: "PATCH", body: { in_trash: true } });
+}
+
+
+/** Every option of the « Rôles » column of the Notion « Liste des joueurs » (10 minutes in cache). */
+export async function optionsRoles(): Promise<string[]> {
+  const ds = process.env.NOTION_DS_JOUEURS || "3e329252-8add-80cc-96fe-000bc0a144e4";
+  const d = (await notion(`data_sources/${ds}`, { method: "GET", revalidate: 600, tags: [TAGS.club] })) as { properties?: Record<string, { multi_select?: { options?: { name: string }[] } }> };
+  return (d.properties?.["Rôles"]?.multi_select?.options || []).map((o) => o.name).filter(Boolean);
 }

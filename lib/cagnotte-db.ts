@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ecrireJournalCagnotte, majCagnotteNotion } from "./club";
+import { ecrireJournalCagnotte, majCagnotteNotion, optionsRoles } from "./club";
 import { solde, type Bareme, type EvenementLie, type Mouvement } from "./cagnotte";
 
 type J = { notion_id: string; cagnotte_groupe: string | null; cagnotte: number | null };
@@ -152,4 +152,34 @@ export async function demandesEvenement(p: { joueurId: string; evId: string; evN
   const { data: j } = await db.from("joueurs").select("cagnotte_groupe").eq("notion_id", p.joueurId).maybeSingle();
   for (const m of (data || []) as Mouvement[]) await journaliser(db, m, (j?.cagnotte_groupe as string | null) || null);
   return { ok: true, message: "", total };
+}
+
+
+/** « 🔑 Ouvreur » → icon « 🔑 », name « Ouvreur ». */
+function decouper(role: string) {
+  const m = role.match(/^((?:\p{Extended_Pictographic}|\p{Emoji_Component}|\uFE0F|\u200D)+)\s*/u);
+  return m && /\p{Extended_Pictographic}/u.test(m[1]) ? { ic: m[1].trim(), nom: role.slice(m[0].length).trim() } : { ic: "⭐", nom: role.trim() };
+}
+const cle = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/**
+ * Every club role (Notion « Rôles ») has its line in the kitty scale: a role added in Notion appears by itself,
+ * inactive and at 0 €, « à configurer » (yearly flat rate or per hour) by the staff. Returns how many were added.
+ */
+export async function assurerBaremeRoles(db: SupabaseClient) {
+  const roles = await optionsRoles().catch(() => [] as string[]);
+  if (!roles.length) return 0;
+  const { data, error } = await db.from("cag_bareme").select("nom,ordre");
+  if (error) return 0;
+  const lignes = (data || []) as { nom: string; ordre: number }[];
+  const connus = new Set(lignes.map((l) => cle(l.nom)));
+  let ordre = Math.max(0, ...lignes.map((l) => l.ordre || 0));
+  let n = 0;
+  for (const r of roles) {
+    const { ic, nom } = decouper(r);
+    if (!nom || connus.has(cle(nom))) continue;
+    const { error: e } = await db.from("cag_bareme").insert({ nom: nom.slice(0, 80), ic: ic.slice(0, 8), unite: "forfait", taux: 0, actif: false, ordre: ++ordre });
+    if (!e) { connus.add(cle(nom)); n++; }
+  }
+  return n;
 }

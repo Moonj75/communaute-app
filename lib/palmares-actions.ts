@@ -1,0 +1,136 @@
+"use server";
+
+import { revalidatePath, revalidateTag } from "next/cache";
+import { getVue } from "./profil";
+import { TAGS, creerResultat, lireMembresRoles, lirePalmares, retirerResultat, validerResultatNotion } from "./club";
+import { RANGS, ROLE_PALMARES, saisonDe, sansTirets, titreDe, typeDe, type Rang } from "./palmares-types";
+import { clientAdmin } from "./supabase/admin";
+import { deposer } from "./courrier";
+import { pousser, pushPret, type Abonnement } from "./push";
+import historique from "./palmares-historique.json";
+
+export type RetourP = { ok: boolean; message: string; reste?: number };
+
+/** The signed-in person: may he validate (staff or « 🏅 Responsable palmarès »)? and his fiches. */
+async function qui() {
+  const { user, profil, apercu } = await getVue();
+  if (!user?.email) return null;
+  const email = user.email.toLowerCase();
+  const membres = await lireMembresRoles().catch(() => []);
+  const fiches = membres.filter((m) => m.email === email && !m.archive);
+  const admin = profil?.role === "admin" && !apercu;
+  const responsable = admin || fiches.some((f) => (f.roles || []).includes(ROLE_PALMARES));
+  const nom = [profil?.prenom, profil?.nom].filter(Boolean).join(" ") || email;
+  return { email, admin, responsable, apercu: Boolean(apercu), fiches, membres, nom };
+}
+
+const fini = () => { revalidateTag(TAGS.palmares); revalidatePath("/palmares"); revalidatePath("/fiche"); revalidatePath("/"); };
+
+/** Phone notification + Courrier for some people (never blocking). */
+async function prevenir(emails: string[], titre: string, texte: string, lien: string) {
+  const db = clientAdmin();
+  if (!db || !emails.length) return;
+  await deposer(db, emails, { type: "notification", titre, texte, lien }).catch(() => 0);
+  if (pushPret()) {
+    const { data: subs } = await db.from("push_abonnements").select("endpoint,email,p256dh,auth");
+    await pousser(db, (subs || []) as Abonnement[], emails, { title: titre, body: texte, url: lien, tag: `palmares-${Date.now()}` }).catch(() => null);
+  }
+}
+
+/**
+ * A new result from the app. Staff and « Responsable palmarès »: validated at once (the players are told).
+ * Any other member: proposed (« À valider »), and the people in charge of the palmarès are told.
+ */
+export async function ajouterResultat(fd: FormData): Promise<RetourP> {
+  const q = await qui();
+  if (!q) return { ok: false, message: "Reconnecte-toi." };
+  if (q.apercu) return { ok: false, message: "Mode aperçu : rien n'est enregistré." };
+  const v = (k: string, n = 200) => String(fd.get(k) || "").replace(/\s+/g, " ").trim().slice(0, n);
+  const competition = v("competition", 150);
+  const rang = v("rang", 40) as Rang;
+  const joueurs = [...new Set(fd.getAll("joueurs").map((x) => sansTirets(String(x))).filter((x) => /^[0-9a-f]{32}$/i.test(x)))].slice(0, 8);
+  const equipe = ["Team A", "Team B"].includes(v("equipe")) ? v("equipe") : null;
+  const categorie = v("categorie", 30) || null;
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(v("date")) ? v("date") : null;
+  const lien = /^https?:\/\//i.test(v("lien", 300)) ? v("lien", 300) : null;
+  if (!competition) return { ok: false, message: "Indique la compétition." };
+  if (!RANGS.some((r) => r.id === rang)) return { ok: false, message: "Choisis le résultat obtenu." };
+  if (!joueurs.length && !equipe) return { ok: false, message: "Choisis au moins un joueur (ou une équipe du club)." };
+  const placeLibre = Number(v("place", 4)) || null;
+  const place = rang === "Autre place" ? placeLibre : RANGS.find((r) => r.id === rang)!.place;
+  if (rang === "Autre place" && !place) return { ok: false, message: "Indique la place obtenue." };
+  const saison = date ? saisonDe(date) : v("saison", 12) || saisonDe(new Date().toISOString().slice(0, 10));
+  const statut = q.responsable ? "Validé" : "À valider";
+  const parEquipe = Boolean(equipe) || fd.get("parEquipe") === "on";
+  try {
+    await creerResultat({ joueurs, equipe, rang, place, competition, categorie, saison, date, type: typeDe(competition), parEquipe, statut, proposePar: q.nom, lien });
+  } catch (e) {
+    return { ok: false, message: "Notion : " + (e instanceof Error ? e.message : "erreur") };
+  }
+  const titre = titreDe({ rang, place, competition, categorie });
+  const mails = (ids: string[]) => [...new Set(q.membres.filter((m) => ids.includes(sansTirets(m.notion_id)) && m.email).map((m) => m.email!.toLowerCase()))];
+  if (statut === "Validé") {
+    await prevenir(mails(joueurs).filter((e) => e !== q.email), "🏅 Nouveau résultat dans ton palmarès", titre, "/fiche");
+  } else {
+    const resp = q.membres.filter((m) => (m.roles || []).includes(ROLE_PALMARES) && m.email).map((m) => m.email!.toLowerCase());
+    let cibles = resp;
+    if (!cibles.length) {
+      const db = clientAdmin();
+      const { data } = db ? await db.from("membres").select("email").eq("role", "admin").eq("actif", true) : { data: [] };
+      cibles = ((data || []) as { email: string }[]).map((m) => m.email);
+    }
+    await prevenir([...new Set(cibles)], "🏅 Résultat à valider", `${q.nom} propose : ${titre}`, "/palmares#bloc-valider");
+  }
+  fini();
+  return { ok: true, message: statut === "Validé" ? `Enregistré ✓ ${titre}` : `Merci ! Ton résultat est envoyé au responsable palmarès pour validation.` };
+}
+
+/** Responsable / staff: validates (ok) or refuses (removed) a proposed result. */
+export async function traiterProposition(id: string, ok: boolean): Promise<RetourP> {
+  const q = await qui();
+  if (!q?.responsable || q.apercu) return { ok: false, message: "Réservé au responsable palmarès et au staff." };
+  const r = (await lirePalmares()).find((x) => x.id === id);
+  if (!r) return { ok: false, message: "Résultat introuvable." };
+  try {
+    if (ok) await validerResultatNotion(id);
+    else await retirerResultat(id);
+  } catch (e) {
+    return { ok: false, message: "Notion : " + (e instanceof Error ? e.message : "erreur") };
+  }
+  if (ok) {
+    const mails = [...new Set(q.membres.filter((m) => r.joueurs.includes(sansTirets(m.notion_id)) && m.email).map((m) => m.email!.toLowerCase()))];
+    await prevenir(mails, "🏅 Résultat validé", r.titre, "/fiche");
+  }
+  fini();
+  return { ok: true, message: ok ? "Validé ✓" : "Retiré." };
+}
+
+/** Staff: removes a validated result (mistake). */
+export async function supprimerResultat(id: string): Promise<RetourP> {
+  const q = await qui();
+  if (!q?.responsable || q.apercu) return { ok: false, message: "Réservé au responsable palmarès et au staff." };
+  await retirerResultat(id).catch(() => null);
+  fini();
+  return { ok: true, message: "Retiré." };
+}
+
+type Hist = { j: string | null; e: string | null; r: Rang; p: number | null; c: string; k: string | null; s: string | null; t: "Belgique" | "International" | "Interne"; q: boolean; o: string };
+
+/**
+ * Staff, once: copies the club's history (the palmarès document, 519 results) into Notion,
+ * 35 results per tap (Notion takes its time); results already there are skipped, so it can be started again safely.
+ */
+export async function importerHistorique(): Promise<RetourP> {
+  const q = await qui();
+  if (!q?.admin) return { ok: false, message: "Réservé aux administrateurs." };
+  // The same sentence can belong to two players (e.g. « Vainqueur coupe du monde par équipe »): player + sentence.
+  const existants = new Set((await lirePalmares(true)).map((r) => `${r.joueurs[0] || r.equipe || ""}|${(r.origine || "").trim()}`));
+  const liste = (historique as Hist[]).filter((h) => !existants.has(`${h.j || h.e || ""}|${h.o.trim()}`));
+  const lot = liste.slice(0, 35);
+  for (const h of lot) {
+    await creerResultat({ joueurs: h.j ? [h.j] : [], equipe: h.e, rang: h.r, place: h.p, competition: h.c, categorie: h.k, saison: h.s, date: null, type: h.t, parEquipe: h.q, statut: "Validé", proposePar: "Import du palmarès historique", lien: null, origine: h.o });
+  }
+  fini();
+  const reste = liste.length - lot.length;
+  return { ok: true, message: reste ? `${lot.length} résultats importés, encore ${reste}…` : "Historique complet ✓", reste };
+}
