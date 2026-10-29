@@ -483,6 +483,11 @@ export async function enregistrerFiche(id: string, valeurs: Record<string, Valeu
   await notion(`pages/${id}`, { method: "PATCH", body: { properties } });
 }
 
+/** Club target of players for a trip (logistics sheet « Objectif de participants »; null clears it). */
+export async function majObjectif(ficheId: string, objectif: number | null) {
+  await notion(`pages/${ficheId}`, { method: "PATCH", body: { properties: { "Objectif de participants": { number: objectif } } } });
+}
+
 export async function creerFiche(evenementId: string, nom: string): Promise<string> {
   const pg = (await notion("pages", {
     body: {
