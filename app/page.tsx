@@ -75,7 +75,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
           salut={greeting()}
           isAdmin={profil?.role === "admin"}
           lie={Boolean(profil)}
-          sansCompet={((fiches || []) as { sans_competition?: boolean; archive?: boolean }[]).filter((f) => !f.archive).length > 0 && ((fiches || []) as { sans_competition?: boolean; archive?: boolean }[]).filter((f) => !f.archive).every((f) => f.sans_competition)}
+          sansCompet={((fiches || []) as { sans_competition?: boolean; archive?: boolean; actif?: boolean }[]).filter((f) => !f.archive).length > 0 && ((fiches || []) as { sans_competition?: boolean; archive?: boolean; actif?: boolean }[]).filter((f) => !f.archive).every((f) => f.sans_competition || f.actif === false)}
           email={user.email || ""}
           gens={(fiches || []) as Gens}
           prochaine={next ? { nom: next.nom, date: next.date, lieu: next.lieu } : null}
