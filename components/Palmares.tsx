@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES_P, JEUNES, RANGS, cleSaison, compter, icRang, libelleRang, triMedailles, triResultats, type ResultatP } from "@/lib/palmares-types";
+import { CATEGORIES_P, JEUNES, RANGS, classeRang, cleSaison, compter, icRang, libelleRang, motRang, placeDe, triMedailles, triVitrine, type ResultatP } from "@/lib/palmares-types";
+import { Trophee } from "./Trophee";
 import { ajouterResultat, importerHistorique, rafraichirPalmares, supprimerResultat, traiterProposition, type RetourP } from "@/lib/palmares-actions";
 import "./palmares.css";
 import Vitrine from "./Vitrine";
@@ -37,46 +38,78 @@ function Compteurs({ m, total }: { m: ReturnType<typeof compter>; total?: boolea
   );
 }
 
-/** Results grouped by season, newest first; the oldest seasons fold away. */
-function ParSaison({ liste, noms, montrerQui, ouvertes = 3, actions }: { liste: ResultatP[]; noms?: Noms; montrerQui?: boolean; ouvertes?: number; actions?: (r: ResultatP) => React.ReactNode }) {
+const estEquipe = (r: ResultatP) => r.parEquipe || Boolean(r.equipe);
+const FILTRES: { id: string; nom: string; f: (r: ResultatP) => boolean }[] = [
+  { id: "tout", nom: "Tout", f: () => true },
+  { id: "ind", nom: "👤 Individuel", f: (r) => !estEquipe(r) },
+  { id: "eq", nom: "👥 Par équipe", f: estEquipe },
+  { id: "be", nom: "🇧🇪 Belgique", f: (r) => r.type === "Belgique" },
+  { id: "int", nom: "🌍 International", f: (r) => r.type === "International" },
+  { id: "jeunes", nom: "🧒 Jeunes", f: (r) => JEUNES.test(r.categorie || "") },
+  { id: "club", nom: "🦁 Interne", f: (r) => r.type === "Interne" },
+];
+
+/** One trophy card: picture, rank word (VICTOIRE / FINALE big), who, competition, individual or team. */
+function Carte({ r, qui, delai = 0, action }: { r: ResultatP; qui?: string; delai?: number; action?: React.ReactNode }) {
+  const p = placeDe(r);
+  const c = classeRang(p);
+  const eq = estEquipe(r);
+  return (
+    <li className={`pk ${c}${r.statut === "À valider" ? " attente" : ""}`}>
+      {r.categorie ? <span className="pk-cat">{r.categorie}</span> : null}
+      {action}
+      <Trophee place={p} equipe={eq} taille={52} delai={delai} />
+      <span className={`pk-pl ${c}`}>{motRang(p)}</span>
+      {qui ? <b className="pk-qui">{qui}</b> : null}
+      <span className="pk-co">{r.competition}</span>
+      <span className={`pk-badge ${eq ? "eq" : "in"}`}>{eq ? "👥 Par équipe" : "👤 Individuel"}</span>
+    </li>
+  );
+}
+
+/** Cards grouped by season (newest first, victories first in each season); long seasons and old seasons fold away. */
+function SaisonsCartes({ liste, noms, ouvertes = 2, parSaison = 6, actions }: { liste: ResultatP[]; noms?: Noms; ouvertes?: number; parSaison?: number; actions?: (r: ResultatP) => React.ReactNode }) {
   const [tout, setTout] = useState(false);
+  const [ouv, setOuv] = useState<string[]>([]);
   const saisons = useMemo(() => {
     const m = new Map<string, ResultatP[]>();
-    for (const r of [...liste].sort(triResultats)) m.set(r.saison || "Sans date", [...(m.get(r.saison || "Sans date") || []), r]);
-    return [...m.entries()].sort((a, b) => cleSaison(b[0]) - cleSaison(a[0]));
+    for (const r of liste) m.set(r.saison || "Sans date", [...(m.get(r.saison || "Sans date") || []), r]);
+    return [...m.entries()].map(([s, l]) => [s, l.sort(triVitrine)] as const).sort((a, b) => cleSaison(b[0]) - cleSaison(a[0]));
   }, [liste]);
-  const vues = tout ? saisons : saisons.slice(0, ouvertes);
   if (!liste.length) return <p className="vide">Pas encore de résultat… le premier arrive ! 💪</p>;
+  const vues = tout ? saisons : saisons.slice(0, ouvertes);
   return (
     <div className="pa-saisons">
-      {vues.map(([s, l]) => (
-        <section key={s}>
-          <p className="pa-sz">{s} <small>{l.length} résultat{l.length > 1 ? "s" : ""}</small></p>
-          <ul className="pa-liste">{l.map((r) => <Ligne key={r.id} r={r} noms={noms} montrerQui={montrerQui} actions={actions?.(r)} />)}</ul>
-        </section>
-      ))}
+      {vues.map(([s, l]) => {
+        const m = compter(l);
+        const plein = ouv.includes(s);
+        const montre = plein ? l : l.slice(0, parSaison);
+        return (
+          <section key={s}>
+            <p className="pk-sz">{s} <small>{m.or ? `🏆 ${m.or} ` : ""}{m.argent ? `🥈 ${m.argent} ` : ""}{m.bronze ? `🥉 ${m.bronze} ` : ""}· {l.length} résultat{l.length > 1 ? "s" : ""}</small></p>
+            <ul className="pk-grille">{montre.map((r, i) => <Carte key={r.id} r={r} qui={noms ? quiDe(r, noms) : undefined} delai={(i % 6) * 0.5} action={actions?.(r)} />)}</ul>
+            {l.length > parSaison ? <button type="button" className="btn en-mini pa-plus" onClick={() => setOuv((o) => (plein ? o.filter((x) => x !== s) : [...o, s]))}>{plein ? "Replier" : `+ ${l.length - parSaison} autres résultats de ${s}`}</button> : null}
+          </section>
+        );
+      })}
       {saisons.length > ouvertes ? <button type="button" className="btn pa-plus" onClick={() => setTout((t) => !t)}>{tout ? "Replier" : `Voir les ${saisons.length - ouvertes} saisons précédentes`}</button> : null}
     </div>
   );
 }
 
-const FILTRES: { id: string; nom: string; f: (r: ResultatP) => boolean }[] = [
-  { id: "tout", nom: "Tout", f: () => true },
-  { id: "be", nom: "🇧🇪 Belgique", f: (r) => r.type === "Belgique" },
-  { id: "int", nom: "🌍 International", f: (r) => r.type === "International" },
-  { id: "jeunes", nom: "🧒 Jeunes", f: (r) => JEUNES.test(r.categorie || "") },
-  { id: "eq", nom: "👥 Équipes", f: (r) => r.parEquipe || Boolean(r.equipe) },
-  { id: "club", nom: "🦁 Interne", f: (r) => r.type === "Interne" },
-];
+const initiales = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join("") || "?";
 
-/** The club's palmarès: totals, filters, honours board (players and teams), results by season. */
+/** The club's palmarès: hero (individual / team totals), filters, honours podium, trophy cards by season. */
 export function PalmaresClub({ resultats, noms, gerer = false }: { resultats: ResultatP[]; noms: Noms; gerer?: boolean }) {
   const [f, setF] = useState("tout");
   const [sz, setSz] = useState("");
   const valides = resultats.filter((r) => r.statut === "Validé");
-  const filtre = FILTRES.find((x) => x.id === f)!.f;
-  const liste = valides.filter((r) => filtre(r) && (!sz || r.saison === sz));
   const saisons = [...new Set(valides.map((r) => r.saison).filter((s): s is string => Boolean(s)))].sort((a, b) => cleSaison(b) - cleSaison(a));
+  const deSaison = valides.filter((r) => !sz || r.saison === sz);
+  const filtre = FILTRES.find((x) => x.id === f)!.f;
+  const liste = deSaison.filter(filtre);
+  const ind = compter(deSaison.filter((r) => !estEquipe(r)));
+  const eq = compter(deSaison.filter(estEquipe));
   const honneur = useMemo(() => {
     const m = new Map<string, ResultatP[]>();
     for (const r of liste) for (const k of r.joueurs.length ? r.joueurs : r.equipe ? [r.equipe] : []) m.set(k, [...(m.get(k) || []), r]);
@@ -84,9 +117,24 @@ export function PalmaresClub({ resultats, noms, gerer = false }: { resultats: Re
   }, [liste, noms]);
   const router = useRouter();
   const [pending, start] = useTransition();
+  const podium = [honneur[1], honneur[0], honneur[2]];
+  const split = (m: ReturnType<typeof compter>, equipe = false) => (
+    <div className={`pk-sp ${equipe ? "eq" : "in"}`}>
+      <span className="pk-sp-t">{equipe ? "👥 Par équipe" : "👤 Individuel"}</span>
+      <span className="pk-sp-n">
+        <span><Trophee place={1} equipe={equipe} taille={28} /><b>{m.or}</b></span>
+        <span><Trophee place={2} taille={28} delai={0.6} /><b>{m.argent}</b></span>
+        <span><Trophee place={3} taille={28} delai={1.2} /><b>{m.bronze}</b></span>
+      </span>
+    </div>
+  );
   return (
     <div className="pa">
-      <Compteurs m={compter(liste)} total />
+      <div className="pk-hero">
+        <span className="pk-k">Lions d&apos;Eugies · {sz || "toutes les saisons"}</span>
+        <p className="pk-h1">Palmarès du club</p>
+        <div className="pk-split">{split(ind)}{split(eq, true)}</div>
+      </div>
       <div className="pa-filtres" role="tablist">
         {FILTRES.map((x) => <button key={x.id} type="button" role="tab" aria-selected={f === x.id} className={f === x.id ? "on" : undefined} onClick={() => setF(x.id)}>{x.nom}</button>)}
         <select className="pa-sel" value={sz} onChange={(e) => setSz(e.target.value)} aria-label="Saison">
@@ -95,20 +143,34 @@ export function PalmaresClub({ resultats, noms, gerer = false }: { resultats: Re
         </select>
       </div>
       {gerer ? <button type="button" className="btn en-mini pa-plus" disabled={pending} onClick={() => start(async () => { await rafraichirPalmares(); router.refresh(); })}>🔄 Mettre à jour depuis Notion</button> : null}
-      <p className="pa-h">🏆 Tableau d&apos;honneur</p>
-      <ol className="pa-hon">
-        {honneur.map((x, i) => (
-          <li key={x.k}><span className="pa-rk">{i + 1}</span><span className="pa-n">{x.nom}</span><span className="pa-m">🥇{x.m.or} 🥈{x.m.argent} 🥉{x.m.bronze}</span></li>
-        ))}
-      </ol>
-      <p className="pa-h">📜 Tous les résultats</p>
-      <ParSaison liste={liste} noms={noms} montrerQui ouvertes={sz ? 1 : 2}
-        actions={gerer ? (r) => <button type="button" className="pa-x" disabled={pending} title="Retirer ce résultat" onClick={() => { if (window.confirm(`Retirer « ${r.titre} » ?`)) start(async () => { await supprimerResultat(r.id); router.refresh(); }); }}>✕</button> : undefined} />
+      {honneur.length ? (
+        <>
+          <p className="pa-h">🏆 Tableau d&apos;honneur</p>
+          <div className="pk-pod">
+            {podium.map((x, i) => x ? (
+              <div key={x.k} className={`pk-pc p${i === 1 ? 1 : i === 0 ? 2 : 3}`}>
+                <span className="pk-rk">{i === 1 ? 1 : i === 0 ? 2 : 3}</span>
+                <span className="pk-av">{initiales(x.nom)}</span>
+                <b>{x.nom}</b>
+                <small>🏆{x.m.or} 🥈{x.m.argent} 🥉{x.m.bronze}</small>
+              </div>
+            ) : <div key={i} />)}
+          </div>
+          {honneur.length > 3 ? (
+            <ol className="pk-hl" start={4}>
+              {honneur.slice(3).map((x, i) => <li key={x.k}><span className="pa-rk">{i + 4}</span><b>{x.nom}</b><i>🏆{x.m.or} 🥈{x.m.argent} 🥉{x.m.bronze}</i></li>)}
+            </ol>
+          ) : null}
+        </>
+      ) : null}
+      <p className="pa-h">📜 Les résultats</p>
+      <SaisonsCartes liste={liste} noms={noms} ouvertes={sz ? 1 : 2}
+        actions={gerer ? (r) => <button type="button" className="pa-x pk-x" disabled={pending} title="Retirer ce résultat" onClick={() => { if (window.confirm(`Retirer « ${r.titre} » ?`)) start(async () => { await supprimerResultat(r.id); router.refresh(); }); }}>✕</button> : undefined} />
     </div>
   );
 }
 
-/** A player's own palmarès (in his fiche). */
+/** A player's own palmarès (in his fiche): same trophy cards, without his name on each. */
 export function PalmaresJoueur({ resultats }: { resultats: ResultatP[] }) {
   const valides = resultats.filter((r) => r.statut === "Validé");
   const attente = resultats.filter((r) => r.statut === "À valider");
@@ -116,7 +178,7 @@ export function PalmaresJoueur({ resultats }: { resultats: ResultatP[] }) {
     <div className="pa">
       <Compteurs m={compter(valides)} />
       {attente.length ? <p className="muted small">⏳ {attente.length} résultat{attente.length > 1 ? "s" : ""} en attente de validation.</p> : null}
-      <ParSaison liste={valides} montrerQui={false} />
+      <SaisonsCartes liste={valides} ouvertes={2} parSaison={4} />
       <a className="btn primary pa-ajout" href="/palmares#bloc-ajouter">➕ Ajouter un résultat</a>
     </div>
   );
