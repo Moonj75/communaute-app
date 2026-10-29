@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import { displayName, getVue } from "@/lib/profil";
 import { essayer, lireCalendrier, lireMembresRoles, lirePalmares, nomsJoueurs } from "@/lib/club";
-import { ROLE_PALMARES, avecDates, sansTirets } from "@/lib/palmares-types";
+import { ROLE_PALMARES, avecDates, sansArchives, sansTirets } from "@/lib/palmares-types";
 import { AValider, AjoutResultat, ImportHistorique, PalmaresPages } from "@/components/Palmares";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,9 @@ export default async function PalmaresPage({ searchParams }: { searchParams: Pro
   const email = (user.email || "").toLowerCase();
   const [res, nomsR, membresR, calR] = await Promise.all([essayer(lirePalmares), essayer(nomsJoueurs), essayer(lireMembresRoles), essayer(lireCalendrier)]);
   // The day of each result, found in the club calendar when it was not typed (to show the month).
-  const resultats = avecDates(res.data || [], calR.data || []);
+  // Archived players stay in Notion but are no longer shown in the app.
+  const archives = (membresR.data || []).filter((m) => m.archive).map((m) => m.notion_id);
+  const resultats = avecDates(sansArchives(res.data || [], archives), calR.data || []);
   const noms: Record<string, string> = {};
   for (const [k, v] of nomsR.data || []) noms[sansTirets(k)] = v;
   const membres = membresR.data || [];
@@ -47,7 +49,7 @@ export default async function PalmaresPage({ searchParams }: { searchParams: Pro
           outils={[
             { id: "ajouter", titre: "Ajouter", ic: "➕", contenu: <AjoutResultat joueurs={joueurs} competitions={competitions} responsable={responsable} moi={miennes.map((m) => sansTirets(m.notion_id))} initial={pre} /> },
             ...(responsable ? [{ id: "valider", titre: "À valider", ic: "⏳", badge: aValider.length ? String(aValider.length) : null, contenu: <AValider liste={aValider} noms={noms} /> }] : []),
-            ...(admin && resultats.length < 519 ? [{ id: "import", titre: "Historique", ic: "📥", contenu: <ImportHistorique deja={resultats.length} /> }] : []),
+            ...(admin && (res.data || []).length < 519 ? [{ id: "import", titre: "Historique", ic: "📥", contenu: <ImportHistorique deja={(res.data || []).length} /> }] : []),
           ]}
         />
       </main>
