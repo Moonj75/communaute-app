@@ -5,10 +5,20 @@ import { Trophee } from "./Trophee";
 import { classeRang, motRang } from "@/lib/palmares-types";
 import "./roue.css";
 
+/** The name on its plaque: first name small, family name big (several players: one per line). */
+function nomBeau(qui: string) {
+  const gens = qui.split(/\s*,\s*/).filter(Boolean);
+  if (gens.length > 1) return <span className="rc-plusieurs">{gens.map((g) => <b key={g}>{g}</b>)}</span>;
+  const m = qui.trim().split(/\s+/);
+  const prenom = m.length > 1 ? m[0] : "";
+  const nom = m.length > 1 ? m.slice(1).join(" ") : m[0] || "?";
+  return <>{prenom ? <span className="rc-pre">{prenom}</span> : null}<b className="rc-nom">{nom}</b></>;
+}
+
 /** One result of the wheel. */
 export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null };
 
-const H_C = 150; // highlighted card
+const H_C = 168; // highlighted card
 const H_V = 50; // neighbours
 const ECART = 6;
 
@@ -83,13 +93,18 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 5
             {centre ? (
               <>
                 {outil ? <span className="rc-outil">{outil(c)}</span> : null}
-                <span className="rc-ic"><Trophee key={`${c.id}-${i}`} place={p} equipe={c.equipe} taille={p === 1 ? 104 : 84} /></span>
-                <span className="rc-t">
-                  <span className={`rc-mot ${rc}`}>{motRang(p)}</span>
-                  <b className="rc-qui">{c.qui}</b>
-                  <span className="rc-co">{c.competition}</span>
+                {/* Left: the cup (place written on it), the rank word, individual or team. */}
+                <span className="rc-g">
+                  <span className="rc-ic"><Trophee key={`${c.id}-${i}`} place={p} equipe={c.equipe} taille={p === 1 ? 74 : 62} /></span>
+                  <span className={`rc-mot ${rc}`}>{motRang(p, true)}</span>
+                  <span className={`pk-badge ${c.equipe ? "eq" : "in"}`}>{c.equipe ? "👥 Équipe" : "👤 Individuel"}</span>
+                </span>
+                {/* Middle: who. */}
+                <span className="rc-m">{nomBeau(c.qui)}</span>
+                {/* Right: the event, big. */}
+                <span className="rc-d">
+                  <b className="rc-ev">{c.competition}</b>
                   <span className="rc-pied">
-                    <span className={`pk-badge ${c.equipe ? "eq" : "in"}`}>{c.equipe ? "👥 Par équipe" : "👤 Individuel"}</span>
                     {c.categorie ? <span className="rc-cat">{c.categorie}</span> : null}
                     {c.saison ? <span className="rc-sz">{c.saison}</span> : null}
                   </span>
@@ -97,9 +112,9 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 5
               </>
             ) : (
               <>
-                <Trophee place={p} equipe={c.equipe} taille={36} />
-                <span className={`rc-mot ${rc}`}>{motRang(p, true)}</span>
-                <span className="rc-l"><b>{c.qui}</b> · {c.competition}</span>
+                <span className="rc-vg"><Trophee place={p} equipe={c.equipe} taille={34} /><span className={`rc-mot ${rc}`}>{motRang(p, true)}</span></span>
+                <b className="rc-vn">{c.qui}</b>
+                <span className="rc-ve">{c.competition}</span>
               </>
             )}
           </div>
