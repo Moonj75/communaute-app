@@ -80,8 +80,11 @@ export default async function PageAdmin({ rubrique }: { rubrique: Rubrique }) {
   const parEmail = new Map<string, J[]>();
   for (const j of (joueurs || []) as J[]) if (j.email) parEmail.set(j.email, [...(parEmail.get(j.email) || []), j]);
   const connected = new Set((profils || []).map((p: { email: string }) => p.email));
-  const list = (membres || []) as Membre[];
-  const lastSync = list.reduce<string | null>((m, x) => (x.synced_at && (!m || x.synced_at > m) ? x.synced_at : m), null);
+  // Accounts whose every fiche is archived (former members) leave the lists: they are in « Archives ».
+  const archiveCompte = (email: string) => { const f = parEmail.get(email) || []; return f.length > 0 && f.every((j) => (j as J & { archive?: boolean }).archive); };
+  const tousComptes = (membres || []) as Membre[];
+  const list = tousComptes.filter((m) => !archiveCompte(m.email));
+  const lastSync = tousComptes.reduce<string | null>((m, x) => (x.synced_at && (!m || x.synced_at > m) ? x.synced_at : m), null);
 
   return (
     <>

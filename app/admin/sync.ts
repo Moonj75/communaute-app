@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { TAG_ARCHIVES } from "@/lib/classements-lire";
 import { categorieFinale } from "@/lib/categories";
 import { majCategorieNotion } from "@/lib/club";
 import { getSessionProfil } from "@/lib/profil";
@@ -171,6 +172,8 @@ export async function synchroniserNotion(): Promise<SyncState> {
 
   revalidatePath("/admin", "layout");
   revalidatePath("/fiche");
+  // Members archived in Notion leave the rankings' « our players » too.
+  revalidateTag(TAG_ARCHIVES);
   return {
     ok: true,
     personnes: fiches.length,
