@@ -9,7 +9,7 @@ import EditeurEtapes, { etapeVide as etape } from "./EditeurEtapes";
 
 const saisonActuelle = () => {
   const d = new Date();
-  const a = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+  const a = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1; // season: 1 September → 31 August
   return `${a}–${a + 1}`;
 };
 
