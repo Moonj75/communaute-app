@@ -58,10 +58,10 @@ export const valeur = (m: Pick<Mouvement, "sens" | "montant" | "statut">) => (m.
 /** Balance of a set of movements (one member, or every member of a shared kitty). */
 export const solde = (ms: Pick<Mouvement, "sens" | "montant" | "statut">[]) => arrondi(ms.reduce((s, m) => s + valeur(m), 0));
 
-/** Season (August → July) of a date, e.g. « 2026–2027 ». */
+/** Season (1 September → 31 August) of a date, e.g. « 2026–2027 ». */
 export function saisonDe(d: string) {
   const x = new Date(`${d.slice(0, 10)}T12:00:00Z`);
-  const a = x.getUTCMonth() >= 7 ? x.getUTCFullYear() : x.getUTCFullYear() - 1;
+  const a = x.getUTCMonth() >= 8 ? x.getUTCFullYear() : x.getUTCFullYear() - 1;
   return `${a}–${a + 1}`;
 }
 

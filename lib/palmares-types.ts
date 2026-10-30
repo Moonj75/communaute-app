@@ -105,7 +105,7 @@ export function triVitrine(a: ResultatP, b: ResultatP) {
   return n(a) - n(b) || cleSaison(b.saison) - cleSaison(a.saison) || (b.date || "").localeCompare(a.date || "") || b.cree.localeCompare(a.cree);
 }
 /** One highlight of the showcase / of the card band. */
-export type Exploit = { id: string; place: number | null; equipe: boolean; competition: string; categorie: string | null; saison: string | null; date?: string | null; scoreFinale?: string | null; adversaire?: string | null; qui: string };
+export type Exploit = { id: string; place: number | null; equipe: boolean; competition: string; categorie: string | null; saison: string | null; date?: string | null; scoreFinale?: string | null; adversaire?: string | null; pays?: string | null; qui: string };
 
 const simple = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\b(19|20)\d{2}\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
 /**
@@ -135,3 +135,6 @@ export function sansArchives<T extends Pick<ResultatP, "joueurs" | "equipe">>(li
     .map((r) => (r.joueurs.some((j) => a.has(j)) ? { ...r, joueurs: r.joueurs.filter((j) => !a.has(j)) } : r))
     .filter((r) => r.joueurs.length || r.equipe);
 }
+
+/** A season written the club's way: « 2026/2027 » → « 2026-2027 » (1 September → 31 August). */
+export const libSaison = (s: string | null | undefined) => (s || "").replace(/\s*\/\s*/, "-");
