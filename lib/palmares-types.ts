@@ -27,6 +27,8 @@ export type ResultatP = {
   /** Final (winner / finalist): score of the final, seen from the club (« 3-1 »), and the opponent. */
   scoreFinale?: string | null;
   adversaire?: string | null;
+  /** Where it took place (city / country): gives the flag. */
+  lieu?: string | null;
   cree: string;
 };
 
@@ -112,15 +114,21 @@ const simple = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLower
  * Results without a day (history, or typed without date): the date of the same competition in the club calendar,
  * in the same season, when it can be found (« Open de Frameries » 2026/2027 → the calendar event of that season).
  */
-export function avecDates<T extends Pick<ResultatP, "competition" | "saison" | "date">>(liste: T[], evs: { nom: string; date: string | null }[]): T[] {
-  const cal = evs.filter((e) => e.date).map((e) => ({ n: simple(e.nom), d: e.date!.slice(0, 10), s: saisonDe(e.date!.slice(0, 10)) }));
+export function avecDates<T extends Pick<ResultatP, "competition" | "saison" | "date"> & { lieu?: string | null }>(liste: T[], evs: { nom: string; date: string | null; lieu?: string | null }[]): T[] {
+  const cal = evs.filter((e) => e.date).map((e) => ({ n: simple(e.nom), d: e.date!.slice(0, 10), s: saisonDe(e.date!.slice(0, 10)), lieu: e.lieu || null }));
   if (!cal.length) return liste;
   return liste.map((r) => {
-    if (r.date || !r.saison) return r;
+    if (r.date && r.lieu) return r;
     const c = simple(r.competition);
     if (c.length < 4) return r;
-    const ev = cal.find((e) => e.s === r.saison && (e.n === c || e.n.includes(c) || c.includes(e.n)));
-    return ev ? { ...r, date: ev.d } : r;
+    const meme = (e: (typeof cal)[number]) => e.n === c || e.n.includes(c) || c.includes(e.n);
+    // The same competition in the calendar: same season, or — history written with the year only (« 2026 ») — that year.
+    const saison = r.date ? saisonDe(r.date.slice(0, 10)) : r.saison;
+    const annee = saison && /^\d{4}$/.test(saison) ? saison : null;
+    const ev = cal.find((e) => meme(e) && (r.date ? e.d === r.date.slice(0, 10) || e.s === saison : annee ? e.d.startsWith(annee) : e.s === saison));
+    if (!ev) return r;
+    // Its date, its place (for the flag) and, for a year-only result, the right season (1 September → 31 August).
+    return { ...r, date: r.date || ev.d, lieu: r.lieu || ev.lieu, saison: annee ? ev.s : r.saison };
   });
 }
 

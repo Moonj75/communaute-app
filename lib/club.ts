@@ -770,6 +770,7 @@ function versResultat(pg: Page): ResultatP {
     origine: texte(p["Texte d'origine"]),
     scoreFinale: texte(p["Score finale"]),
     adversaire: texte(p["Adversaire finale"]),
+    lieu: texte(p["Lieu"]),
     cree: pg.created_time,
   };
 }
@@ -782,7 +783,7 @@ export async function lirePalmares(frais = false): Promise<ResultatP[]> {
   return pages.map(versResultat);
 }
 /** A new result in the Notion « Palmarès du club ». Returns the page id. */
-export async function creerResultat(r: { joueurs: string[]; equipe: string | null; rang: Rang; place: number | null; competition: string; categorie: string | null; saison: string | null; date: string | null; type: TypeCompet; parEquipe: boolean; statut: "Validé" | "À valider"; proposePar: string | null; lien: string | null; origine?: string | null; scoreFinale?: string | null; adversaire?: string | null }) {
+export async function creerResultat(r: { joueurs: string[]; equipe: string | null; rang: Rang; place: number | null; competition: string; categorie: string | null; saison: string | null; date: string | null; type: TypeCompet; parEquipe: boolean; statut: "Validé" | "À valider"; proposePar: string | null; lien: string | null; origine?: string | null; scoreFinale?: string | null; adversaire?: string | null; lieu?: string | null }) {
   const properties: Record<string, unknown> = {
     "Résultat": { title: [{ type: "text", text: { content: titreDe(r).slice(0, 200) } }] },
     Joueurs: { relation: r.joueurs.map((id) => ({ id })) },
@@ -802,6 +803,7 @@ export async function creerResultat(r: { joueurs: string[]; equipe: string | nul
   if (r.lien) properties["Lien résultats"] = { url: r.lien };
   if (r.scoreFinale) properties["Score finale"] = rt(r.scoreFinale);
   if (r.adversaire) properties["Adversaire finale"] = rt(r.adversaire);
+  if (r.lieu) properties["Lieu"] = rt(r.lieu);
   const pg = (await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS.palmares }, properties } })) as Page;
   return pg.id;
 }

@@ -39,7 +39,7 @@ export const NOM_PAYS: Record<string, string> = { BE: "Belgique", FR: "France", 
 /** Country of a calendar event: its place, its name, else Belgium for a « Proximité » trip (nothing when unknown). */
 export const paysEv = (e: { lieu?: string | null; nom: string; deplacement?: string | null }) => paysDe(e.lieu, e.nom) || (/proximit/i.test(e.deplacement || "") ? "BE" : null);
 /** Country of a palmarès result: its competition's name, else Belgium for a Belgian / internal competition. */
-export const paysResultat = (r: { competition: string; type?: string | null }) => paysDe(r.competition) || (r.type === "Belgique" || r.type === "Interne" ? "BE" : null);
+export const paysResultat = (r: { competition: string; type?: string | null; lieu?: string | null }) => paysDe(r.lieu, r.competition) || (r.type === "Belgique" || r.type === "Interne" ? "BE" : null);
 
 /** National-team competitions (World Cup, European Cup, Nations…): the player represents his country, not the club. */
 const NATIONS = /coupe du monde|coupe d.europe|championnat du monde|championnat d.europe|world cup|european cup|\beuros?\b|nations/i;

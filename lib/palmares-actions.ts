@@ -80,7 +80,7 @@ export async function ajouterResultat(fd: FormData): Promise<RetourP> {
   const statut = q.responsable ? "Validé" : "À valider";
   const parEquipe = mode === "eq";
   try {
-    await creerResultat({ joueurs, equipe, rang, place, competition, categorie, saison, date, type: typeDe(competition), parEquipe, statut, proposePar: q.nom, lien, scoreFinale, adversaire });
+    await creerResultat({ joueurs, equipe, rang, place, competition, categorie, saison, date, type: typeDe(competition), parEquipe, statut, proposePar: q.nom, lien, scoreFinale, adversaire, lieu: ev.lieu || null });
   } catch (e) {
     return { ok: false, message: "Notion : " + (e instanceof Error ? e.message : "erreur") };
   }
