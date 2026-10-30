@@ -9,7 +9,8 @@ import { listeDef } from "@/lib/classements-types";
 import { MesClassements } from "@/components/club/Classements";
 import { lireExtraits } from "@/lib/classements-lire";
 import { essayer, lirePalmares } from "@/lib/club";
-import { placeDe, sansTirets, triResultats, triVitrine } from "@/lib/palmares-types";
+import { libSaison, placeDe, sansTirets, triResultats, triVitrine } from "@/lib/palmares-types";
+import { paysResultat } from "@/lib/drapeaux";
 import { PalmaresJoueur } from "@/components/Palmares";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export default async function FichePage() {
   // The card's scrolling band: victories first (newest first), then finals, then semi-finals — 20 at most.
   const tropheesDe = (id: string) =>
     sesResultats(id).filter((r) => r.statut === "Validé" && (placeDe(r) || 99) <= 3).sort(triVitrine).slice(0, 20)
-      .map((r) => ({ place: placeDe(r), equipe: r.parEquipe || Boolean(r.equipe), texte: `${r.competition}${r.categorie ? ` (${r.categorie})` : ""} · ${r.saison || ""}${r.parEquipe || r.equipe ? " · 👥 équipe" : ""}` }));
+      .map((r) => ({ place: placeDe(r), equipe: r.parEquipe || Boolean(r.equipe), pays: paysResultat(r), texte: `${r.competition}${r.categorie ? ` (${r.categorie})` : ""} · ${libSaison(r.saison)}${r.parEquipe || r.equipe ? " · 👥 équipe" : ""}` }));
   const fiches = fiches0;
   const famille = fiches.length > 1;
   const synced = fiches.map((f) => f.synced_at).filter(Boolean).sort().pop();

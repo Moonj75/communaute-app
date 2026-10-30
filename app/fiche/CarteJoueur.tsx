@@ -48,7 +48,7 @@ const place = (n: number | null | undefined) => (n ? <>{n}<sup>{n === 1 ? "er" :
  * the honours scroll from right to left in a band at the bottom of the card. The kitty sits apart, below.
  * `places` = the player's places read from the latest imported rankings (always up to date).
  */
-export function CarteJoueur({ f, famille, photoUrl, places, cag, trophees = [] }: { /** Palmarès (Notion): cup / medal, rank word, competition. */ trophees?: { place: number | null; equipe: boolean; texte: string }[]; f: Fiche; famille: boolean; photoUrl: string | null; places?: PlacesVivantes; /** Kitty history (null = not installed yet). */ cag?: { mouvements: Mouvement[] | null; bareme: Bareme[]; noms: Record<string, string>; evenements?: EvenementLie[] } }) {
+export function CarteJoueur({ f, famille, photoUrl, places, cag, trophees = [] }: { /** Palmarès (Notion): cup / medal, rank word, competition. */ trophees?: { place: number | null; equipe: boolean; pays?: string | null; texte: string }[]; f: Fiche; famille: boolean; photoUrl: string | null; places?: PlacesVivantes; /** Kitty history (null = not installed yet). */ cag?: { mouvements: Mouvement[] | null; bareme: Bareme[]; noms: Record<string, string>; evenements?: EvenementLie[] } }) {
   const full = [f.prenom, f.nom].filter(Boolean).join(" ");
   const cagnotte = Number(f.cagnotte) || 0;
   const titres = (f.palmares || "").split(/\n+/).map((t) => t.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
