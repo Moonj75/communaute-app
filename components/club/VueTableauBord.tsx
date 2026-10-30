@@ -11,6 +11,8 @@ import CopierLien from "./CopierLien";
 import Blocs from "@/components/Blocs";
 import ChoixJoueurs from "./ChoixJoueurs";
 import LigneCompet from "./LigneCompet";
+import { JourBadge, LegendeJours } from "./CarteEvenement";
+import "./tableau-tel.css";
 
 type Props = {
   fiches?: Map<string, FicheLogistiqueT>;
@@ -87,6 +89,13 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   const avecReferent = ouiP.filter((x) => x.r.referent === "Oui").map((x) => x.j.nom);
   const avecRestr = ouiP.filter((x) => x.r.restrictions.length || x.r.depart || x.r.retour).map((x) => x.j.nom);
   const deuxJours = Boolean(sel?.fin && sel.fin !== sel.date);
+  // Two-day event: « S » saturday only, « D » sunday only, next to the name (nothing when both days).
+  const jourDe = (id: string): "S" | "D" | undefined => {
+    if (!deuxJours || !c) return undefined;
+    const j = c.m.get(id)?.jours || "";
+    return /^samedi/i.test(j) ? "S" : /^dimanche/i.test(j) ? "D" : undefined;
+  };
+  const nbUnJour = c ? [...c.o, ...c.p].filter((j) => jourDe(j.notionId)).length : 0;
   const chiffres = (
     <section className="tb-kpis tb-bande bande-fixe" aria-label="Chiffres clés de la compétition choisie" aria-live="polite">
       <div className="tb-kpi k-nat tb-ksel">
@@ -224,9 +233,9 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
         { id: "qui", titre: "Qui vient · réponses", ic: "👥", badge: c ? `${c.o.length}/${N}` : null, contenu: sel && c ? (<>
           <section className="panel"><div className="bd">
               <div className="three">
-                <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}</span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className={`chip o${c.m.get(j.notionId)?.valide ? " valide" : ""}`}><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}</span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
+                <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}<LegendeJours n={nbUnJour} /></span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className={`chip o${c.m.get(j.notionId)?.valide ? " valide" : ""}`}><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}<JourBadge j={jourDe(j.notionId)} /></span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
                 <div className="box b-p"><span className="bh">En attente ({c.att.length})</span><div className="chips">{c.att.length ? c.att.map((j) => <Link key={j.notionId} className="chip chip-lien" href={lienReponse(sel, j.notionId)} title={`Répondre pour ${j.nom}`}><i>{initiales(j.nom)}</i>{j.nom} ✎</Link>) : <span className="muted small">Tout le monde a répondu 🎉</span>}</div></div>
-                <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <span key={j.notionId} className={`chip ${c.p.includes(j) ? "m" : "n"}`}><i>{initiales(j.nom)}</i>{j.nom}</span>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
+                <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <span key={j.notionId} className={`chip ${c.p.includes(j) ? "m" : "n"}`}><i>{initiales(j.nom)}</i>{j.nom}{c.p.includes(j) ? <JourBadge j={jourDe(j.notionId)} /> : null}</span>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
               </div>
           </div></section>
           {/* How the answers came in, under the people (formerly its own page « Rythme des réponses »). */}

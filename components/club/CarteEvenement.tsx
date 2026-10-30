@@ -191,7 +191,7 @@ export default function CarteEvenement({
 }
 
 /** Round « S » (saturday only) or « D » (sunday only) badge next to a name; nothing when the player comes both days. */
-function JourBadge({ j }: { j?: "S" | "D" }) {
+export function JourBadge({ j }: { j?: "S" | "D" }) {
   if (!j) return null;
   return (
     <b
@@ -205,7 +205,7 @@ function JourBadge({ j }: { j?: "S" | "D" }) {
 }
 
 /** Legend shown only when somebody comes one day only. */
-function LegendeJours({ n }: { n: number }) {
+export function LegendeJours({ n }: { n: number }) {
   if (!n) return null;
   return (
     <span className="small" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: 8, fontWeight: 600, color: "var(--muted)" }}>

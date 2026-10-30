@@ -1,0 +1,32 @@
+/* Staff · Tableau de bord, « Priorités · 4 mois » sur téléphone : chiffres lisibles et une liste compacte. */
+@media (max-width: 640px) {
+  /* Bande des chiffres : le nom de la compétition, puis 3 grands chiffres. */
+  .tb-kpis.tb-bande { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; }
+  .tb-bande .tb-ksel { grid-column: 1 / -1; padding: 8px 10px !important; }
+  .tb-bande .tb-ksel .tb-knom { font-size: 18px !important; }
+  .tb-bande .tb-kpi:not(.tb-ksel) { display: flex !important; flex-direction: column; align-items: center; text-align: center; gap: 2px !important; padding: 7px 4px !important; }
+  .tb-bande .tb-kpi:not(.tb-ksel) .tb-kl { font-size: 9.5px !important; letter-spacing: .04em !important; white-space: nowrap; }
+  .tb-bande .tb-kpi:not(.tb-ksel) .tb-kv { font-size: 24px !important; line-height: 1; }
+  .tb-bande .tb-kpi:not(.tb-ksel) .tb-kt { width: 80%; height: 4px !important; }
+
+  /* Titre et légende */
+  .tb-prio .hd { flex-wrap: wrap; gap: 4px; }
+  .tb-prio .hd h2 { font-size: 16px; white-space: normal; }
+  .tb-leg { font-size: 10.5px; gap: 8px; }
+
+  /* Une compétition = une ligne compacte : le compte à rebours en gros à gauche. */
+  .tb-pg { grid-template-columns: 1fr !important; gap: 8px !important; padding: 10px 8px 12px !important; max-height: none !important; }
+  .tb-pg .tb-pc { position: relative; display: grid; grid-template-columns: 58px minmax(0, 1fr); column-gap: 10px; row-gap: 3px; padding: 9px 10px; opacity: 1 !important; filter: none !important; }
+  .tb-pc .tb-t1 { display: contents; }
+  .tb-pc .tb-t1 .tb-cd { grid-column: 1; grid-row: 1 / span 3; align-self: stretch; display: grid; place-items: center; border-radius: 12px; color: #fff; font-family: var(--font-display); font-style: italic; font-weight: 900; font-size: 17px; padding: 0; }
+  .tb-pc .tb-nm { grid-column: 2; grid-row: 1; font-size: 16px; }
+  .tb-pc .tb-t1 .v-date { grid-column: 2; grid-row: 2; font-size: 12.5px; font-weight: 800; color: var(--t-second); text-transform: capitalize; }
+  .tb-pc .tb-ds { grid-column: 2; grid-row: 3; font-size: 11.5px; }
+  .tb-pc .tb-ct { grid-column: 1 / -1; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--ligne-sep); font-size: 13.5px; }
+  .tb-pc .tb-ct b.num { font-size: 16px; }
+  .tb-pc .tb-pied { grid-column: 1 / -1; gap: 4px; }
+  .tb-pc .tb-pied > span { font-size: 11px; }
+  .tb-pc.on { box-shadow: 0 0 0 2.5px #00e5ff, 0 10px 20px -12px rgba(0, 229, 255, .6) !important; }
+  .tb-pc.on::after { top: -9px; right: 8px; font-size: 9.5px; }
+}
+@media (max-width: 640px) { .tb-leg span { white-space: nowrap; } .tb-prio .hd h2 { flex: 1 1 100%; } }
