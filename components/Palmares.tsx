@@ -270,6 +270,8 @@ export function AjoutResultat({ joueurs, competitions, responsable, moi, initial
   const [choisis, setChoisis] = useState<string[]>([]);
   const [equipe, setEquipe] = useState("");
   const [rang, setRang] = useState("");
+  // « Autre place »: any final place typed in (e.g. 18th).
+  const [placeLibre, setPlaceLibre] = useState("");
   const [cat, setCat] = useState("");
   const [cherche, setCherche] = useState("");
   const [toutes, setToutes] = useState(false);
@@ -290,7 +292,7 @@ export function AjoutResultat({ joueurs, competitions, responsable, moi, initial
   };
   const ajouterJ = (id: string) => { setChoisis((x) => (mode === "ind" ? [id] : [...x, id])); setCherche(""); };
   const sansMoi = !responsable && moi.length > 0 && !choisis.some((y) => moi.includes(y));
-  const manque = !c ? "Choisis la compétition" : sansMoi && mode ? "Ton propre résultat : ajoute-toi" : !mode ? "Individuel ou par équipe ?" : jours.length > 1 && !jour ? "Choisis le jour" : mode === "ind" && choisis.length !== 1 ? "Choisis le joueur" : mode === "eq" && !equipe ? "Choisis l'équipe (Team A / Team B)" : !rang ? "Choisis le résultat" : null;
+  const manque = !c ? "Choisis la compétition" : sansMoi && mode ? "Ton propre résultat : ajoute-toi" : !mode ? "Individuel ou par équipe ?" : jours.length > 1 && !jour ? "Choisis le jour" : mode === "ind" && choisis.length !== 1 ? "Choisis le joueur" : mode === "eq" && !equipe ? "Choisis l'équipe (Team A / Team B)" : !rang ? "Choisis le résultat" : rang === "Autre place" && !(Number(placeLibre) >= 1) ? "Indique la place (ex. 18)" : null;
   const envoyer = (fd: FormData) => start(async () => {
     choisis.forEach((x) => fd.append("joueurs", x));
     const r = await ajouterResultat(fd);
@@ -364,7 +366,17 @@ export function AjoutResultat({ joueurs, competitions, responsable, moi, initial
                 <Trophee place={r.place} equipe={mode === "eq"} taille={r.place === 1 ? 46 : 38} /><b>{r.court}</b>
               </button>
             ))}
+            <button type="button" className={`af-rang rx${rang === "Autre place" ? " on" : ""}`} onClick={() => setRang("Autre place")}>
+              <Trophee place={Number(placeLibre) || null} equipe={mode === "eq"} taille={38} /><b>Autre place</b>
+            </button>
           </div>
+          {rang === "Autre place" ? (
+            <label className="af-place">
+              <span>Place obtenue</span>
+              <input className="input num" name="place" inputMode="numeric" maxLength={3} placeholder="18" value={placeLibre} autoFocus onChange={(e) => setPlaceLibre(e.target.value.replace(/\D/g, "").slice(0, 3))} />
+              <b>{placeLibre ? (placeLibre === "1" ? "er" : "e") : "e"}</b>
+            </label>
+          ) : null}
           {rang === "Vainqueur" || rang === "Finaliste" ? (
             <div className="af-finale">
               <p className="af-finale-t">⚔️ Le match de la finale <small className="muted">(facultatif)</small></p>

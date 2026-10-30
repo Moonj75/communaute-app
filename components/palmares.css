@@ -203,3 +203,7 @@
 .af-score small { font-size: 12px; font-weight: 800; }
 .af-score input { width: 70px; text-align: center; font-size: 26px !important; font-weight: 900; }
 .af-score > b { font-size: 26px; padding-bottom: 8px; }
+.af-rangs { grid-template-columns: repeat(3, 1fr); }
+.af-place { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px; border-radius: 14px; background: var(--sunk, #f3eee8); font-weight: 800; }
+.af-place input { width: 84px; text-align: center; font-size: 28px !important; font-weight: 900; }
+.af-place b { font-size: 22px; }
