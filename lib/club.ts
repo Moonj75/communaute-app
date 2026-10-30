@@ -417,6 +417,8 @@ export type ReponseNative = {
   vehicule: "Oui" | "Non" | null;
   referent: "Oui" | "Non" | null;
   definitif: boolean;
+  /** Staff only: takes the final validation off (the player can change his answer again). */
+  deverrouiller?: boolean;
 };
 
 export async function enregistrerReponse(r: ReponseNative) {
@@ -437,6 +439,10 @@ export async function enregistrerReponse(r: ReponseNative) {
   if (r.definitif) {
     properties["Validation définitive"] = { checkbox: true };
     properties["Validée le"] = { date: { start: new Date().toISOString().slice(0, 10) } };
+  } else if (r.deverrouiller) {
+    // Staff: the validation is taken off, the player can change his answer again.
+    properties["Validation définitive"] = { checkbox: false };
+    properties["Validée le"] = { date: null };
   }
   if (r.participationId) await notion(`pages/${r.participationId}`, { method: "PATCH", body: { properties } });
   else await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS.participations }, properties } });
