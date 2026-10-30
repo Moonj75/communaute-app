@@ -3,8 +3,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Trophee } from "./Trophee";
 import { classeRang, motRang } from "@/lib/palmares-types";
+import Drapeau from "./Drapeau";
 
-type T = { place: number | null; equipe: boolean; texte: string };
+type T = { place: number | null; equipe: boolean; pays?: string | null; texte: string };
 
 /**
  * Player fiche: the palmarès band. It slides from one result to the next and stops on each one,
@@ -41,7 +42,7 @@ export default function BandePalmares({ trophees, duree = 4200 }: { trophees: T[
         {trophees.map((t, k) => (
           <span key={k} className={`bp-t ${classeRang(t.place)}${k === i ? " on" : ""}${k === i && (gros || n < 2) ? " gros" : ""}`} aria-hidden={k !== i}>
             <Trophee place={t.place} equipe={t.equipe} taille={32} delai={(k % 5) * 0.6} />
-            <span className="bp-c"><em>{motRang(t.place, true)}</em><span className="bp-x">{t.texte}</span></span>
+            <span className="bp-c"><em>{motRang(t.place, true)}</em><span className="bp-x"><Drapeau code={t.pays ?? null} />{t.texte}</span></span>
           </span>
         ))}
       </div>

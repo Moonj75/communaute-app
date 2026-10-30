@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Trophee } from "./Trophee";
-import { classeRang, motRang } from "@/lib/palmares-types";
+import { classeRang, libSaison, motRang } from "@/lib/palmares-types";
+import Drapeau from "./Drapeau";
 import { couleurCategorie } from "@/lib/classements-types";
 import "./roue.css";
 
@@ -27,14 +28,15 @@ function nomBeau(qui: string) {
 }
 
 /** One result of the wheel. */
-export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null; date?: string | null; scoreFinale?: string | null; adversaire?: string | null };
+export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null; date?: string | null; scoreFinale?: string | null; adversaire?: string | null; /** Country of the tournament (flag). */ pays?: string | null };
 
 /** « 12 octobre 2025 », or the season when the day is not known. */
 function Quand({ c }: { c: Cran }) {
-  if (!c.date) return c.saison ? <span className="rc-date">📅 Saison {c.saison}</span> : null;
+  if (!c.date) return c.saison ? <span className="rc-date"><small>Saison</small><b>{libSaison(c.saison)}</b></span> : null;
   const d = new Date(c.date.slice(0, 10) + "T12:00:00Z");
   const mois = d.toLocaleDateString("fr-BE", { month: "long", timeZone: "UTC" });
-  return <span className="rc-date">📅 <small>{d.getUTCDate()}</small> <b>{mois}</b> {d.getUTCFullYear()}</span>;
+  // Two neat lines: « 4 octobre » then the year.
+  return <span className="rc-date"><b>{d.getUTCDate()} {mois}</b><small>{d.getUTCFullYear()}</small></span>;
 }
 /** Pause after a tap on the card or on an arrow, before the wheel goes on by itself. */
 const ARRET = 12000;
@@ -133,16 +135,17 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 7
                 <span className="rc-m">{nomBeau(c.qui)}{c.categorie ? <span className="rc-mcat" style={couleurCategorie(c.categorie) ? ({ "--cc": couleurCategorie(c.categorie) } as React.CSSProperties) : undefined}>{c.categorie}</span> : null}</span>
                 {/* Right: the event, big. */}
                 <span className="rc-d">
+                  {c.pays ? <span className="rc-flag"><Drapeau code={c.pays} /></span> : null}
                   <b className="rc-ev">{c.competition}</b>
                   <Quand c={c} />
-                  {c.scoreFinale || c.adversaire ? <span className="rc-fin">⚔️ Finale{c.scoreFinale ? <b className="num"> {c.scoreFinale.replace("-", " – ")}</b> : null}{c.adversaire ? <> contre <b>{c.adversaire}</b></> : null}</span> : null}
+                  {c.scoreFinale || c.adversaire ? <span className="rc-fin">⚔️{c.scoreFinale ? <b className="num"> {c.scoreFinale.replace("-", "–")}</b> : null}{c.adversaire ? <> vs <b>{c.adversaire}</b></> : null}</span> : null}
                 </span>
               </>
             ) : (
               <>
                 <span className="rc-vg"><Trophee place={p} equipe={c.equipe} taille={34} /><span className={`rc-mot ${rc}`}>{motRang(p, true)}</span></span>
                 <b className="rc-vn">{c.qui}</b>
-                <span className="rc-ve">{c.competition}</span>
+                <span className="rc-ve"><Drapeau code={c.pays ?? null} />{c.competition}</span>
               </>
             )}
           </div>

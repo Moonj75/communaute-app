@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES_P, JEUNES, classeRang, cleSaison, compter, icRang, libelleRang, motRang, placeDe, triMedailles, triVitrine, type ResultatP } from "@/lib/palmares-types";
+import { CATEGORIES_P, JEUNES, classeRang, libSaison, cleSaison, compter, icRang, libelleRang, motRang, placeDe, triMedailles, triVitrine, type ResultatP } from "@/lib/palmares-types";
 import { Trophee } from "./Trophee";
 import { ajouterResultat, importerHistorique, rafraichirPalmares, supprimerResultat, traiterProposition, type RetourP } from "@/lib/palmares-actions";
 import "./palmares.css";
 import Roue, { type Cran } from "./Roue";
+import Drapeau from "./Drapeau";
+import { paysResultat } from "@/lib/drapeaux";
 import Blocs from "./Blocs";
 import type { Exploit } from "@/lib/palmares-types";
 
@@ -22,7 +24,7 @@ function Ligne({ r, noms, montrerQui = true, actions }: { r: ResultatP; noms?: N
         <b>{libelleRang(r)}</b> · {r.competition}
         <small>{[montrerQui && noms ? quiDe(r, noms) : null, r.categorie, r.parEquipe && !r.equipe ? "par équipe" : null].filter(Boolean).join(" · ")}</small>
       </span>
-      <span className="pa-s">{r.saison || ""}</span>
+      <span className="pa-s">{libSaison(r.saison)}</span>
       {actions}
     </li>
   );
@@ -62,7 +64,7 @@ function Carte({ r, qui, delai = 0, action }: { r: ResultatP; qui?: string; dela
       <Trophee place={p} equipe={eq} taille={52} delai={delai} />
       <span className={`pk-pl ${c}`}>{motRang(p)}</span>
       {qui ? <b className="pk-qui">{qui}</b> : null}
-      <span className="pk-co">{r.competition}</span>
+      <span className="pk-co"><Drapeau code={paysResultat(r)} />{r.competition}</span>
       <span className={`pk-badge ${eq ? "eq" : "in"}`}>{eq ? "👥 Par équipe" : "👤 Individuel"}</span>
     </li>
   );
@@ -87,7 +89,7 @@ function SaisonsCartes({ liste, noms, ouvertes = 2, parSaison = 6, actions }: { 
         const montre = plein ? l : l.slice(0, parSaison);
         return (
           <section key={s}>
-            <p className="pk-sz">{s} <small>{m.or ? `🏆 ${m.or} ` : ""}{m.argent ? `🥈 ${m.argent} ` : ""}{m.bronze ? `🥉 ${m.bronze} ` : ""}· {l.length} résultat{l.length > 1 ? "s" : ""}</small></p>
+            <p className="pk-sz">{libSaison(s)} <small>{m.or ? `🏆 ${m.or} ` : ""}{m.argent ? `🥈 ${m.argent} ` : ""}{m.bronze ? `🥉 ${m.bronze} ` : ""}· {l.length} résultat{l.length > 1 ? "s" : ""}</small></p>
             <ul className="pk-grille">{montre.map((r, i) => <Carte key={r.id} r={r} qui={noms ? quiDe(r, noms) : undefined} delai={(i % 6) * 0.5} action={actions?.(r)} />)}</ul>
             {l.length > parSaison ? <button type="button" className="btn en-mini pa-plus" onClick={() => setOuv((o) => (plein ? o.filter((x) => x !== s) : [...o, s]))}>{plein ? "Replier" : `+ ${l.length - parSaison} autres résultats de ${s}`}</button> : null}
           </section>
@@ -112,7 +114,7 @@ function Victoires({ m, titre = "Victoires", sous }: { m: ReturnType<typeof comp
   );
 }
 
-const versCran = (r: ResultatP, noms: Noms): Cran => ({ id: r.id, place: placeDe(r), equipe: estEquipe(r), qui: quiDe(r, noms), competition: r.competition, categorie: r.categorie, saison: r.saison, date: r.date, scoreFinale: r.scoreFinale, adversaire: r.adversaire });
+const versCran = (r: ResultatP, noms: Noms): Cran => ({ id: r.id, place: placeDe(r), equipe: estEquipe(r), qui: quiDe(r, noms), competition: r.competition, categorie: r.categorie, saison: r.saison, date: r.date, scoreFinale: r.scoreFinale, adversaire: r.adversaire, pays: paysResultat(r) });
 const FILTRES_R = FILTRES.filter((x) => x.id !== "club");
 
 /**
@@ -148,7 +150,7 @@ export function PalmaresPages({ resultats, noms, gerer = false, outils, initial 
   const choixSaison = (
     <select className="pa-sel" value={sz} onChange={(e) => setSz(e.target.value)} aria-label="Saison">
       <option value="">Toutes les saisons</option>
-      {saisons.map((s) => <option key={s}>{s}</option>)}
+      {saisons.map((s) => <option key={s} value={s}>{libSaison(s)}</option>)}
     </select>
   );
 
@@ -236,7 +238,7 @@ export function PalmaresAccueil({ exploits, totaux }: { /** Chosen on the server
 }
 
 /** A club competition of the calendar, proposed in the form (past ones only: a result comes after the event). */
-export type CompetCal = { id: string; nom: string; date: string; fin: string | null; lieu: string | null };
+export type CompetCal = { id: string; nom: string; date: string; fin: string | null; lieu: string | null; pays?: string | null };
 const RANGS_SAISIE: { id: string; court: string; place: number }[] = [
   { id: "Huitième de finaliste", court: "8e de finale", place: 9 },
   { id: "Quart de finaliste", court: "¼ de finale", place: 5 },
@@ -314,7 +316,7 @@ export function AjoutResultat({ joueurs, competitions, responsable, moi, initial
       <div className="af-evs">
         {vus.map((x) => (
           <button type="button" key={x.id} className={`af-ev${ev === x.id ? " on" : ""}`} onClick={() => choisirEv(x.id)}>
-            <b>{x.nom}</b>
+            <b><Drapeau code={x.pays ?? null} />{x.nom}</b>
             <small>📅 {jourCourt(x.date)}{x.fin && x.fin > x.date ? " · 2 jours" : ""}{x.lieu ? ` · ${x.lieu}` : ""}</small>
           </button>
         ))}
