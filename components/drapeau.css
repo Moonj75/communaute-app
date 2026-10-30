@@ -1,10 +1,10 @@
-/* A flag that waves in the wind, next to a tournament's name. */
-.drapeau { display: inline-block; margin-right: .3em; line-height: 1; font-style: normal; vertical-align: -.08em; perspective: 60px; }
-.drapeau-in { display: inline-block; transform-origin: 0 50%; animation: drapeau-vent 2.6s ease-in-out infinite; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); }
+/* A flag (SVG, same on every device) that waves in the wind, next to or above a tournament's name. */
+.drapeau { display: inline-block; margin-right: .35em; line-height: 0; vertical-align: -.12em; }
+.drapeau-in { display: inline-block; width: 1.45em; height: 1em; border-radius: 2px; transform-origin: 0 50%; animation: drapeau-vent 2.6s ease-in-out infinite; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .35)); }
 @keyframes drapeau-vent {
-  0%, 100% { transform: rotateY(0deg) skewY(0deg) scaleX(1); }
-  25% { transform: rotateY(-14deg) skewY(-4deg) scaleX(.95); }
-  50% { transform: rotateY(6deg) skewY(3deg) scaleX(1.02); }
-  75% { transform: rotateY(-8deg) skewY(-2deg) scaleX(.97); }
+  0%, 100% { transform: skewY(0deg) scaleX(1); }
+  25% { transform: skewY(-5deg) scaleX(.93); }
+  50% { transform: skewY(3deg) scaleX(1.01); }
+  75% { transform: skewY(-2deg) scaleX(.96); }
 }
 @media (prefers-reduced-motion: reduce) { .drapeau-in { animation: none; } }
