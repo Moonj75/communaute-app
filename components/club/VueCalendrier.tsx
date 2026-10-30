@@ -9,6 +9,8 @@ import CarteEvenement, { decisionBadge } from "./CarteEvenement";
 import Blocs from "@/components/Blocs";
 import Jalons from "./Jalons";
 import StatutChip from "./StatutChip";
+import Drapeau from "@/components/Drapeau";
+import { paysEv } from "@/lib/drapeaux";
 
 export type CalendrierProps = {
   fiches?: Map<string, FicheLogistiqueT>;
@@ -138,7 +140,7 @@ export default function VueCalendrier({ evs, parts, famille, m, e, erreur, fiche
                     <small>{moisCourt(x.date!)}</small>
                   </span>
                   <span className="row-main">
-                    <b>{x.nom}</b>
+                    <b><Drapeau code={paysEv(x)} />{x.nom}</b>
                     <small>
                       {x.lieu || "Lieu à préciser"} · {compteARebours(x.date, today)}
                     </small>

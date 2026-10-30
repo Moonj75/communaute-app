@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Drapeau from "@/components/Drapeau";
+import { paysEv } from "@/lib/drapeaux";
 
 export type InfoCompet = {
   id: string;
@@ -46,7 +48,7 @@ export default function LigneCompet({ x }: { x: InfoCompet }) {
       <button type="button" className="cp-tete" onClick={clic} aria-expanded={ouvert} title="Ouvrir la fiche de l'évènement">
         <span className="row-d"><b className="num">{x.jour}</b><small>{x.mois}</small></span>
         <span className="row-main">
-          <b>{x.nom}</b>
+          <b><Drapeau code={paysEv(x)} />{x.nom}</b>
           <span className="bar3" aria-label={`${x.oui} oui, ${x.peutEtre} peut-être, ${x.non} non`}>
             <i className="o" style={{ width: `${pc(x.oui, x.total)}%` }} />
             <i className="m" style={{ width: `${pc(x.peutEtre, x.total)}%` }} />

@@ -11,6 +11,8 @@ import PhotoAccueil from "./PhotoAccueil";
 import { PalmaresAccueil } from "@/components/Palmares";
 import type { Exploit } from "@/lib/palmares-types";
 import "./entr.css";
+import Drapeau from "@/components/Drapeau";
+import { paysEv } from "@/lib/drapeaux";
 
 export type Gens = { prenom: string | null; cagnotte: number | null; roles: string[] | null; actif: boolean }[];
 
@@ -70,7 +72,7 @@ export default function VueAccueil(p: {
           <span className="vg-j num">{p.j === null ? "—" : p.j === 0 ? "Jour J" : p.j === 1 ? "Demain" : <>J-{p.j}</>}</span>
         </div>
         <div className="vg-ev">
-          <b>{p.prochaine?.nom || "Calendrier en préparation"}</b>
+          <b>{p.prochaine ? <><Drapeau code={paysEv(p.prochaine)} />{p.prochaine.nom}</> : "Calendrier en préparation"}</b>
           {p.prochaine ? (
             <span>
               {dateLongue(p.prochaine.date)}
@@ -87,7 +89,7 @@ export default function VueAccueil(p: {
         <Link className={`acc-suiv ${proche(p.suivante.j)}`} href="/calendrier">
           <span className="acc-sk">Ensuite</span>
           <b className="acc-sj num">J-{p.suivante.j}</b>
-          <span className="acc-sn">{p.suivante.nom}</span>
+          <span className="acc-sn"><Drapeau code={paysEv(p.suivante)} />{p.suivante.nom}</span>
           <span className="acc-sd">{dateLongue(p.suivante.date)}{p.suivante.lieu ? ` · ${p.suivante.lieu}` : ""}</span>
         </Link>
       ) : null}

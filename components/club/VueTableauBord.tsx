@@ -13,6 +13,8 @@ import ChoixJoueurs from "./ChoixJoueurs";
 import LigneCompet from "./LigneCompet";
 import { JourBadge, LegendeJours } from "./CarteEvenement";
 import "./tableau-tel.css";
+import Drapeau from "@/components/Drapeau";
+import { paysEv } from "@/lib/drapeaux";
 
 type Props = {
   fiches?: Map<string, FicheLogistiqueT>;
@@ -101,7 +103,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
       <div className="tb-kpi k-nat tb-ksel">
         <span className="tb-kh"><span className="tb-kl">{sel && sel.date! >= today ? (sel.id === avenir[0]?.id ? "Prochaine compétition" : "Compétition choisie") : "Compétition"}</span>
           {sel?.date ? <span className={`tb-cd ${proximite(sel.date)}`}>{compteARebours(sel.date, today)}</span> : null}</span>
-        <b className="tb-knom">{sel ? sel.nom : "Rien de prévu"}</b>
+        <b className="tb-knom">{sel ? <><Drapeau code={paysEv(sel)} />{sel.nom}</> : "Rien de prévu"}</b>
         {sel ? <span className="tb-ks">{dateMoyenne(sel.date)}{sel.lieu ? ` · ${sel.lieu}` : ""}</span> : null}
         {sel ? (
           <span className="tb-kbtn">
@@ -148,7 +150,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                 return (
                   <Link key={x.id} href={`/staff/inscriptions?e=${x.id}#bloc-prio`} scroll={false} className={`tb-pc${x.id === sel?.id ? " on" : ""}`}>
                     <span className="tb-t1"><span className="v-date">{dateMoyenne(x.date)}</span><span className={`tb-cd ${proximite(x.date!)}`}>{compteARebours(x.date, today)}</span></span>
-                    <b className="tb-nm">{x.nom}</b>
+                    <b className="tb-nm"><Drapeau code={paysEv(x)} />{x.nom}</b>
                     <span className="tb-ds">{x.lieu ? <span className="v-lieu">📍 {x.lieu}</span> : null}{x.competition ? <span>🏆 {x.competition}</span> : null}</span>
                     <span className="tb-ct">
                       <span className="tb-anneau" style={{ color: couleurObjectif(pct(k.o.length, but || N)) }}><Anneau v={pct(k.o.length, but || N)} taille={34} epaisseur={5} couleur="currentColor" /></span>
@@ -172,7 +174,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
               <div className="stat-hero">
                 <div>
                   <span className="eyebrow">{dateMoyenne(sel.date)} · {compteARebours(sel.date, today)}{sel.lieu ? ` · ${sel.lieu}` : ""}</span>
-                  <h2>{sel.nom}</h2>
+                  <h2><Drapeau code={paysEv(sel)} />{sel.nom}</h2>
                 </div>
                 <div className="gauge">
                   <div className="gauge-l">

@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import type { Evenement, JoueurLite, Participation } from "@/lib/club-types";
 import { compteARebours, dateMoyenne, indexReponses, initiales, joursEntre, moisCourt } from "@/lib/club-types";
 import { DECISION_OUI } from "@/lib/club-types";
+import Drapeau from "@/components/Drapeau";
+import { paysEv } from "@/lib/drapeaux";
 
 export function decisionBadge(d: string | null) {
   if (!d) return <span className="dec dec-p">À décider</span>;
@@ -109,7 +111,7 @@ export default function CarteEvenement({
         </div>
         <div className="ce-id">
           <span className={`ce-cd ${proximite(j)}`}>{compteARebours(ev.date, today)}</span>
-          <h3 className="ce-nom">{ev.nom}</h3>
+          <h3 className="ce-nom"><Drapeau code={paysEv(ev)} />{ev.nom}</h3>
           {ev.lieu ? <span className="ce-l v-lieu">📍 {ev.lieu}</span> : null}
           {ev.competition || ev.notes ? (
             <span className="ce-l">🏆 {[ev.competition, ev.notes].filter(Boolean).join(" · ")}</span>

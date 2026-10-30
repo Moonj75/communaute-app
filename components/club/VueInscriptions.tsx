@@ -6,6 +6,8 @@ import {
 import StatutChip from "./StatutChip";
 import Blocs from "@/components/Blocs";
 import { decisionBadge } from "./VueCalendrier";
+import Drapeau from "@/components/Drapeau";
+import { paysEv } from "@/lib/drapeaux";
 
 export default function VueInscriptions({ evs, parts, famille, erreur, elig }: { evs: Evenement[]; parts: Participation[]; famille: JoueurLite[]; erreur?: string | null; /** Players concerned by each form (none = everybody). */ elig?: Map<string, string[]> }) {
   const today = aujourdhui();
@@ -31,7 +33,7 @@ export default function VueInscriptions({ evs, parts, famille, erreur, elig }: {
         <span className="cdn">{compteARebours(e.date, today)}</span>
       </div>
       <div className="ins-main">
-        <h3>{e.nom}</h3>
+        <h3><Drapeau code={paysEv(e)} />{e.nom}</h3>
         <p className="muted small">
           {e.lieu ? `📍 ${e.lieu}` : "Lieu à préciser"}
           {e.fin && e.fin !== e.date ? ` · jusqu'au ${dateCourte(e.fin)}` : ""}
