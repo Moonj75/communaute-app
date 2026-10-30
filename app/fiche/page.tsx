@@ -8,8 +8,8 @@ import { lireEvenementsLies, lireHistoriques } from "@/lib/cagnotte-db";
 import { listeDef } from "@/lib/classements-types";
 import { MesClassements } from "@/components/club/Classements";
 import { lireExtraits } from "@/lib/classements-lire";
-import { essayer, lirePalmares } from "@/lib/club";
-import { libSaison, placeDe, sansTirets, triResultats, triVitrine } from "@/lib/palmares-types";
+import { essayer, lireCalendrier, lirePalmares } from "@/lib/club";
+import { avecDates, libSaison, placeDe, sansTirets, triResultats, triVitrine } from "@/lib/palmares-types";
 import { paysResultat } from "@/lib/drapeaux";
 import { PalmaresJoueur } from "@/components/Palmares";
 
@@ -31,7 +31,9 @@ export default async function FichePage() {
   if (res.error) res = await lire(COLS);
   const fiches0 = ((res.data || []) as unknown) as Fiche[];
   // Palmarès (Notion « Palmarès du club »): the card's scrolling band shows the titles and finals.
-  const palma = (await essayer(lirePalmares)).data || [];
+  // The calendar gives the day, the place (flag) and the right season of results written with a year only.
+  const [palmaR, calP] = await Promise.all([essayer(lirePalmares), essayer(lireCalendrier)]);
+  const palma = avecDates(palmaR.data || [], calP.data || []);
   const sesResultats = (id: string) => palma.filter((r) => r.joueurs.includes(sansTirets(id))).sort(triResultats);
   // The card's scrolling band: victories first (newest first), then finals, then semi-finals — 20 at most.
   const tropheesDe = (id: string) =>
