@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import { LISTES, resserrer, type LigneClassement } from "./classements-types";
 import { SUPABASE_KEY, SUPABASE_URL } from "./supabase/env";
+import { clientAdmin } from "./supabase/admin";
 
 /* Readers of the rankings stored in Supabase. They return empty lists when the table does not exist yet.
  *
@@ -87,14 +88,31 @@ async function _lireClubs(): Promise<{ nat: LigneClassement[]; equipes: LigneCla
   return { nat: (n.data || []) as LigneClassement[], equipes: toutes };
 }
 
+/* Archived members (former players): their lines stay in the rankings, but no longer as « ours ». */
+export const TAG_ARCHIVES = "archives";
+const _archives = unstable_cache(async () => {
+  const db = clientAdmin();
+  if (!db) return [] as string[];
+  const { data, error } = await db.from("joueurs").select("notion_id").eq("archive", true);
+  if (error) return [] as string[];
+  return ((data || []) as { notion_id: string }[]).map((j) => j.notion_id);
+}, ["archives-joueurs"], { tags: [TAG_ARCHIVES], revalidate: 3600 });
+async function sansArchives(lignes: LigneClassement[], garderAutres = true) {
+  const a = new Set(await _archives().catch(() => [] as string[]));
+  if (!a.size) return lignes;
+  const out = lignes.map((l) => (l.joueur_id && a.has(l.joueur_id) ? { ...l, eugies: false, joueur_id: null } : l));
+  return garderAutres ? out : out.filter((l) => l.eugies);
+}
+
 export const lireEugiesCache = enCache("lireEugies", _lireEugies);
 export function lireEugies(_sb: SupabaseClient) {
-  return lireEugiesCache().catch(() => [] as LigneClassement[]);
+  return lireEugiesCache().then((l) => sansArchives(l, false)).catch(() => [] as LigneClassement[]);
 }
 
 export const lireListeCache = enCache("lireListe", _lireListe);
 export function lireListe(_sb: SupabaseClient, liste: string, filtre?: string) {
-  return lireListeCache(liste, filtre).catch(() => [] as LigneClassement[]);
+  // « club » filter: our lines only, so an archived member's line leaves the list.
+  return lireListeCache(liste, filtre).then((l) => sansArchives(l, filtre !== "club")).catch(() => [] as LigneClassement[]);
 }
 
 export const compterListesCache = enCache("compterListes", _compterListes);
