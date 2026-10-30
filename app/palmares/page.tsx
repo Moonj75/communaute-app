@@ -5,6 +5,7 @@ import { displayName, getVue } from "@/lib/profil";
 import { essayer, lireCalendrier, lireMembresRoles, lirePalmares, nomsJoueurs } from "@/lib/club";
 import { ROLE_PALMARES, avecDates, sansArchives, sansTirets } from "@/lib/palmares-types";
 import { estCompetition, estRetenu } from "@/lib/club-types";
+import { paysEv } from "@/lib/drapeaux";
 import { AValider, AjoutResultat, ImportHistorique, PalmaresPages, type CompetCal } from "@/components/Palmares";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export default async function PalmaresPage({ searchParams }: { searchParams: Pro
   const auj = new Date().toISOString().slice(0, 10);
   const competitions: CompetCal[] = (calR.data || [])
     .filter((e) => e.date && e.date.slice(0, 10) >= depuis && e.date.slice(0, 10) <= auj && estCompetition(e) && estRetenu(e) && !e.jourSpecial)
-    .map((e) => ({ id: e.id, nom: e.nom, date: e.date!.slice(0, 10), fin: e.fin ? e.fin.slice(0, 10) : null, lieu: e.lieu || null }))
+    .map((e) => ({ id: e.id, nom: e.nom, date: e.date!.slice(0, 10), fin: e.fin ? e.fin.slice(0, 10) : null, lieu: e.lieu || null, pays: paysEv(e) }))
     .sort((a, b) => b.date.localeCompare(a.date));
   const aValider = resultats.filter((r) => r.statut === "À valider");
 
