@@ -30,3 +30,4 @@
   .tb-pc.on::after { top: -9px; right: 8px; font-size: 9.5px; }
 }
 @media (max-width: 640px) { .tb-leg span { white-space: nowrap; } .tb-prio .hd h2 { flex: 1 1 100%; } }
+.tb-astuce { margin: 4px 0 0; }
