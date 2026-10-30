@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { clientAdmin } from "@/lib/supabase/admin";
 import { TAGS, lireCalendrier, lireParticipations, lireTaches } from "@/lib/club";
+import { completerPalmares } from "@/lib/palmares-complet";
 import { pousser, pushPret, type Abonnement, type MessagePush } from "@/lib/push";
 import { comptesActifs, comptesConcernes, inscritsOui, sansReponse } from "@/lib/audiences";
 import { lireEligibles } from "@/lib/eligibles";
@@ -170,7 +171,9 @@ export async function GET(req: NextRequest) {
   }
   // Trainings (safety net if the hourly Supabase job is not installed): confirmation / cancellation.
   const entrainements = await traiterEntrainements(db).catch((e) => ({ erreur: e instanceof Error ? e.message : String(e) }));
-  return NextResponse.json({ date: T, envois: bilan, entrainements });
+  // Palmarès: empty « Lieu » / « Date » filled in from the calendar (the flag, the month, the right season).
+  const palmares = await completerPalmares(evs).catch((e) => ({ erreur: e instanceof Error ? e.message : String(e) }));
+  return NextResponse.json({ date: T, envois: bilan, entrainements, palmares });
 }
 
 /** Trainings only: accepted with the Vercel CRON_SECRET or the token created in Supabase (nothing to copy by hand). */
