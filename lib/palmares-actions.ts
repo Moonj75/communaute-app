@@ -61,14 +61,16 @@ export async function ajouterResultat(fd: FormData): Promise<RetourP> {
   if (fin > debut && !jour) return { ok: false, message: "Choisis le jour du résultat." };
   const date = jour && jour >= debut && jour <= fin ? jour : debut;
   const lien = /^https?:\/\//i.test(v("lien", 300)) ? v("lien", 300) : null;
-  if (!["Huitième de finaliste", "Quart de finaliste", "Demi-finaliste", "Finaliste", "Vainqueur"].includes(rang)) return { ok: false, message: "Choisis le résultat obtenu." };
+  if (!["Huitième de finaliste", "Quart de finaliste", "Demi-finaliste", "Finaliste", "Vainqueur", "Autre place"].includes(rang)) return { ok: false, message: "Choisis le résultat obtenu." };
+  const libre = Math.round(Number(v("place", 4)));
+  if (rang === "Autre place" && !(libre >= 1 && libre <= 999)) return { ok: false, message: "Indique la place obtenue (ex. 18)." };
   if (mode !== "ind" && mode !== "eq") return { ok: false, message: "Individuel ou par équipe ?" };
   if (mode === "ind" && joueurs.length !== 1) return { ok: false, message: "Un résultat individuel : choisis un seul joueur." };
   if (mode === "eq" && !equipe) return { ok: false, message: "Choisis l'équipe du club (Team A ou Team B)." };
   // A player adds his own results only (they are checked by the responsable palmarès).
   const mesIds = q.fiches.map((f) => sansTirets(f.notion_id));
   if (!q.responsable && !joueurs.some((j) => mesIds.includes(j))) return { ok: false, message: "Tu peux ajouter seulement tes propres résultats (ou ceux de ton équipe, avec toi dedans)." };
-  const place = RANGS.find((r) => r.id === rang)!.place;
+  const place = rang === "Autre place" ? libre : RANGS.find((r) => r.id === rang)!.place;
   const saison = saisonDe(date);
   // Final (winner or finalist): its score, seen from the club (« 3-1 »), and the opponent — both optional.
   const finale = rang === "Vainqueur" || rang === "Finaliste";
