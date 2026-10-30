@@ -9,7 +9,7 @@ const PAYS: [string, RegExp][] = [
   ["GR", /gr[eè]ce|greece|ath[eè]nes|athens|ilioupoli|thessalon/i],
   ["DE", /allemagne|germany|ludwi|berlin|munich|m[uü]nchen|hambourg|hamburg|cologne|k[oö]ln|francfort|frankfurt|stuttgart|dortmund|d[uü]sseldorf/i],
   ["AT", /autriche|austria|vienne|wien|salzbourg|graz|linz/i],
-  ["GB", /angleterre|england|royaume|gillingham|manchester|dewsb|haverhill|london|londres|liverpool|birmingham|leeds|ecosse|scotland|glasgow|edimbourg|pays de galles|wales|cardiff/i],
+  ["GB", /irlande du nord|northern ireland|derry|belfast|heckmond|angleterre|england|royaume|gillingham|manchester|dewsb|haverhill|london|londres|liverpool|birmingham|leeds|ecosse|scotland|glasgow|edimbourg|pays de galles|wales|cardiff/i],
   ["IE", /irlande|ireland|dublin/i],
   ["MT", /malte|malta/i],
   ["CZ", /tch[eè]qu|czech|prague|praha|brno/i],
@@ -19,7 +19,7 @@ const PAYS: [string, RegExp][] = [
   ["LU", /luxembourg/i],
   ["CY", /chypre|cyprus/i],
   ["US", /[eé]tats-unis|usa|new york/i],
-  ["BE", /belgique|belgium|eugies|frameries|mons|gand|gent|bruxelles|brussel|li[eè]ge|namur|charleroi|anvers|antwerp|bruges|tournai|wavre|ath\b|auvelais|flanders|flandre|wallonie|hainaut|national d/i],
+  ["BE", /belgique|belgium|eugies|frameries|mons|gand|gent|bruxelles|brussel|li[eè]ge|namur|charleroi|anvers|antwerp|bruges|tournai|wavre|ath\b|auvelais|flanders|flandre|wallonie|hainaut|national d|stembert|wamme|\baye\b|temploux|hennuyer|mechelen|malines|marche-en|verviers|jambes|eupen|hasselt|louvain|leuven|ostende|kortrijk|courtrai|mouscron|arlon|dinant|huy\b|nivelles|waterloo|soignies|la louvi[eè]re|binche|quaregnon|dour|boussu|saint-ghislain|\b\d{4} [A-Z][a-z]+/i],
 ];
 
 /** ISO code of the country (« FR »), or null when nothing is recognised. */

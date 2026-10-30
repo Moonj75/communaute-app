@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { getVue } from "./profil";
 import { TAGS, creerResultat, lireCalendrier, lireMembresRoles, lirePalmares, retirerResultat, validerResultatNotion } from "./club";
 import { estCompetition } from "./club-types";
+import { completerPalmares } from "./palmares-complet";
 import { RANGS, ROLE_PALMARES, saisonDe, sansTirets, titreDe, typeDe, type Rang } from "./palmares-types";
 import { clientAdmin } from "./supabase/admin";
 import { deposer } from "./courrier";
@@ -156,6 +157,8 @@ export async function importerHistorique(): Promise<RetourP> {
 export async function rafraichirPalmares(): Promise<RetourP> {
   const q = await qui();
   if (!q?.responsable) return { ok: false, message: "Réservé au responsable palmarès et au staff." };
+  // Also fills the empty « Lieu » / « Date » in Notion from the calendar (done every morning anyway).
+  const r = await completerPalmares(await lireCalendrier().catch(() => [])).catch(() => ({ completes: 0 }));
   fini();
-  return { ok: true, message: "À jour avec Notion ✓" };
+  return { ok: true, message: `À jour avec Notion ✓${"completes" in r && r.completes ? ` · ${r.completes} résultat(s) complété(s)` : ""}` };
 }

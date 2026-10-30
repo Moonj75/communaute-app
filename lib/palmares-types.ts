@@ -115,7 +115,9 @@ const simple = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLower
  * in the same season, when it can be found (« Open de Frameries » 2026/2027 → the calendar event of that season).
  */
 export function avecDates<T extends Pick<ResultatP, "competition" | "saison" | "date"> & { lieu?: string | null }>(liste: T[], evs: { nom: string; date: string | null; lieu?: string | null }[]): T[] {
-  const cal = evs.filter((e) => e.date).map((e) => ({ n: simple(e.nom), d: e.date!.slice(0, 10), s: saisonDe(e.date!.slice(0, 10)), lieu: e.lieu || null }));
+  // Only events already played: a result never takes the date of a coming event.
+  const auj = new Date().toISOString().slice(0, 10);
+  const cal = evs.filter((e) => e.date && e.date.slice(0, 10) <= auj).map((e) => ({ n: simple(e.nom), d: e.date!.slice(0, 10), s: saisonDe(e.date!.slice(0, 10)), lieu: e.lieu || null }));
   if (!cal.length) return liste;
   return liste.map((r) => {
     if (r.date && r.lieu) return r;

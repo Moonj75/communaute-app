@@ -810,6 +810,17 @@ export async function creerResultat(r: { joueurs: string[]; equipe: string | nul
 export async function validerResultatNotion(id: string) {
   await notion(`pages/${id}`, { method: "PATCH", body: { properties: { Statut: { select: { name: "Validé" } } } } });
 }
+/**
+ * Fills in, in Notion, what was found for a result in the club calendar: its day, its place and its season
+ * (only the given values; what someone typed is never overwritten — the caller only sends empty fields).
+ */
+export async function completerResultatNotion(id: string, v: { date?: string | null; lieu?: string | null; saison?: string | null }) {
+  const properties: Record<string, unknown> = {};
+  if (v.date) properties.Date = { date: { start: v.date } };
+  if (v.lieu) properties["Lieu"] = rt(v.lieu);
+  if (v.saison) properties.Saison = { select: { name: v.saison } };
+  if (Object.keys(properties).length) await notion(`pages/${id}`, { method: "PATCH", body: { properties } });
+}
 /** Removes a result (to the Notion trash, it can be restored from there). */
 export async function retirerResultat(id: string) {
   await notion(`pages/${id}`, { method: "PATCH", body: { in_trash: true } });
