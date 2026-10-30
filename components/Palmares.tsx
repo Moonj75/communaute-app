@@ -8,7 +8,7 @@ import { ajouterResultat, importerHistorique, rafraichirPalmares, supprimerResul
 import "./palmares.css";
 import Roue, { type Cran } from "./Roue";
 import Drapeau from "./Drapeau";
-import { paysResultat } from "@/lib/drapeaux";
+import { emblemeResultat, paysResultat } from "@/lib/drapeaux";
 import Blocs from "./Blocs";
 import type { Exploit } from "@/lib/palmares-types";
 
@@ -114,7 +114,7 @@ function Victoires({ m, titre = "Victoires", sous }: { m: ReturnType<typeof comp
   );
 }
 
-const versCran = (r: ResultatP, noms: Noms): Cran => ({ id: r.id, place: placeDe(r), equipe: estEquipe(r), qui: quiDe(r, noms), competition: r.competition, categorie: r.categorie, saison: r.saison, date: r.date, scoreFinale: r.scoreFinale, adversaire: r.adversaire, pays: paysResultat(r) });
+const versCran = (r: ResultatP, noms: Noms): Cran => ({ id: r.id, place: placeDe(r), equipe: estEquipe(r), qui: quiDe(r, noms), competition: r.competition, categorie: r.categorie, saison: r.saison, date: r.date, scoreFinale: r.scoreFinale, adversaire: r.adversaire, pays: paysResultat(r), embleme: emblemeResultat(r) });
 const FILTRES_R = FILTRES.filter((x) => x.id !== "club");
 
 /**

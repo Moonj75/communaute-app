@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Trophee } from "./Trophee";
 import { classeRang, libSaison, motRang } from "@/lib/palmares-types";
 import Drapeau from "./Drapeau";
+import { NOM_PAYS } from "@/lib/drapeaux";
 import { couleurCategorie } from "@/lib/classements-types";
 import "./roue.css";
 
@@ -28,7 +29,7 @@ function nomBeau(qui: string) {
 }
 
 /** One result of the wheel. */
-export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null; date?: string | null; scoreFinale?: string | null; adversaire?: string | null; /** Country of the tournament (flag). */ pays?: string | null };
+export type Cran = { id: string; place: number | null; equipe: boolean; qui: string; competition: string; categorie: string | null; saison: string | null; date?: string | null; scoreFinale?: string | null; adversaire?: string | null; /** Country of the tournament (flag). */ pays?: string | null; /** Above the cup: « club » (Eugies crest) or a country code (national team). */ embleme?: string | null };
 
 /** « 12 octobre 2025 », or the season when the day is not known. */
 function Quand({ c }: { c: Cran }) {
@@ -132,7 +133,16 @@ export default function Roue({ crans, auto = false, voisins: maxV = 3, duree = 7
                   <span className={`pk-badge ${c.equipe ? "eq" : "in"}`}>{c.equipe ? "👥 Équipe" : "👤 Individuel"}</span>
                 </span>
                 {/* Middle: who. */}
-                <span className="rc-m">{nomBeau(c.qui)}{c.categorie ? <span className="rc-mcat" style={couleurCategorie(c.categorie) ? ({ "--cc": couleurCategorie(c.categorie) } as React.CSSProperties) : undefined}>{c.categorie}</span> : null}</span>
+                <span className="rc-m">
+                  {/* Above the player: for whom he played — the club (Eugies crest) or Belgium (national team). */}
+                  {c.embleme ? (
+                    <span className={`rc-em${c.embleme === "club" ? " club" : " pays"}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {c.embleme === "club" ? <img src="/crest.png" alt="" /> : <Drapeau code={c.embleme} />}
+                      <small>{c.embleme === "club" ? "Eugies" : NOM_PAYS[c.embleme] || c.embleme}</small>
+                    </span>
+                  ) : null}
+                  {nomBeau(c.qui)}{c.categorie ? <span className="rc-mcat" style={couleurCategorie(c.categorie) ? ({ "--cc": couleurCategorie(c.categorie) } as React.CSSProperties) : undefined}>{c.categorie}</span> : null}</span>
                 {/* Right: the event, big. */}
                 <span className="rc-d">
                   {c.pays ? <span className="rc-flag"><Drapeau code={c.pays} /></span> : null}
