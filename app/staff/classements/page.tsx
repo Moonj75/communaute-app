@@ -23,10 +23,10 @@ export default async function ClassementsStaff() {
   const tablesOk = !impR.error;
   const imports = (impR.data || []) as Import[];
   const eug = (eugR.data || []) as LigneClassement[];
-  const joueurs = (joueursR.data || []) as { notion_id: string; prenom: string | null; nom: string; actif: boolean; sans_competition?: boolean }[];
+  const joueurs = (joueursR.data || []) as { notion_id: string; prenom: string | null; nom: string; actif: boolean; sans_competition?: boolean; archive?: boolean }[];
   const nonReconnus = eug.filter((l) => !l.joueur_id);
   const classes = new Set(eug.map((l) => l.joueur_id).filter(Boolean));
-  const sansClassement = joueurs.filter((j) => j.actif && !j.sans_competition && !classes.has(j.notion_id));
+  const sansClassement = joueurs.filter((j) => j.actif && !j.archive && !j.sans_competition && !classes.has(j.notion_id));
   const imp = (s: "fbfts" | "fistf") => imports.find((i) => i.source === s);
   const moisDefaut = new Date().toISOString().slice(0, 7);
 
