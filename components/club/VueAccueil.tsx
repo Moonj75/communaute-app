@@ -10,6 +10,7 @@ import Defile from "./Defile";
 import PhotoAccueil from "./PhotoAccueil";
 import { PalmaresAccueil } from "@/components/Palmares";
 import type { Exploit } from "@/lib/palmares-types";
+import "./entr.css";
 
 export type Gens = { prenom: string | null; cagnotte: number | null; roles: string[] | null; actif: boolean }[];
 
@@ -103,7 +104,7 @@ export default function VueAccueil(p: {
       />
       <PhotoAccueil />
 
-      <a className="acc-c acc-entr" href="/entrainements" style={{ "--k": "var(--n-temps)" } as React.CSSProperties}>
+      <a className="acc-c acc-entr calme v-souffle" href="/entrainements" style={{ "--k": "var(--n-temps)" } as React.CSSProperties}>
         <span className="acc-l">🎯 Prochain entraînement</span>
         <b className="acc-v txt">{seance ? dateLongue(seance.date) : "—"}</b>
         <span className="acc-s">{seance ? [seance.debut && seance.fin ? `${seance.debut} – ${seance.fin}` : seance.debut, seance.lieu].filter(Boolean).join(" · ") : "Aucune séance prévue"}</span>

@@ -1,0 +1,8 @@
+/* Accueil : « Prochain entraînement », mis en relief par une lueur douce qui respire lentement (plus de guirlande qui clignote). */
+.vg .acc-entr.calme::before, .vg .acc-entr.calme::after { animation: none; background: none; filter: none; content: none; }
+.acc-entr.v-souffle { border-color: color-mix(in srgb, var(--k) 80%, transparent); animation: acc-souffle 4.5s ease-in-out infinite; }
+@keyframes acc-souffle {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--k) 0%, transparent), 0 12px 24px -16px var(--k); }
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--k) 22%, transparent), 0 0 22px 2px color-mix(in srgb, var(--k) 45%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .acc-entr.v-souffle { animation: none; } }
