@@ -34,7 +34,7 @@ export async function envoyerManuel(_prev: RetourEnvoi | null, fd: FormData): Pr
       // A group of the training crew, read from Notion (roles).
       const voulus = rolesDuGroupe(cible.slice(4));
       const membres = await lireMembresRoles();
-      emails = new Set(membres.filter((m) => m.actif && !m.archive && m.email && (m.roles || []).some((r) => voulus.includes(r))).map((m) => m.email!.toLowerCase()));
+      emails = new Set(membres.filter((m) => !m.archive && m.email && (m.roles || []).some((r) => voulus.includes(r))).map((m) => m.email!.toLowerCase()));
       url = "/entrainements";
     } else if (cible.startsWith("attente:") || cible.startsWith("oui:")) {
       const id = cible.split(":")[1];
