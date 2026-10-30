@@ -10,6 +10,7 @@ import { lireInfosPubliques } from "@/lib/club";
 import { salutation } from "@/lib/salut";
 import { avecDates, cleSaison, compter, placeDe, sansArchives, triVitrine, type Exploit } from "@/lib/palmares-types";
 import { essayer, lireCalendrier, lireClassementsClub, lireMembresRoles, lirePalmares, lireResultats, lireSeances, nomsJoueurs } from "@/lib/club";
+import { paysResultat } from "@/lib/drapeaux";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
   const recents = valides.filter((r) => cleSaison(r.saison) >= derniere - 1).sort(triVitrine);
   const anciens = valides.filter((r) => cleSaison(r.saison) < derniere - 1 && placeDe(r) === 1).sort(triVitrine);
   const exploits: Exploit[] = [...recents, ...anciens].slice(0, 12).map((r) => ({
-    id: r.id, place: placeDe(r), equipe: r.parEquipe || Boolean(r.equipe), competition: r.competition, categorie: r.categorie, saison: r.saison, date: r.date, scoreFinale: r.scoreFinale || null, adversaire: r.adversaire || null,
+    id: r.id, place: placeDe(r), equipe: r.parEquipe || Boolean(r.equipe), competition: r.competition, categorie: r.categorie, saison: r.saison, date: r.date, scoreFinale: r.scoreFinale || null, adversaire: r.adversaire || null, pays: paysResultat(r),
     qui: [...r.joueurs.map((j) => tousNoms.get(j) || "?"), ...(r.equipe ? [r.equipe] : [])].join(", "),
   }));
   const next = compets[0];
