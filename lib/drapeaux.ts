@@ -40,3 +40,11 @@ export const NOM_PAYS: Record<string, string> = { BE: "Belgique", FR: "France", 
 export const paysEv = (e: { lieu?: string | null; nom: string; deplacement?: string | null }) => paysDe(e.lieu, e.nom) || (/proximit/i.test(e.deplacement || "") ? "BE" : null);
 /** Country of a palmarès result: its competition's name, else Belgium for a Belgian / internal competition. */
 export const paysResultat = (r: { competition: string; type?: string | null }) => paysDe(r.competition) || (r.type === "Belgique" || r.type === "Interne" ? "BE" : null);
+
+/** National-team competitions (World Cup, European Cup, Nations…): the player represents his country, not the club. */
+const NATIONS = /coupe du monde|coupe d.europe|championnat du monde|championnat d.europe|world cup|european cup|\beuros?\b|nations/i;
+/**
+ * Emblem shown above the cup / medal: the country's flag for a national-team competition
+ * (Belgium: our players play for Belgium), the club's crest for everything played for Eugies (club teams, opens…).
+ */
+export const emblemeResultat = (r: { competition: string; equipe?: string | null }) => (NATIONS.test(r.competition) && !r.equipe ? "BE" : "club");
