@@ -44,6 +44,8 @@ export default function Formulaire(p: {
   confirmation: boolean;
   /** The player's kitty (null = not available). */
   cagnotte?: InfoCagnotte;
+  /** Staff changing an answer already validated for good. */
+  staffValide?: boolean;
 }) {
   const cag = p.cagnotte || null;
   const dejaAttente = (cag?.deja || []).filter((d) => d.statut === "en_attente");
@@ -207,6 +209,12 @@ export default function Formulaire(p: {
       {/* Only the answers to questions that apply are sent. */}
       {etapes.map((e) => (r[e.cle] ? <input key={e.cle} type="hidden" name={e.cle} value={r[e.cle]!} /> : null))}
       {cag ? <input type="hidden" name="cag_present" value="1" /> : null}
+      {p.staffValide ? (
+        <div className="notice rep-staff" style={{ borderLeft: "5px solid #00e5ff" }}>
+          <b>🔒 Réponse validée définitivement</b> — tu la modifies en tant que staff : elle reste validée.
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontWeight: 700, cursor: "pointer" }}><input type="checkbox" name="deverrouiller" style={{ width: 20, height: 20 }} /> 🔓 Déverrouiller : le joueur pourra de nouveau la modifier lui-même</label>
+        </div>
+      ) : null}
       {cag && r.cagnotte === "Oui" ? POSTES.map((x, i) => <input key={x.c} type="hidden" name={`cag_${i}`} value={String(num(montants[i]))} />) : null}
 
       <div className="pas-prog" aria-label={`Étape ${Math.min(faites + 1, etapes.length)} sur ${etapes.length}`}>

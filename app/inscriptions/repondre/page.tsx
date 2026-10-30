@@ -95,6 +95,7 @@ export default async function Repondre({ searchParams }: { searchParams: Promise
             jusquau={jusquau}
             confirmation={ph === "confirmation"}
             cagnotte={cag}
+            staffValide={admin && Boolean(p?.valide)}
           />
         ) : (
           <section className="verrou">

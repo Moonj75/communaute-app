@@ -59,6 +59,8 @@ export async function envoyerReponse(_p: RetourReponse | null, fd: FormData): Pr
       vehicule: parmi(fd.get("vehicule"), CHOIX.oui_non) as "Oui" | "Non" | null,
       referent: parmi(fd.get("referent"), CHOIX.oui_non) as "Oui" | "Non" | null,
       definitif,
+      // Staff only: unlock a validated answer so that the player can change it again.
+      deverrouiller: admin && fd.get("deverrouiller") === "on",
     });
     revalidateTag(TAGS.participations);
     // Kitty: what the player wants to pay with it for this event (requests waiting for a validation).
