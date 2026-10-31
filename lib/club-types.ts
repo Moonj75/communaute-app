@@ -124,7 +124,6 @@ export type JoueurLite = { notionId: string; nom: string; email: string | null; 
 /** Takes part in the official competitions: in the forms, reminders and form statistics. */
 export const competiteur = (j: JoueurLite) => j.actif && !j.sansCompet;
 
-export const TALLY_URL = "https://tally.so/r/vGkvr4";
 export const DECISION_OUI = "✅ On y va";
 export const DECISION_NON = "❌ On n'y va pas";
 export const STATUTS_TACHE = ["À faire", "En cours", "En attente", "Bloqué", "Fait"];
@@ -206,21 +205,6 @@ export function libelleTally(e: Evenement) {
   if (!e.date) return e.nom;
   const [y, m, d] = e.date.split("-");
   return `${e.nom} — ${d}/${m}/${y}`;
-}
-
-/** Link to the Tally form, pre-filled with the event and (optionally) the player. */
-export function lienTally(e: Evenement, joueur?: string | null) {
-  const p = new URLSearchParams();
-  p.set("evenement", libelleTally(e));
-  const two = Boolean(e.fin && e.fin !== e.date);
-  const loin = Boolean(e.deplacement && !/local|sur place|aucun/i.test(e.deplacement));
-  p.set("vehicule_requis", loin ? "Oui" : "Non");
-  p.set("restriction_requise", two || loin ? "Oui" : "Non");
-  if (joueur) {
-    p.set("joueur", joueur);
-    p.set("prenom", joueur.split(" ")[0]);
-  }
-  return `${TALLY_URL}?${p.toString()}`;
 }
 
 export type Jalon = { k: "dec" | "open" | "limit" | "valid" | "ev"; label: string; ic: string; date: string | null; fait?: boolean };
