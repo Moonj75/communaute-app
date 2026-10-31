@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getSessionProfil } from "@/lib/profil";
-import { creerEvenement, creerFiche, creerTache, lireCalendrier, majEvenement, majObjectif, modifierTache, TAGS } from "@/lib/club";
+import { creerEvenement, creerFiche, creerTache, deverrouillerParticipation, lireCalendrier, majEvenement, majObjectif, modifierTache, TAGS } from "@/lib/club";
 import { COMPETITIONS_EV, DECISIONS, DEPLACEMENTS, PRIORITES_EV, TYPES_EV, type EvSaisie } from "@/lib/evenements-types";
 import { PRIORITES } from "@/lib/club-types";
 
@@ -144,6 +144,19 @@ export async function enregistrerEvenement(fd: FormData): Promise<Retour & { id?
     Object.values(TAGS).forEach((t) => revalidateTag(t));
     revalidatePath("/", "layout");
     return { ok: true, id: pageId, message: id ? `✓ « ${e.nom} » mis à jour dans Notion.` : `✓ « ${e.nom} » ajouté au calendrier (Notion).` };
+  } catch (e) {
+    return erreur(e);
+  }
+}
+
+/** Staff: unlock a validated answer from the dashboard table (the player can change it again). */
+export async function deverrouillerReponse(id: string): Promise<Retour> {
+  try {
+    await exigerAdmin();
+    if (!/^[0-9a-f-]{32,36}$/i.test(id)) return { ok: false, message: "Réponse introuvable." };
+    await deverrouillerParticipation(id);
+    revalidateTag(TAGS.participations);
+    return { ok: true };
   } catch (e) {
     return erreur(e);
   }
