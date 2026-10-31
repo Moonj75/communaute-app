@@ -1,3 +1,4 @@
+// app/inscriptions/repondre/actions.ts
 "use server";
 
 import { revalidateTag } from "next/cache";
@@ -20,6 +21,16 @@ const CHOIX = {
 const parmi = (v: FormDataEntryValue | null, l: string[]) => (typeof v === "string" && l.includes(v) ? v : null);
 
 export async function envoyerReponse(_p: RetourReponse | null, fd: FormData): Promise<RetourReponse> {
+  // Never let an error break the page: the player gets a message and can try again.
+  try {
+    return await envoyer(fd);
+  } catch (e) {
+    console.error("[repondre] envoi impossible", e);
+    return { ok: false, message: e instanceof NotionErreur ? e.message : "L'envoi n'a pas fonctionné : recharge la page puis réessaie." };
+  }
+}
+
+async function envoyer(fd: FormData): Promise<RetourReponse> {
   const { supabase, user, profil, apercu } = await getVue();
   if (!user) return { ok: false, message: "Reconnecte-toi." };
   if (estInactif(profil)) return { ok: false, message: "Ton compte n'est pas actif cette saison : contacte le staff pour t'inscrire." };
