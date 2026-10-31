@@ -13,6 +13,7 @@ import ChoixJoueurs from "./ChoixJoueurs";
 import LigneCompet from "./LigneCompet";
 import { JourBadge, LegendeJours } from "./CarteEvenement";
 import "./tableau-tel.css";
+import BoutonDeverrouiller from "./BoutonDeverrouiller";
 import Drapeau from "@/components/Drapeau";
 import { paysEv } from "@/lib/drapeaux";
 
@@ -54,7 +55,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
   };
 
   const c = sel ? compte(sel) : null;
-  const rows = c ? [...c.o, ...c.p].map((j) => ({ j, r: c.m.get(j.notionId)! })) : [];
+  const rows = c ? [...c.o, ...c.p, ...c.n].map((j) => ({ j, r: c.m.get(j.notionId) })).filter((x): x is { j: JoueurLite; r: Participation } => Boolean(x.r?.statut && x.r.statut !== "En attente")) : [];
   const fiche = sel ? fiches?.get(sel.id) : null;
   const objectif = fiche?.objectif || null;
   const points = c ? actifs.map((j) => c.m.get(j.notionId)).filter((p): p is Participation => Boolean(p?.statut && p.statut !== "En attente")).map((p) => ({ t: p.creeLe, oui: p.statut === "Oui" })) : [];
@@ -235,9 +236,9 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
         { id: "qui", titre: "Qui vient · réponses", ic: "👥", badge: c ? `${c.o.length}/${N}` : null, contenu: sel && c ? (<>
           <section className="panel"><div className="bd">
               <div className="three">
-                <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}<LegendeJours n={nbUnJour} /></span><p className="small muted tb-astuce">✎ Touche un nom pour modifier sa réponse, même validée 🔒 (staff uniquement).</p><div className="chips">{c.o.length ? c.o.map((j) => <Link key={j.notionId} href={lienReponse(sel, j.notionId)} title={`Modifier la réponse de ${j.nom}`} className={`chip chip-lien o${c.m.get(j.notionId)?.valide ? " valide" : ""}`}><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}<JourBadge j={jourDe(j.notionId)} /> ✎</Link>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
+                <div className="box b-o"><span className="bh">Participent ({c.o.length}){c.o.filter((j) => c.m.get(j.notionId)?.valide).length ? ` · 🔒 ${c.o.filter((j) => c.m.get(j.notionId)?.valide).length} validés` : ""}<LegendeJours n={nbUnJour} /></span><div className="chips">{c.o.length ? c.o.map((j) => <span key={j.notionId} className={`chip o${c.m.get(j.notionId)?.valide ? " valide" : ""}`}><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}<JourBadge j={jourDe(j.notionId)} /></span>) : <span className="muted small">Personne pour l&apos;instant.</span>}</div></div>
                 <div className="box b-p"><span className="bh">En attente ({c.att.length})</span><div className="chips">{c.att.length ? c.att.map((j) => <Link key={j.notionId} className="chip chip-lien" href={lienReponse(sel, j.notionId)} title={`Répondre pour ${j.nom}`}><i>{initiales(j.nom)}</i>{j.nom} ✎</Link>) : <span className="muted small">Tout le monde a répondu 🎉</span>}</div></div>
-                <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <Link key={j.notionId} href={lienReponse(sel, j.notionId)} title={`Modifier la réponse de ${j.nom}`} className={`chip chip-lien ${c.p.includes(j) ? "m" : "n"}${c.m.get(j.notionId)?.valide ? " valide" : ""}`}><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}{c.p.includes(j) ? <JourBadge j={jourDe(j.notionId)} /> : null} ✎</Link>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
+                <div className="box b-n"><span className="bh">Peut-être / Non ({c.p.length + c.n.length})</span><div className="chips">{[...c.p, ...c.n].map((j) => <span key={j.notionId} className={`chip ${c.p.includes(j) ? "m" : "n"}${c.m.get(j.notionId)?.valide ? " valide" : ""}`}><i>{initiales(j.nom)}</i>{j.nom}{c.m.get(j.notionId)?.valide ? " 🔒" : ""}{c.p.includes(j) ? <JourBadge j={jourDe(j.notionId)} /> : null}</span>)}{!c.p.length && !c.n.length ? <span className="muted small">Personne.</span> : null}</div></div>
               </div>
           </div></section>
           {/* How the answers came in, under the people (formerly its own page « Rythme des réponses »). */}
@@ -251,7 +252,7 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
           </section>
         </>) : <p className="vide">Choisis une compétition.</p> },
 
-        { id: "inscrits", titre: "Inscrits, transport et référents", ic: "🚗", badge: rows.length || null, contenu: sel && c ? (
+        { id: "inscrits", titre: "Inscrits, transport et référents", ic: "🚗", badge: c ? c.o.length + c.p.length || null : null, contenu: sel && c ? (
           <section className="panel"><div className="bd">
               {rows.length ? (
                 <>
@@ -273,12 +274,13 @@ export default function VueTableauBord({ evs, parts, joueurs, e, erreur, rafraic
                   ) : null}
                   <div className="scroll-x">
                     <table className="t">
-                      <thead><tr><th>Joueur</th><th>Réponse</th><th>Jours</th><th>Véhicule</th><th>Référent</th><th>Départ</th><th>Retour</th><th>Restrictions</th></tr></thead>
+                      <thead><tr><th>Joueur</th><th>Staff</th><th>Réponse</th><th>Jours</th><th>Véhicule</th><th>Référent</th><th>Départ</th><th>Retour</th><th>Restrictions</th></tr></thead>
                       <tbody>
                         {rows.map(({ j, r }) => (
                           <tr key={j.notionId}>
-                            <td><b>{j.nom}</b></td>
-                            <td><span className={`st st-${r.statut === "Oui" ? "o" : "m"}`}>{r.statut}</span></td>
+                            <td><b>{j.nom}</b>{r.valide ? " 🔒" : ""}</td>
+                            <td className="tb-act"><Link className="tb-bt" href={lienReponse(sel, j.notionId)}>✏️ Modifier</Link>{r.valide ? <BoutonDeverrouiller id={r.id} nom={j.nom} /> : null}</td>
+                            <td><span className={`st st-${r.statut === "Oui" ? "o" : r.statut === "Non" ? "n" : "m"}`}>{r.statut}</span></td>
                             <td>{r.jours || "—"}</td>
                             <td>{r.vehicule === "Oui" ? "🚗 Oui" : r.vehicule || "—"}</td>
                             <td>{r.referent === "Oui" ? "🧭 Oui" : r.referent || "—"}</td>
