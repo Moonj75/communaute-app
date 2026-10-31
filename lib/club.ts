@@ -448,6 +448,11 @@ export async function enregistrerReponse(r: ReponseNative) {
   else await notion("pages", { body: { parent: { type: "data_source_id", data_source_id: DS.participations }, properties } });
 }
 
+/** Staff: takes the final validation off an answer (the player can change it again himself). */
+export async function deverrouillerParticipation(id: string) {
+  await notion(`pages/${id}`, { method: "PATCH", body: { properties: { "Validation définitive": { checkbox: false }, "Validée le": { date: null } } } });
+}
+
 /* ---------- Fiche logistique : édition depuis l'appli ---------- */
 export type FicheEdition = { id: string; url: string; titre: string; evenementId: string | null; statut: string | null; masques: string[]; valeurs: Record<string, Valeur> };
 
